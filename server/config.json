@@ -1,0 +1,9 @@
+{
+  "web_address": ":40156",
+  "data_path": "./data",
+  "nav_path": "./nav.json",
+  "admin": {
+    "username": "admin",
+    "password": "123456"
+  }
+}

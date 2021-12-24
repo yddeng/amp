@@ -1,0 +1,23 @@
+[
+  {
+    "name": "control",
+    "parentId": 0,
+    "id": 20,
+    "meta": {
+      "icon": "form",
+      "title": "服务器管理"
+    },
+    "redirect": "/control/startpage",
+    "component": "RouteView"
+  },
+  {
+    "name": "startpage",
+    "parentId": 20,
+    "id": 21,
+    "meta": {
+      "title": "启动"
+    },
+    "component": "Startpage",
+    "path": "/control/startpage"
+  }
+]

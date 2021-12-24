@@ -7,13 +7,13 @@ import (
 	"time"
 )
 
-var address = "127.0.0.1:40235"
+var address = ":40156"
 
-func startWebListener() {
-	RunWeb(&Config{
-		WebAddress: address,
-		FilePath:   "",
-	})
+func startWebListener(t *testing.T) {
+	if err := LoadNav("../nav.json"); err != nil {
+		t.Fatal(err)
+	}
+	RunWeb(address)
 }
 
 func authLogin(t *testing.T, Username, Password string) string {
@@ -29,8 +29,8 @@ func authLogin(t *testing.T, Username, Password string) string {
 	return ret
 }
 
-func TestLogin(t *testing.T) {
-	go startWebListener()
+func TestAuth_Login(t *testing.T) {
+	go startWebListener(t)
 	time.Sleep(time.Millisecond * 100)
 
 	ret := authLogin(t, "admin", "123456")

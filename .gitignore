@@ -9,4 +9,5 @@ log/
 .idea
 .DS_Store
 
-server/main/server
+server/server
+uplaod/initial/

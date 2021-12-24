@@ -8,14 +8,14 @@ import (
 	"time"
 )
 
-func TestHandler_GetNav(t *testing.T) {
-	go startWebListener()
+func TestUser_Nav(t *testing.T) {
+	go startWebListener(t)
 	time.Sleep(time.Millisecond * 100)
 
-	ret := authLogin(t, "admin", "123456")
+	ret := authLogin(t, "test", "test")
 	t.Log(ret, gjson.Get(ret, "data.token").String())
 
-	req2, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/user/getNav", address), "POST")
+	req2, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/user/nav", address), "POST")
 	req2.SetHeader("token", gjson.Get(ret, "data.token").String())
 
 	ret, err := req2.ToString()
