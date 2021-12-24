@@ -2,9 +2,8 @@ package web
 
 import (
 	"fmt"
-	"github.com/kataras/iris/middleware/logger"
 	"github.com/kataras/iris/v12"
-	"initialthree/node/node_gmmgr/webservice/problem"
+	"github.com/kataras/iris/v12/middleware/logger"
 	"log"
 	"reflect"
 	"time"
@@ -40,7 +39,7 @@ func HandleJSONJSON(fn interface{}) iris.Handler {
 			inValue = reflect.New(inType)
 		}
 		if err := ctx.ReadJSON(inValue.Interface()); err != nil {
-			ctx.Problem(problem.New(iris.StatusBadRequest, "", err.Error()))
+			ctx.Problem(NewProblem(iris.StatusBadRequest, "", err.Error()))
 			return
 		}
 
@@ -50,9 +49,18 @@ func HandleJSONJSON(fn interface{}) iris.Handler {
 
 		outValue := val.Call([]reflect.Value{inValue})[0]
 		if _, err := ctx.JSON(outValue.Interface()); err != nil {
-			ctx.Problem(problem.New(iris.StatusInternalServerError, "", err.Error()))
+			ctx.Problem(NewProblem(iris.StatusInternalServerError, "", err.Error()))
 		}
 	}
+}
+
+func NewProblem(statusCode int, title, detail string) iris.Problem {
+	p := iris.NewProblem().Status(statusCode)
+	if title != "" {
+		p.Title(title)
+	}
+	p.Detail(detail)
+	return p
 }
 
 func RunWeb(cfg *Config) {
