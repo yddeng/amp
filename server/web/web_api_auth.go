@@ -1,6 +1,7 @@
 package web
 
 import (
+	"initial-sever/task"
 	"log"
 )
 
@@ -18,7 +19,9 @@ func (*Auth) Login(req struct {
 		return
 	}
 
-	token := addToken(req.Username)
+	rets := task.Wait(addToken, req.Username)
+	token := rets[0].(string)
+
 	ret.Data = struct {
 		Token string `json:"token"`
 	}{Token: token}

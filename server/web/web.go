@@ -59,6 +59,6 @@ func RunWeb(address string) {
 
 	log.Printf("web server run %s.\n", address)
 	if err := app.Listen(address); err != nil {
-		panic(err)
+		log.Println(err)
 	}
 }

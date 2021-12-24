@@ -1,11 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"initial-sever/server/web"
 	"initial-sever/util"
-	"io/ioutil"
 )
 
 type Config struct {
@@ -16,18 +14,6 @@ type Config struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	} `json:"admin"`
-}
-
-func load(filename string) Config {
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		panic(err)
-	}
-	var cfg Config
-	if err := json.Unmarshal(data, &cfg); err != nil {
-		panic(err)
-	}
-	return cfg
 }
 
 var (

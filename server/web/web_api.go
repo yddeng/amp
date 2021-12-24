@@ -2,6 +2,7 @@ package web
 
 import (
 	"github.com/kataras/iris/v12"
+	"initial-sever/task"
 	"reflect"
 )
 
@@ -39,7 +40,9 @@ func tokenFunc(ctx iris.Context) (reflect.Value, *Result) {
 	if tkn == "" {
 		return nameValue, &Result{Code: 2, Message: "未携带Token"}
 	}
-	username, ok := getToken(tkn)
+
+	rets := task.Wait(getToken, tkn)
+	username, ok := rets[0].(string), rets[1].(bool)
 	if !ok {
 		return nameValue, &Result{Code: 3, Message: "Token失效"}
 	}
