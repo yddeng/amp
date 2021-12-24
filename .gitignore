@@ -1,0 +1,12 @@
+log/
+
+*.exe
+*.out
+*.toml
+*.cfg
+
+*.log
+.idea
+.DS_Store
+
+server/main/server

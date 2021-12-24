@@ -5,22 +5,22 @@ import (
 	"log"
 )
 
-func login(context iris.Context) {
+func (*Handler) Login(ctx iris.Context) {
 	type Login struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
 
 	var req Login
-	if err := context.ReadJSON(&req); err != nil {
-		context.Problem(NewProblem(iris.StatusBadRequest, "", err.Error()))
+	if err := ctx.ReadJSON(&req); err != nil {
+		ctx.Problem(NewProblem(iris.StatusBadRequest, "", err.Error()))
 		return
 	}
 
 	ret := Result{}
 	defer func() {
-		if _, err := context.JSON(ret); err != nil {
-			context.Problem(NewProblem(iris.StatusInternalServerError, "", err.Error()))
+		if _, err := ctx.JSON(ret); err != nil {
+			ctx.Problem(NewProblem(iris.StatusInternalServerError, "", err.Error()))
 		}
 	}()
 

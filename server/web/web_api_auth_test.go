@@ -9,25 +9,30 @@ import (
 
 var address = "127.0.0.1:40235"
 
-func TestLogin(t *testing.T) {
-	go func() {
-		RunWeb(&Config{
-			WebAddress: address,
-			FilePath:   "",
-		})
-	}()
+func startWebListener() {
+	RunWeb(&Config{
+		WebAddress: address,
+		FilePath:   "",
+	})
+}
 
-	time.Sleep(time.Second)
-
-	baseUrl := fmt.Sprintf("http://%s", address)
-	req, _ := dhttp.PostJson(baseUrl+"/auth/login", struct {
+func authLogin(t *testing.T, Username, Password string) string {
+	req, _ := dhttp.PostJson(fmt.Sprintf("http://%s/auth/login", address), struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
-	}{Username: "admin", Password: "123456"})
+	}{Username: Username, Password: Password})
 
-	var ret Result
-	if err := req.ToJSON(&ret); err != nil {
+	ret, err := req.ToString()
+	if err != nil {
 		t.Fatal(err)
 	}
+	return ret
+}
+
+func TestLogin(t *testing.T) {
+	go startWebListener()
+	time.Sleep(time.Millisecond * 100)
+
+	ret := authLogin(t, "admin", "123456")
 	t.Log(ret)
 }

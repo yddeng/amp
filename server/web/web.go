@@ -63,21 +63,6 @@ func NewProblem(statusCode int, title, detail string) iris.Problem {
 	return p
 }
 
-func RunWeb(cfg *Config) {
-	app := iris.New()
-	app.Use(logger.New())
-	// 跨域
-	app.Use(handleCORS)
-
-	authRouter := app.Party("/auth")
-	authRouter.Post("/login", login)
-
-	log.Printf("web server run %s.\n", cfg.WebAddress)
-	if err := app.Listen(cfg.WebAddress); err != nil {
-		panic(err)
-	}
-}
-
 type token struct {
 	user   string
 	expire time.Time
@@ -108,26 +93,24 @@ func getToken(tkn string) (string, bool) {
 	return t.user, true
 }
 
-func CheckToken(ctx iris.Context) {
+func CheckToken(ctx iris.Context) (string, *Result) {
 	tkn := ctx.GetHeader("token")
 	if tkn == "" {
-		_, _ = ctx.JSON(Result{
+		return "", &Result{
 			Code:    2,
 			Message: "未携带Token",
-		})
-		return
+		}
 	}
 
-	_, ok := getToken(tkn)
+	username, ok := getToken(tkn)
 	if !ok {
-		_, _ = ctx.JSON(Result{
+		return "", &Result{
 			Code:    3,
 			Message: "Token失效",
-		})
-		return
+		}
 	}
 
-	ctx.Next()
+	return username, nil
 }
 
 // 应答结构
@@ -135,4 +118,29 @@ type Result struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
+}
+
+type Handler struct{}
+
+func RunWeb(cfg *Config) {
+	app := iris.New()
+	app.Use(logger.New())
+	// 跨域
+	app.Use(handleCORS)
+
+	handler := new(Handler)
+	authRouter := app.Party("/auth")
+	authRouter.Post("/login", handler.Login)
+
+	userRouter := app.Party("/user")
+	userRouter.Post("/getNav", handler.GetNav)
+
+	log.Printf("web server run %s.\n", cfg.WebAddress)
+	if err := app.Listen(cfg.WebAddress); err != nil {
+		panic(err)
+	}
+}
+
+func init() {
+
 }
