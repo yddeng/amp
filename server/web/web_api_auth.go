@@ -1,7 +1,6 @@
 package web
 
 import (
-	"initial-sever/task"
 	"log"
 )
 
@@ -13,17 +12,31 @@ func (*Auth) Login(req struct {
 }) (ret Result) {
 
 	log.Printf("login %v\n", req)
-	if req.Username == "admin" && req.Password != "123456" {
+
+	u, ok := getUser(req.Username)
+	if !ok {
+		ret.Code = 1
+		ret.Message = "用户不存在"
+		return
+	}
+
+	if u.Password != req.Password {
 		ret.Code = 1
 		ret.Message = "密码错误"
 		return
 	}
 
-	rets := task.Wait(addToken, req.Username)
-	token := rets[0].(string)
-
+	token := addToken(req.Username)
 	ret.Data = struct {
 		Token string `json:"token"`
 	}{Token: token}
+	return
+}
+
+func (*Auth) Logout(user string) (ret Result) {
+	log.Printf("logout %v\n", user)
+	if _, ok := getUserTkn(user); ok {
+		rmUserTkn(user)
+	}
 	return
 }

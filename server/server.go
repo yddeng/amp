@@ -28,7 +28,15 @@ func main() {
 		panic(err)
 	}
 
+	// web
 	if err := web.LoadNav(cfg.NavPath); err != nil {
+		panic(err)
+	}
+
+	if err := web.LoadData(cfg.DataPath, struct {
+		Username string
+		Password string
+	}{Username: cfg.Admin.Username, Password: cfg.Admin.Password}); err != nil {
 		panic(err)
 	}
 

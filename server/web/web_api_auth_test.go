@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"github.com/tidwall/gjson"
 	"github.com/yddeng/dnet/dhttp"
 	"testing"
 	"time"
@@ -13,7 +14,14 @@ func startWebListener(t *testing.T) {
 	if err := LoadNav("../nav.json"); err != nil {
 		t.Fatal(err)
 	}
-	RunWeb(address)
+	if err := LoadData("../data", struct {
+		Username string
+		Password string
+	}{Username: "admin", Password: "123456"}); err != nil {
+		panic(err)
+	}
+	go RunWeb(address)
+	time.Sleep(time.Millisecond * 100)
 }
 
 func authLogin(t *testing.T, Username, Password string) string {
@@ -30,9 +38,25 @@ func authLogin(t *testing.T, Username, Password string) string {
 }
 
 func TestAuth_Login(t *testing.T) {
-	go startWebListener(t)
-	time.Sleep(time.Millisecond * 100)
+	startWebListener(t)
 
 	ret := authLogin(t, "admin", "123456")
 	t.Log(ret)
+}
+
+func TestAuth_Logout(t *testing.T) {
+	startWebListener(t)
+
+	ret := authLogin(t, "admin", "123456")
+	t.Log(ret, gjson.Get(ret, "data.token").String())
+
+	req2, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/auth/logout", address), "POST")
+	req2.SetHeader("token", gjson.Get(ret, "data.token").String())
+
+	ret, err := req2.ToString()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(ret)
+
 }

@@ -10,4 +10,6 @@ log/
 .DS_Store
 
 server/server
+server/data/
+
 uplaod/initial/

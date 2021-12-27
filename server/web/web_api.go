@@ -13,10 +13,19 @@ type Result struct {
 	Data    interface{} `json:"data"`
 }
 
-func callResult(ctx iris.Context, ret interface{}) {
+func resultFunc(ctx iris.Context, ret interface{}) {
 	if _, err := ctx.JSON(ret); err != nil {
 		_, _ = ctx.Problem(newProblem(iris.StatusInternalServerError, "", err.Error()))
 	}
+}
+
+func callWait(val reflect.Value, args ...reflect.Value) reflect.Value {
+	f := func(val reflect.Value, args []reflect.Value) reflect.Value {
+		outValue := val.Call(args)[0]
+		return outValue
+	}
+	outValue := task.Wait(f, val, args)[0].(reflect.Value)
+	return outValue
 }
 
 func bodyFunc(ctx iris.Context, inType reflect.Type) (inValue reflect.Value, err error) {
@@ -34,20 +43,32 @@ func bodyFunc(ctx iris.Context, inType reflect.Type) (inValue reflect.Value, err
 	return
 }
 
-func tokenFunc(ctx iris.Context) (reflect.Value, *Result) {
-	var nameValue reflect.Value
+// 查询Token并执行
+func tknCallFunc(ctx iris.Context, val reflect.Value, args ...reflect.Value) reflect.Value {
 	tkn := ctx.GetHeader("token")
 	if tkn == "" {
-		return nameValue, &Result{Code: 2, Message: "未携带Token"}
+		return reflect.ValueOf(Result{Code: 2, Message: "未携带Token"})
 	}
 
-	rets := task.Wait(getToken, tkn)
-	username, ok := rets[0].(string), rets[1].(bool)
-	if !ok {
-		return nameValue, &Result{Code: 3, Message: "Token失效"}
+	f := func(tkn string, val reflect.Value, args []reflect.Value) reflect.Value {
+		username, ok := getTknUser(tkn)
+		if !ok {
+			return reflect.ValueOf(Result{Code: 3, Message: "Token失效"})
+		}
+		nameValue := reflect.ValueOf(username)
+		outValue := val.Call(append([]reflect.Value{nameValue}, args...))[0]
+		return outValue
 	}
-	nameValue = reflect.ValueOf(username)
-	return nameValue, nil
+
+	rets := task.Wait(f, tkn, val, args)
+	return rets[0].(reflect.Value)
+}
+
+// 仅在队列中执行
+func warpWaitHandle(fn iris.Handler) iris.Handler {
+	return func(context iris.Context) {
+		callWait(reflect.ValueOf(fn))
+	}
 }
 
 // func(req struct)Result // body解析对应的json
@@ -61,13 +82,14 @@ func warpJsonHandle(fn interface{}) iris.Handler {
 		panic("func symbol error")
 	}
 	return func(ctx iris.Context) {
+		//log.Println(ctx.RouteName(), ctx.GetCurrentRoute().String())
 		inValue, err := bodyFunc(ctx, typ.In(0))
 		if err != nil {
 			_, _ = ctx.Problem(newProblem(iris.StatusBadRequest, "", err.Error()))
 			return
 		}
-		outValue := val.Call([]reflect.Value{inValue})[0]
-		callResult(ctx, outValue.Interface())
+		outValue := callWait(val, inValue)
+		resultFunc(ctx, outValue.Interface())
 	}
 }
 
@@ -82,13 +104,8 @@ func warpTokenHandle(fn interface{}) iris.Handler {
 		panic("func symbol error")
 	}
 	return func(ctx iris.Context) {
-		nameValue, ret := tokenFunc(ctx)
-		if ret != nil {
-			callResult(ctx, ret)
-			return
-		}
-		outValue := val.Call([]reflect.Value{nameValue})[0]
-		callResult(ctx, outValue.Interface())
+		outValue := tknCallFunc(ctx, val)
+		resultFunc(ctx, outValue.Interface())
 	}
 }
 
@@ -103,18 +120,13 @@ func warpTokenJsonHandle(fn interface{}) iris.Handler {
 		panic("func symbol error")
 	}
 	return func(ctx iris.Context) {
-		nameValue, ret := tokenFunc(ctx)
-		if ret != nil {
-			callResult(ctx, ret)
-			return
-		}
 		inValue, err := bodyFunc(ctx, typ.In(1))
 		if err != nil {
 			_, _ = ctx.Problem(newProblem(iris.StatusBadRequest, "", err.Error()))
 			return
 		}
-		outValue := val.Call([]reflect.Value{nameValue, inValue})[0]
-		callResult(ctx, outValue.Interface())
+		outValue := tknCallFunc(ctx, val, inValue)
+		resultFunc(ctx, outValue.Interface())
 	}
 }
 
