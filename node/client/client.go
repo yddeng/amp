@@ -7,9 +7,10 @@ import (
 	"github.com/yddeng/dnet"
 	"github.com/yddeng/dnet/drpc"
 	"github.com/yddeng/utils/task"
-	"initialtool/deploy/logger"
-	"initialtool/deploy/protocol"
+	"initial-sever/logger"
+	"initial-sever/protocol"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -63,6 +64,7 @@ func (c *Client) dial() {
 				c.onConnected(conn)
 				return
 			} else {
+				log.Println(err)
 				time.Sleep(1 * time.Second)
 			}
 		}
@@ -116,9 +118,7 @@ func (c *Client) onConnected(conn net.Conn) {
 
 }
 
-func (c *Client) dispatchMsg(session dnet.Session, msg *protocol.Message) {
-
-}
+func (c *Client) dispatchMsg(session dnet.Session, msg *protocol.Message) {}
 
 type Config struct {
 	Name     string

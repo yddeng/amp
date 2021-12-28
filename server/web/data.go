@@ -34,12 +34,12 @@ func findNav(routes map[string]struct{}) (navs []Nav) {
 
 const (
 	rePath   = "/web"
-	fileUser = "user.json"
+	userFile = "user.json"
 )
 
 var (
-	webPath string
-	defNav  []Nav
+	dataPath string
+	defNav   []Nav
 )
 
 func LoadNav(filename string) error {
@@ -50,12 +50,12 @@ func LoadData(root string, admin struct {
 	Username string
 	Password string
 }) (err error) {
-	webPath = path.Join(root, rePath)
-	_ = os.MkdirAll(webPath, os.ModePerm)
+	dataPath = path.Join(root, rePath)
+	_ = os.MkdirAll(dataPath, os.ModePerm)
 
 	// user
 	users = map[string]*User{}
-	filename := path.Join(webPath, fileUser)
+	filename := path.Join(dataPath, userFile)
 	if err = util.DecodeJsonFromFile(&users, filename); err != nil {
 		if os.IsNotExist(err) {
 			users[admin.Username] = &User{
@@ -74,6 +74,6 @@ func LoadData(root string, admin struct {
 }
 
 func saveUser() error {
-	filename := path.Join(webPath, fileUser)
+	filename := path.Join(dataPath, userFile)
 	return util.EncodeJsonToFile(users, filename)
 }

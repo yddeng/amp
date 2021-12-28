@@ -23,6 +23,12 @@ func RunWeb(address string) {
 	// 跨域
 	app.Use(handleCORS)
 
+	app.Get("/test", func(context iris.Context) {
+		_, _ = context.JSON(Result{Data: struct {
+			Text string
+		}{Text: "hello world!"}})
+	})
+
 	authHandle := new(Auth)
 	authRouter := app.Party("/auth")
 	authRouter.Post("/login", warpJsonHandle(authHandle.Login))
@@ -30,8 +36,8 @@ func RunWeb(address string) {
 
 	userHandle := new(User)
 	userRouter := app.Party("/user")
-	userRouter.Post("/nav", warpTokenHandle(userHandle.Nav))
-	userRouter.Post("/info", warpTokenHandle(userHandle.Info))
+	userRouter.Get("/nav", warpTokenHandle(userHandle.Nav))
+	userRouter.Get("/info", warpTokenHandle(userHandle.Info))
 
 	log.Printf("web server run %s.\n", address)
 	if err := app.Listen(address); err != nil {

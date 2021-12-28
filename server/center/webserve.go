@@ -1,5 +1,0 @@
-package center
-
-func startWeb() {
-
-}

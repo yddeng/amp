@@ -1,8 +1,8 @@
 package client
 
 import (
-	"initialtool/deploy/logger"
-	"initialtool/deploy/util"
+	"initial-sever/logger"
+	"initial-sever/util"
 	"syscall"
 	"time"
 )

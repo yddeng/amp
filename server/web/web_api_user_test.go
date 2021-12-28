@@ -14,7 +14,7 @@ func TestUser_Nav(t *testing.T) {
 	t.Log(ret, gjson.Get(ret, "data.token").String())
 
 	req2, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/user/nav", address), "POST")
-	req2.SetHeader("token", gjson.Get(ret, "data.token").String())
+	req2.SetHeader("Access-Token", gjson.Get(ret, "data.token").String())
 
 	ret, err := req2.ToString()
 	if err != nil {
@@ -30,7 +30,7 @@ func TestUser_Info(t *testing.T) {
 	t.Log(ret, gjson.Get(ret, "data.token").String())
 
 	req2, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/user/info", address), "POST")
-	req2.SetHeader("token", gjson.Get(ret, "data.token").String())
+	req2.SetHeader("Access-Token", gjson.Get(ret, "data.token").String())
 
 	ret, err := req2.ToString()
 	if err != nil {

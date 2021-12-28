@@ -45,7 +45,7 @@ func bodyFunc(ctx iris.Context, inType reflect.Type) (inValue reflect.Value, err
 
 // 查询Token并执行
 func tknCallFunc(ctx iris.Context, val reflect.Value, args ...reflect.Value) reflect.Value {
-	tkn := ctx.GetHeader("token")
+	tkn := ctx.GetHeader("Access-Token")
 	if tkn == "" {
 		return reflect.ValueOf(Result{Code: 2, Message: "未携带Token"})
 	}

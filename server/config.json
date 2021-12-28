@@ -1,5 +1,6 @@
 {
-  "web_address": ":40156",
+  "web_address": "0.0.0.0:40156",
+  "center_address": "0.0.0.0:40155",
   "data_path": "./data",
   "nav_path": "./nav.json",
   "admin": {

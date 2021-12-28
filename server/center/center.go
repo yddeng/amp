@@ -6,52 +6,47 @@ import (
 	"github.com/yddeng/dnet"
 	"github.com/yddeng/dnet/drpc"
 	"github.com/yddeng/utils/task"
-	"initialtool/deploy/logger"
-	"initialtool/deploy/protocol"
+	"initial-sever/logger"
+	"initial-sever/protocol"
+	"log"
 	"net"
-	"os"
 	"time"
 )
 
-type Config struct {
-	Address  string
-	FilePath string
-}
+var center *Center
 
-type Client struct {
+type Node struct {
 	Name    string
 	session dnet.Session
 }
 
-func (c *Client) SendRequest(req *drpc.Request) error {
+func (c *Node) SendRequest(req *drpc.Request) error {
 	return c.session.Send(req)
 }
 
-func (c *Client) SendResponse(resp *drpc.Response) error {
+func (c *Node) SendResponse(resp *drpc.Response) error {
 	return c.session.Send(resp)
 }
 
 type Center struct {
-	cfg       *Config
 	acceptor  dnet.Acceptor
 	taskPool  *task.TaskPool
-	clients   map[string]*Client
+	nodes     map[string]*Node
 	rpcServer *drpc.Server
 	rpcClient *drpc.Client
 	itemMgr   *ItemMgr
 }
 
-func NewCenter(cfg Config) *Center {
+func NewCenter(address string) *Center {
 	c := new(Center)
-	c.cfg = &cfg
-	c.acceptor = dnet.NewTCPAcceptor(cfg.Address)
+	c.acceptor = dnet.NewTCPAcceptor(address)
 	c.taskPool = task.NewTaskPool(1, 1024)
 	c.rpcClient = drpc.NewClient()
 	c.rpcServer = drpc.NewServer()
-	c.clients = map[string]*Client{}
-	_ = os.MkdirAll(cfg.FilePath, os.ModePerm)
+	c.nodes = map[string]*Node{}
 
 	c.rpcServer.Register(proto.MessageName(&protocol.LoginReq{}), c.onLogin)
+	log.Printf("tcp server run :%s.\n", address)
 	return c
 }
 
@@ -64,7 +59,7 @@ func (c *Center) startListener() error {
 				c.taskPool.Submit(func() {
 					switch data.(type) {
 					case *drpc.Request:
-						c.rpcServer.OnRPCRequest(&Client{session: session}, data.(*drpc.Request))
+						c.rpcServer.OnRPCRequest(&Node{session: session}, data.(*drpc.Request))
 					case *drpc.Response:
 						c.rpcClient.OnRPCResponse(data.(*drpc.Response))
 					case *protocol.Message:
@@ -77,7 +72,7 @@ func (c *Center) startListener() error {
 					logger.GetSugar().Infof("session closed, reason: %s\n", reason)
 					ctx := session.Context()
 					if ctx != nil {
-						client := ctx.(*Client)
+						client := ctx.(*Node)
 						client.session = nil
 						session.SetContext(nil)
 					}
@@ -110,23 +105,28 @@ func (this *Center) Start() {
 	}()
 }
 
+func RunCenter(address string) {
+	center = NewCenter(address)
+	center.Start()
+}
+
 func (this *Center) onLogin(replier *drpc.Replier, req interface{}) {
 	channel := replier.Channel
 	msg := req.(*protocol.LoginReq)
 	logger.GetSugar().Infof("onLogin %v\n", msg)
 
 	name := msg.GetName()
-	client := this.clients[name]
+	client := this.nodes[name]
 	if client == nil {
-		client = &Client{Name: name}
-		this.clients[name] = client
+		client = &Node{Name: name}
+		this.nodes[name] = client
 	}
 	if client.session != nil {
 		replier.Reply(&protocol.LoginResp{Code: "client already login. "}, nil)
-		channel.(*Client).session.Close(errors.New("client already login. "))
+		channel.(*Node).session.Close(errors.New("client already login. "))
 		return
 	}
 
-	client.session = channel.(*Client).session
+	client.session = channel.(*Node).session
 	replier.Reply(&protocol.LoginResp{}, nil)
 }

@@ -8,9 +8,15 @@ import (
 	"time"
 )
 
-var address = ":40156"
+var (
+	address  = "212.129.131.27:40156"
+	startWeb = false
+)
 
 func startWebListener(t *testing.T) {
+	if !startWeb {
+		return
+	}
 	if err := LoadNav("../nav.json"); err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +57,7 @@ func TestAuth_Logout(t *testing.T) {
 	t.Log(ret, gjson.Get(ret, "data.token").String())
 
 	req2, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/auth/logout", address), "POST")
-	req2.SetHeader("token", gjson.Get(ret, "data.token").String())
+	req2.SetHeader("Access-Token", gjson.Get(ret, "data.token").String())
 
 	ret, err := req2.ToString()
 	if err != nil {
