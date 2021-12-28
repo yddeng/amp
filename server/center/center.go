@@ -46,7 +46,7 @@ func NewCenter(address string) *Center {
 	c.nodes = map[string]*Node{}
 
 	c.rpcServer.Register(proto.MessageName(&protocol.LoginReq{}), c.onLogin)
-	log.Printf("tcp server run :%s.\n", address)
+	log.Printf("tcp server run %s.\n", address)
 	return c
 }
 
@@ -54,7 +54,7 @@ func (c *Center) startListener() error {
 	return c.acceptor.ServeFunc(func(conn net.Conn) {
 		dnet.NewTCPSession(conn,
 			dnet.WithCodec(new(protocol.Codec)),
-			//dnet.WithTimeout(time.Second )
+			dnet.WithTimeout(time.Second*5, 0),
 			dnet.WithMessageCallback(func(session dnet.Session, data interface{}) {
 				c.taskPool.Submit(func() {
 					switch data.(type) {
@@ -128,5 +128,7 @@ func (this *Center) onLogin(replier *drpc.Replier, req interface{}) {
 	}
 
 	client.session = channel.(*Node).session
+	client.session.SetContext(client)
+	logger.GetSugar().Infof("onLogin %s\n", client.session.RemoteAddr().String())
 	replier.Reply(&protocol.LoginResp{}, nil)
 }

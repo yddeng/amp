@@ -2,7 +2,7 @@
   {
     "name": "control",
     "parentId": 0,
-    "id": 20,
+    "id": 1,
     "meta": {
       "icon": "form",
       "title": "服务器管理"
@@ -12,12 +12,33 @@
   },
   {
     "name": "startpage",
-    "parentId": 20,
-    "id": 21,
+    "parentId": 1,
+    "id": 11,
     "meta": {
       "title": "启动"
     },
     "component": "Startpage",
     "path": "/control/startpage"
+  },
+  {
+    "name": "system",
+    "parentId": 0,
+    "id": 2,
+    "meta": {
+      "icon": "form",
+      "title": "系统管理"
+    },
+    "redirect": "/system/usermange",
+    "component": "RouteView"
+  },
+  {
+    "name": "usermange",
+    "parentId": 2,
+    "id": 21,
+    "meta": {
+      "title": "用户管理"
+    },
+    "component": "Usermange",
+    "path": "/system/usermange"
   }
 ]

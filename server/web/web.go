@@ -38,6 +38,13 @@ func RunWeb(address string) {
 	userRouter := app.Party("/user")
 	userRouter.Get("/nav", warpTokenHandle(userHandle.Nav))
 	userRouter.Get("/info", warpTokenHandle(userHandle.Info))
+	userRouter.Post("/list", warpTokenJsonHandle(userHandle.List))
+	userRouter.Post("/add", warpTokenJsonHandle(userHandle.Add))
+	userRouter.Post("/delete", warpTokenJsonHandle(userHandle.Delete))
+
+	nodeHandle := new(Node)
+	nodeRouter := app.Party("/node")
+	nodeRouter.Get("/list", warpTokenHandle(nodeHandle.List))
 
 	log.Printf("web server run %s.\n", address)
 	if err := app.Listen(address); err != nil {
