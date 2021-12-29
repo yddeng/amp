@@ -4,7 +4,7 @@
     "parentId": 0,
     "id": 1,
     "meta": {
-      "icon": "form",
+      "icon": "from",
       "title": "服务器管理"
     },
     "redirect": "/control/startpage",
@@ -25,7 +25,7 @@
     "parentId": 0,
     "id": 2,
     "meta": {
-      "icon": "form",
+      "icon": "control",
       "title": "系统管理"
     },
     "redirect": "/system/usermange",

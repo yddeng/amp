@@ -1,4 +1,4 @@
-package web
+package service
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ type token struct {
 var (
 	tknUser  = map[string]*token{}
 	userTkn  = map[string]*token{}
-	duration = time.Hour
+	duration = time.Hour // 一小时后超时
 )
 
 func addToken(u string) (tkn string) {

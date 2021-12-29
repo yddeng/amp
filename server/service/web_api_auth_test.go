@@ -1,4 +1,4 @@
-package web
+package service
 
 import (
 	"fmt"
@@ -9,7 +9,8 @@ import (
 )
 
 var (
-	address  = "212.129.131.27:40156"
+	//address  = "212.129.131.27:40156"
+	address  = "10.128.2.123:40156"
 	startWeb = false
 )
 
@@ -17,16 +18,18 @@ func startWebListener(t *testing.T) {
 	if !startWeb {
 		return
 	}
-	if err := LoadNav("../nav.json"); err != nil {
-		t.Fatal(err)
-	}
-	if err := LoadData("../data", struct {
-		Username string
-		Password string
-	}{Username: "admin", Password: "123456"}); err != nil {
-		panic(err)
-	}
-	go RunWeb(address)
+
+	_ = Service(Config{
+		WebAddress:    address,
+		CenterAddress: "",
+		DataPath:      "../data",
+		NavPath:       "../nav.json",
+		Admin: struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+		}{Username: "admin", Password: "123456"},
+	})
+
 	time.Sleep(time.Millisecond * 100)
 }
 

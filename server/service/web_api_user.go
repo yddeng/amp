@@ -1,15 +1,47 @@
-package web
+package service
 
 import (
 	"encoding/json"
+	"initial-sever/util"
 	"log"
 	"sort"
 )
+
+type Nav struct {
+	Name     string `json:"name,omitempty"`
+	Path     string `json:"path,omitempty"`
+	Id       int    `json:"id"`
+	ParentId int    `json:"parentId"`
+	Meta     struct {
+		Title        string `json:"title,omitempty"`
+		Icon         string `json:"icon,omitempty"`
+		Show         bool   `json:"show,omitempty"`
+		HideHeader   bool   `json:"hideHeader,omitempty"`
+		HideChildren bool   `json:"hideChildren,omitempty"`
+	} `json:"meta,omitempty"`
+	Redirect  string `json:"redirect,omitempty"`
+	Component string `json:"component,omitempty"`
+}
+
+func findNav(routes map[string]struct{}) (navs []Nav) {
+	navs = make([]Nav, 0, len(routes))
+	for _, v := range allNav {
+		if _, ok := routes[v.Name]; ok {
+			navs = append(navs, v)
+		}
+	}
+	return
+}
+
+func loadNav(filename string) error {
+	return util.DecodeJsonFromFile(&allNav, filename)
+}
 
 var (
 	admin     *User
 	userMap   = map[string]*User{}
 	userSlice []*User
+	allNav    []Nav
 )
 
 func sortUser() {
@@ -31,7 +63,7 @@ func addUser(username, password string) {
 	userMap[u.Username] = u
 	userSlice = append(userSlice, u)
 	sortUser()
-	saveUser()
+	saveStore(snUser)
 }
 
 func deleteUser(username string) {
@@ -43,7 +75,7 @@ func deleteUser(username string) {
 			}
 		}
 	}
-	saveUser()
+	saveStore(snUser)
 }
 
 type User struct {
@@ -118,7 +150,7 @@ func (*User) Nav(user string) (ret Result) {
 	//	return
 	//}
 	//u, _ := getUser(user)
-	ret.Data = defNav
+	ret.Data = allNav
 	return
 }
 
@@ -128,11 +160,11 @@ func (*User) List(user string, req struct {
 }) (ret Result) {
 	log.Printf("user list by:%s %v\n", user, req)
 
-	if user != admin.Username {
-		ret.Code = 1
-		ret.Message = "无权限"
-		return
-	}
+	//if user != admin.Username {
+	//	ret.Code = 1
+	//	ret.Message = "无权限"
+	//	return
+	//}
 
 	if userSlice == nil {
 		userSlice = make([]*User, 0, len(userMap))
@@ -174,11 +206,11 @@ func (*User) Add(user string, req struct {
 }) (ret Result) {
 	log.Printf("user add by:%s %v \n", user, req)
 
-	if user != admin.Username {
-		ret.Code = 1
-		ret.Message = "无权限"
-		return
-	}
+	//if user != admin.Username {
+	//	ret.Code = 1
+	//	ret.Message = "无权限"
+	//	return
+	//}
 
 	if _, ok := getUser(req.Username); ok {
 		ret.Code = 1
@@ -195,11 +227,11 @@ func (*User) Delete(user string, req struct {
 }) (ret Result) {
 	log.Printf("user delete by:%s %v\n", user, req)
 
-	if user != admin.Username {
-		ret.Code = 1
-		ret.Message = "无权限"
-		return
-	}
+	//if user != admin.Username {
+	//	ret.Code = 1
+	//	ret.Message = "无权限"
+	//	return
+	//}
 
 	for _, username := range req.Username {
 		deleteUser(username)

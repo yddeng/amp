@@ -1,4 +1,4 @@
-package web
+package service
 
 import (
 	"fmt"
@@ -52,10 +52,7 @@ func TestUser_List(t *testing.T) {
 		PageSize int `json:"pageSize"`
 	}{PageNo: 1, PageSize: 10})
 
-	ret, err := req2.ToString()
-	if err != nil {
-		t.Fatal(err)
-	}
+	ret, _ = req2.ToString()
 	t.Log(ret)
 }
 
@@ -72,10 +69,7 @@ func TestUser_Add(t *testing.T) {
 		Password string `json:"password"`
 	}{Username: "test", Password: "test"})
 
-	ret, err := req2.ToString()
-	if err != nil {
-		t.Fatal(err)
-	}
+	ret, _ = req2.ToString()
 	t.Log(ret)
 }
 
@@ -91,9 +85,6 @@ func TestUser_Delete(t *testing.T) {
 		Username []string `json:"username"`
 	}{Username: []string{"test"}})
 
-	ret, err := req2.ToString()
-	if err != nil {
-		t.Fatal(err)
-	}
+	ret, _ = req2.ToString()
 	t.Log(ret)
 }

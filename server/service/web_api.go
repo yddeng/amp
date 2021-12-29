@@ -1,4 +1,4 @@
-package web
+package service
 
 import (
 	"github.com/kataras/iris/v12"
@@ -44,30 +44,31 @@ func bodyFunc(ctx iris.Context, inType reflect.Type) (inValue reflect.Value, err
 }
 
 // 查询Token并执行
-func tknCallFunc(ctx iris.Context, val reflect.Value, args ...reflect.Value) reflect.Value {
+func tknCallFunc(ctx iris.Context, val reflect.Value, args ...reflect.Value) (reflect.Value, int) {
 	tkn := ctx.GetHeader("Access-Token")
 	if tkn == "" {
-		return reflect.ValueOf(Result{Code: 2, Message: "未携带Token"})
+		return reflect.ValueOf(Result{Code: 1, Message: "未携带Token"}), 401
 	}
 
-	f := func(tkn string, val reflect.Value, args []reflect.Value) reflect.Value {
+	f := func(tkn string, val reflect.Value, args []reflect.Value) (reflect.Value, int) {
 		username, ok := getTknUser(tkn)
 		if !ok {
-			return reflect.ValueOf(Result{Code: 3, Message: "Token失效"})
+			return reflect.ValueOf(Result{Code: 1, Message: "Token失效"}), 401
 		}
 		nameValue := reflect.ValueOf(username)
 		outValue := val.Call(append([]reflect.Value{nameValue}, args...))[0]
-		return outValue
+		return outValue, 200
 	}
 
 	rets := task.Wait(f, tkn, val, args)
-	return rets[0].(reflect.Value)
+	return rets[0].(reflect.Value), rets[1].(int)
 }
 
 // 仅在队列中执行
-func warpWaitHandle(fn iris.Handler) iris.Handler {
-	return func(context iris.Context) {
-		callWait(reflect.ValueOf(fn))
+func warpWaitHandle(fn func(ctx iris.Context) Result) iris.Handler {
+	return func(ctx iris.Context) {
+		outValue := callWait(reflect.ValueOf(fn), reflect.ValueOf(ctx))
+		resultFunc(ctx, outValue.Interface())
 	}
 }
 
@@ -104,7 +105,8 @@ func warpTokenHandle(fn interface{}) iris.Handler {
 		panic("func symbol error")
 	}
 	return func(ctx iris.Context) {
-		outValue := tknCallFunc(ctx, val)
+		outValue, statue := tknCallFunc(ctx, val)
+		ctx.StatusCode(statue)
 		resultFunc(ctx, outValue.Interface())
 	}
 }
@@ -125,7 +127,9 @@ func warpTokenJsonHandle(fn interface{}) iris.Handler {
 			_, _ = ctx.Problem(newProblem(iris.StatusBadRequest, "", err.Error()))
 			return
 		}
-		outValue := tknCallFunc(ctx, val, inValue)
+
+		outValue, statue := tknCallFunc(ctx, val, inValue)
+		ctx.StatusCode(statue)
 		resultFunc(ctx, outValue.Interface())
 	}
 }
@@ -143,4 +147,23 @@ func handleCORS(ctx iris.Context) {
 	ctx.Header("Access-Control-Allow-Origin", "*")
 	ctx.Header("Access-Control-Allow-Headers", "Content-Type")
 	ctx.Next()
+}
+
+func initHandler(app *iris.Application) {
+	authHandle := new(Auth)
+	authRouter := app.Party("/auth")
+	authRouter.Post("/login", warpJsonHandle(authHandle.Login))
+	authRouter.Post("/logout", warpWaitHandle(authHandle.Logout))
+
+	userHandle := new(User)
+	userRouter := app.Party("/user")
+	userRouter.Get("/nav", warpTokenHandle(userHandle.Nav))
+	userRouter.Get("/info", warpTokenHandle(userHandle.Info))
+	userRouter.Post("/list", warpTokenJsonHandle(userHandle.List))
+	userRouter.Post("/add", warpTokenJsonHandle(userHandle.Add))
+	userRouter.Post("/delete", warpTokenJsonHandle(userHandle.Delete))
+
+	nodeHandle := new(Node)
+	nodeRouter := app.Party("/node")
+	nodeRouter.Get("/list", warpTokenHandle(nodeHandle.List))
 }

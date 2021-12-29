@@ -3,24 +3,15 @@ package main
 import (
 	"flag"
 	"initial-sever/logger"
-	"initial-sever/server/center"
-	"initial-sever/server/web"
+	"initial-sever/server/service"
 	"initial-sever/util"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
-type Config struct {
-	WebAddress    string `json:"web_address"`
-	CenterAddress string `json:"center_address"`
-	DataPath      string `json:"data_path"`
-	NavPath       string `json:"nav_path"`
-	Admin         struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	} `json:"admin"`
-}
-
 var (
-	file = flag.String("file", "./config.json", "config")
+	file = flag.String("file", "./config.json", "config file")
 )
 
 func main() {
@@ -30,27 +21,18 @@ func main() {
 	logger.InitLogger(log)
 
 	var err error
-	var cfg Config
+	var cfg service.Config
 	if err = util.DecodeJsonFromFile(&cfg, *file); err != nil {
 		panic(err)
 	}
 
-	if err = center.LoadData(cfg.DataPath); err != nil {
-		panic(err)
-	}
-	center.RunCenter(cfg.CenterAddress)
-
-	// web
-	if err = web.LoadNav(cfg.NavPath); err != nil {
+	if err = service.Service(cfg); err != nil {
 		panic(err)
 	}
 
-	if err = web.LoadData(cfg.DataPath, struct {
-		Username string
-		Password string
-	}{Username: cfg.Admin.Username, Password: cfg.Admin.Password}); err != nil {
-		panic(err)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	select {
+	case <-sigChan:
 	}
-
-	web.RunWeb(cfg.WebAddress)
 }
