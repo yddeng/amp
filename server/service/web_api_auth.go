@@ -4,9 +4,10 @@ import (
 	"log"
 )
 
-type Auth struct{}
+type authHandler struct {
+}
 
-func (*Auth) Login(done *Done, user string, req struct {
+func (*authHandler) Login(done *Done, user string, req struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }) {
@@ -28,7 +29,7 @@ func (*Auth) Login(done *Done, user string, req struct {
 	return
 }
 
-func (*Auth) Logout(done *Done, user string) {
+func (*authHandler) Logout(done *Done, user string) {
 	defer func() { done.Done() }()
 	if user == "" {
 		return

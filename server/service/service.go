@@ -11,7 +11,6 @@ func webRun(address string) {
 	/*
 	 所有的公共变量在队列中执行。
 	 使用warp函数处理过的方法，已经是在队列中执行。
-	 方法中不能再调用队列，否则将造成死锁。
 	*/
 
 	app := iris.New()
@@ -35,6 +34,11 @@ func webRun(address string) {
 			panic(err)
 		}
 	}()
+}
+
+func centerRun(address string) {
+	center = newCenter(address)
+	center.start()
 }
 
 type Config struct {

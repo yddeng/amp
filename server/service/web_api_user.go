@@ -84,7 +84,10 @@ type User struct {
 	Routes   map[string]struct{} `json:"routes"`
 }
 
-func (*User) Info(done *Done, user string) {
+type userHandler struct {
+}
+
+func (*userHandler) Info(done *Done, user string) {
 	log.Printf("user info by:%s \n", user)
 	defer func() { done.Done() }()
 	//u, _ := getUser(user)
@@ -143,14 +146,14 @@ func (*User) Info(done *Done, user string) {
 	done.result.Data = info
 }
 
-func (*User) Nav(done *Done, user string) {
+func (*userHandler) Nav(done *Done, user string) {
 	log.Printf("user nav by:%s \n", user)
 	defer func() { done.Done() }()
 
 	done.result.Data = allNav
 }
 
-func (*User) List(done *Done, user string, req struct {
+func (*userHandler) List(done *Done, user string, req struct {
 	PageNo   int `json:"pageNo"`
 	PageSize int `json:"pageSize"`
 }) {
@@ -196,7 +199,7 @@ func (*User) List(done *Done, user string, req struct {
 	return
 }
 
-func (*User) Add(done *Done, user string, req struct {
+func (*userHandler) Add(done *Done, user string, req struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }) {
@@ -217,7 +220,7 @@ func (*User) Add(done *Done, user string, req struct {
 	addUser(req.Username, req.Password)
 }
 
-func (*User) Delete(done *Done, user string, req struct {
+func (*userHandler) Delete(done *Done, user string, req struct {
 	Username []string `json:"username"`
 }) {
 	log.Printf("user delete by:%s %v\n", user, req)

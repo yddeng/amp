@@ -4,10 +4,9 @@ import (
 	"log"
 )
 
-type Node struct {
-}
+type nodeHandler struct{}
 
-func (*Node) List(done *Done, user string) {
+func (*nodeHandler) List(done *Done, user string) {
 	log.Printf("info user:%s \n", user)
 
 	GetNode(func(nodes []Node) {

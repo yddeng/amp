@@ -187,12 +187,12 @@ func checkPermission(ctx iris.Context, route, user string) (ret Result) {
 }
 
 func initHandler(app *iris.Application) {
-	authHandle := new(Auth)
+	authHandle := new(authHandler)
 	authRouter := app.Party("/auth")
 	authRouter.Post("/login", warpHandle(authHandle.Login))
 	authRouter.Post("/logout", warpHandle(authHandle.Logout))
 
-	userHandle := new(User)
+	userHandle := new(userHandler)
 	userRouter := app.Party("/user")
 	userRouter.Get("/nav", warpHandle(userHandle.Nav))
 	userRouter.Get("/info", warpHandle(userHandle.Info))
@@ -200,7 +200,7 @@ func initHandler(app *iris.Application) {
 	userRouter.Post("/add", warpHandle(userHandle.Add))
 	userRouter.Post("/delete", warpHandle(userHandle.Delete))
 
-	nodeHandle := new(Node)
+	nodeHandle := new(nodeHandler)
 	nodeRouter := app.Party("/node")
 	nodeRouter.Get("/list", warpHandle(nodeHandle.List))
 }
