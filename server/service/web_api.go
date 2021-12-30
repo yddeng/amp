@@ -2,8 +2,9 @@ package service
 
 import (
 	"github.com/kataras/iris/v12"
-	"initial-sever/task"
+	"github.com/yddeng/utils/task"
 	"reflect"
+	"sync"
 )
 
 // 应答结构
@@ -13,22 +14,81 @@ type Result struct {
 	Data    interface{} `json:"data"`
 }
 
-func resultFunc(ctx iris.Context, ret interface{}) {
-	if _, err := ctx.JSON(ret); err != nil {
+var webTransQueue = task.NewTaskPool(1, 2048)
+
+type Done struct {
+	statue   int
+	result   Result
+	done     chan struct{}
+	doneOnce sync.Once
+}
+
+func newDone() *Done {
+	return &Done{
+		statue: 200,
+		done:   make(chan struct{}),
+	}
+}
+
+func (this *Done) Done() {
+	this.doneOnce.Do(func() {
+		close(this.done)
+	})
+}
+
+func (this *Done) Wait() {
+	<-this.done
+}
+
+func transBegin(ctx iris.Context, fn interface{}, args ...reflect.Value) {
+	val := reflect.ValueOf(fn)
+	if val.Kind() != reflect.Func {
+		panic("value not func")
+	}
+	typ := val.Type()
+	if typ.NumIn() != len(args)+2 {
+		panic("func argument error")
+	}
+
+	done := newDone()
+	route := getCurrentRoute(ctx)
+	if err := webTransQueue.Submit(func() {
+		user, ret := checkToken(ctx, route)
+		if ret.Code != 0 {
+			done.statue = 401
+			done.result.Code = ret.Code
+			done.result.Message = ret.Message
+			done.Done()
+			return
+		}
+
+		ret = checkPermission(ctx, route, user)
+		if ret.Code != 0 {
+			done.statue = 403
+			done.result.Code = ret.Code
+			done.result.Message = ret.Message
+			done.Done()
+			return
+		}
+		val.Call(append([]reflect.Value{reflect.ValueOf(done), reflect.ValueOf(user)}, args...))
+	}); err != nil {
+		panic(err)
+	}
+	done.Wait()
+
+	if done.statue != 200 {
+		ctx.StatusCode(done.statue)
+	}
+	if _, err := ctx.JSON(done.result); err != nil {
 		_, _ = ctx.Problem(newProblem(iris.StatusInternalServerError, "", err.Error()))
 	}
 }
 
-func callWait(val reflect.Value, args ...reflect.Value) reflect.Value {
-	f := func(val reflect.Value, args []reflect.Value) reflect.Value {
-		outValue := val.Call(args)[0]
-		return outValue
-	}
-	outValue := task.Wait(f, val, args)[0].(reflect.Value)
-	return outValue
+func getCurrentRoute(ctx iris.Context) string {
+	return ctx.GetCurrentRoute().Path()
 }
 
-func bodyFunc(ctx iris.Context, inType reflect.Type) (inValue reflect.Value, err error) {
+func getJsonBody(ctx iris.Context, inType reflect.Type) (inValue reflect.Value, err error) {
 	if inType.Kind() == reflect.Ptr {
 		inValue = reflect.New(inType.Elem())
 	} else {
@@ -43,94 +103,29 @@ func bodyFunc(ctx iris.Context, inType reflect.Type) (inValue reflect.Value, err
 	return
 }
 
-// 查询Token并执行
-func tknCallFunc(ctx iris.Context, val reflect.Value, args ...reflect.Value) (reflect.Value, int) {
-	tkn := ctx.GetHeader("Access-Token")
-	if tkn == "" {
-		return reflect.ValueOf(Result{Code: 1, Message: "未携带Token"}), 401
-	}
-
-	f := func(tkn string, val reflect.Value, args []reflect.Value) (reflect.Value, int) {
-		username, ok := getTknUser(tkn)
-		if !ok {
-			return reflect.ValueOf(Result{Code: 1, Message: "Token失效"}), 401
-		}
-		nameValue := reflect.ValueOf(username)
-		outValue := val.Call(append([]reflect.Value{nameValue}, args...))[0]
-		return outValue, 200
-	}
-
-	rets := task.Wait(f, tkn, val, args)
-	return rets[0].(reflect.Value), rets[1].(int)
-}
-
-// 仅在队列中执行
-func warpWaitHandle(fn func(ctx iris.Context) Result) iris.Handler {
-	return func(ctx iris.Context) {
-		outValue := callWait(reflect.ValueOf(fn), reflect.ValueOf(ctx))
-		resultFunc(ctx, outValue.Interface())
-	}
-}
-
-// func(req struct)Result // body解析对应的json
-func warpJsonHandle(fn interface{}) iris.Handler {
+func warpHandle(fn interface{}) iris.Handler {
 	val := reflect.ValueOf(fn)
 	if val.Kind() != reflect.Func {
 		panic("value not func")
 	}
 	typ := val.Type()
-	if typ.NumIn() != 1 || typ.NumOut() != 1 {
-		panic("func symbol error")
-	}
-	return func(ctx iris.Context) {
-		//log.Println(ctx.RouteName(), ctx.GetCurrentRoute().String())
-		inValue, err := bodyFunc(ctx, typ.In(0))
-		if err != nil {
-			_, _ = ctx.Problem(newProblem(iris.StatusBadRequest, "", err.Error()))
-			return
+	switch typ.NumIn() {
+	case 2: // func(done *Done, username string)
+		return func(ctx iris.Context) {
+			transBegin(ctx, fn)
 		}
-		outValue := callWait(val, inValue)
-		resultFunc(ctx, outValue.Interface())
-	}
-}
+	case 3: // func(done *Done, username string,req struct)Result
+		return func(ctx iris.Context) {
+			inValue, err := getJsonBody(ctx, typ.In(2))
+			if err != nil {
+				_, _ = ctx.Problem(newProblem(iris.StatusBadRequest, "", err.Error()))
+				return
+			}
 
-// func(username string)Result // 仅验证token
-func warpTokenHandle(fn interface{}) iris.Handler {
-	val := reflect.ValueOf(fn)
-	if val.Kind() != reflect.Func {
-		panic("value not func")
-	}
-	typ := val.Type()
-	if typ.NumIn() != 1 || typ.NumOut() != 1 {
-		panic("func symbol error")
-	}
-	return func(ctx iris.Context) {
-		outValue, statue := tknCallFunc(ctx, val)
-		ctx.StatusCode(statue)
-		resultFunc(ctx, outValue.Interface())
-	}
-}
-
-// func(username string,req struct)Result //  body解析对应的json, 验证token
-func warpTokenJsonHandle(fn interface{}) iris.Handler {
-	val := reflect.ValueOf(fn)
-	if val.Kind() != reflect.Func {
-		panic("value not func")
-	}
-	typ := val.Type()
-	if typ.NumIn() != 2 || typ.NumOut() != 1 {
-		panic("func symbol error")
-	}
-	return func(ctx iris.Context) {
-		inValue, err := bodyFunc(ctx, typ.In(1))
-		if err != nil {
-			_, _ = ctx.Problem(newProblem(iris.StatusBadRequest, "", err.Error()))
-			return
+			transBegin(ctx, fn, inValue)
 		}
-
-		outValue, statue := tknCallFunc(ctx, val, inValue)
-		ctx.StatusCode(statue)
-		resultFunc(ctx, outValue.Interface())
+	default:
+		panic("func symbol error")
 	}
 }
 
@@ -143,27 +138,69 @@ func newProblem(statusCode int, title, detail string) iris.Problem {
 	return p
 }
 
+var (
+	// 允许无token的路由
+	allowTokenRoute = map[string]struct{}{
+		"/auth/login":  {},
+		"/auth/logout": {},
+	}
+	// 允许无权限的路由
+	allowPermissionRoute = map[string]struct{}{
+		"/auth/login":  {},
+		"/auth/logout": {},
+		"/user/nav":    {},
+		"/user/info":   {},
+	}
+)
+
 func handleCORS(ctx iris.Context) {
 	ctx.Header("Access-Control-Allow-Origin", "*")
 	ctx.Header("Access-Control-Allow-Headers", "Content-Type")
 	ctx.Next()
 }
 
+func checkToken(ctx iris.Context, route string) (user string, ret Result) {
+	var ok bool
+	if _, ok = allowTokenRoute[route]; ok {
+		return
+	}
+	tkn := ctx.GetHeader("Access-Token")
+	if tkn == "" {
+		ret.Code = 401
+		ret.Message = "未携带Token"
+		return
+	}
+	if user, ok = getTknUser(tkn); !ok {
+		ret.Code = 401
+		ret.Message = "Token失效"
+		return
+	}
+	return
+}
+
+func checkPermission(ctx iris.Context, route, user string) (ret Result) {
+	var ok bool
+	if _, ok = allowPermissionRoute[route]; ok {
+		return
+	}
+	return
+}
+
 func initHandler(app *iris.Application) {
 	authHandle := new(Auth)
 	authRouter := app.Party("/auth")
-	authRouter.Post("/login", warpJsonHandle(authHandle.Login))
-	authRouter.Post("/logout", warpWaitHandle(authHandle.Logout))
+	authRouter.Post("/login", warpHandle(authHandle.Login))
+	authRouter.Post("/logout", warpHandle(authHandle.Logout))
 
 	userHandle := new(User)
 	userRouter := app.Party("/user")
-	userRouter.Get("/nav", warpTokenHandle(userHandle.Nav))
-	userRouter.Get("/info", warpTokenHandle(userHandle.Info))
-	userRouter.Post("/list", warpTokenJsonHandle(userHandle.List))
-	userRouter.Post("/add", warpTokenJsonHandle(userHandle.Add))
-	userRouter.Post("/delete", warpTokenJsonHandle(userHandle.Delete))
+	userRouter.Get("/nav", warpHandle(userHandle.Nav))
+	userRouter.Get("/info", warpHandle(userHandle.Info))
+	userRouter.Post("/list", warpHandle(userHandle.List))
+	userRouter.Post("/add", warpHandle(userHandle.Add))
+	userRouter.Post("/delete", warpHandle(userHandle.Delete))
 
 	nodeHandle := new(Node)
 	nodeRouter := app.Party("/node")
-	nodeRouter.Get("/list", warpTokenHandle(nodeHandle.List))
+	nodeRouter.Get("/list", warpHandle(nodeHandle.List))
 }

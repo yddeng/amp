@@ -84,10 +84,11 @@ type User struct {
 	Routes   map[string]struct{} `json:"routes"`
 }
 
-func (*User) Info(user string) (ret Result) {
+func (*User) Info(done *Done, user string) {
 	log.Printf("user info by:%s \n", user)
+	defer func() { done.Done() }()
 	//u, _ := getUser(user)
-	//ret.Data = struct {
+	//done.result.Data = struct {
 	//	Name     string `json:"name"`
 	//	Username string `json:"username"`
 	//	Avatar   string `json:"avatar"`
@@ -135,34 +136,29 @@ func (*User) Info(user string) (ret Result) {
 `
 	var info map[string]interface{}
 	if err := json.Unmarshal([]byte(str), &info); err != nil {
-		ret.Code = 1
-		ret.Message = err.Error()
+		done.result.Code = 1
+		done.result.Message = err.Error()
 		return
 	}
-	ret.Data = info
-	return
+	done.result.Data = info
 }
 
-func (*User) Nav(user string) (ret Result) {
+func (*User) Nav(done *Done, user string) {
 	log.Printf("user nav by:%s \n", user)
-	//if user == "admin" {
-	//	ret.Data = defNav
-	//	return
-	//}
-	//u, _ := getUser(user)
-	ret.Data = allNav
-	return
+	defer func() { done.Done() }()
+
+	done.result.Data = allNav
 }
 
-func (*User) List(user string, req struct {
+func (*User) List(done *Done, user string, req struct {
 	PageNo   int `json:"pageNo"`
 	PageSize int `json:"pageSize"`
-}) (ret Result) {
+}) {
 	log.Printf("user list by:%s %v\n", user, req)
-
+	defer func() { done.Done() }()
 	//if user != admin.Username {
-	//	ret.Code = 1
-	//	ret.Message = "无权限"
+	//	done.result.Code = 1
+	//	done.result.Message = "无权限"
 	//	return
 	//}
 
@@ -188,7 +184,7 @@ func (*User) List(user string, req struct {
 		end = len(userSlice)
 	}
 
-	ret.Data = struct {
+	done.result.Data = struct {
 		PageNo     int     `json:"pageNo"`
 		PageSize   int     `json:"pageSize"`
 		TotalCount int     `json:"totalCount"`
@@ -200,41 +196,39 @@ func (*User) List(user string, req struct {
 	return
 }
 
-func (*User) Add(user string, req struct {
+func (*User) Add(done *Done, user string, req struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
-}) (ret Result) {
+}) {
 	log.Printf("user add by:%s %v \n", user, req)
-
+	defer func() { done.Done() }()
 	//if user != admin.Username {
-	//	ret.Code = 1
-	//	ret.Message = "无权限"
+	//	done.result.Code = 1
+	//	done.result.Message = "无权限"
 	//	return
 	//}
 
 	if _, ok := getUser(req.Username); ok {
-		ret.Code = 1
-		ret.Message = "用户名已存在"
+		done.result.Code = 1
+		done.result.Message = "用户名已存在"
 		return
 	}
 
 	addUser(req.Username, req.Password)
-	return
 }
 
-func (*User) Delete(user string, req struct {
+func (*User) Delete(done *Done, user string, req struct {
 	Username []string `json:"username"`
-}) (ret Result) {
+}) {
 	log.Printf("user delete by:%s %v\n", user, req)
-
+	defer func() { done.Done() }()
 	//if user != admin.Username {
-	//	ret.Code = 1
-	//	ret.Message = "无权限"
+	//	done.result.Code = 1
+	//	done.result.Message = "无权限"
 	//	return
 	//}
 
 	for _, username := range req.Username {
 		deleteUser(username)
 	}
-	return
 }

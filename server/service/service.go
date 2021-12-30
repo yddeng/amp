@@ -19,10 +19,12 @@ func webRun(address string) {
 	// 跨域
 	app.Use(handleCORS)
 
-	app.Get("/test", func(context iris.Context) {
-		_, _ = context.JSON(Result{Data: struct {
-			Text string
-		}{Text: "hello world!"}})
+	app.Get("/test", func(ctx iris.Context) {
+		var ret Result
+		ret.Data = struct {
+			Text string `json:"text"`
+		}{Text: "hello world!"}
+		_, _ = ctx.JSON(ret)
 	})
 
 	initHandler(app)
