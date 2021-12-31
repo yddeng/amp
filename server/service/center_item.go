@@ -15,7 +15,3 @@ type Item struct {
 	UpdateAt  int64  `json:"update_at"`
 	Online    bool   `json:"online"`
 }
-
-var (
-	itemMgr *ItemMgr
-)

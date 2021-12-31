@@ -23,7 +23,7 @@
   {
     "name": "system",
     "parentId": 0,
-    "id": 2,
+    "id": 3,
     "meta": {
       "icon": "control",
       "title": "系统管理"
@@ -33,12 +33,43 @@
   },
   {
     "name": "usermange",
-    "parentId": 2,
-    "id": 21,
+    "parentId": 3,
+    "id": 31,
     "meta": {
       "title": "用户管理"
     },
     "component": "Usermange",
     "path": "/system/usermange"
+  },
+  {
+    "name": "project",
+    "parentId": 0,
+    "id": 4,
+    "meta": {
+      "icon": "from",
+      "title": "Initial"
+    },
+    "redirect": "/project/cluster",
+    "component": "RouteView"
+  },
+  {
+    "name": "cluster",
+    "parentId": 4,
+    "id": 41,
+    "meta": {
+      "title": "集群管理"
+    },
+    "component": "Cluster",
+    "path": "/project/cluster"
+  },
+  {
+    "name": "config",
+    "parentId": 4,
+    "id": 42,
+    "meta": {
+      "title": "配置模版"
+    },
+    "component": "Config",
+    "path": "/project/config"
   }
 ]

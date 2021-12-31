@@ -16,15 +16,6 @@ type storeBase struct {
 	filename string
 }
 
-type storeName string
-
-const (
-	snNode    storeName = "node"
-	snItemMgr storeName = "item_mgr"
-	snUser    storeName = "user"
-	snAdmin   storeName = "admin"
-)
-
 var stores = map[storeName]Store{}
 
 func loadStore(dataPath string) (err error) {
@@ -59,7 +50,6 @@ func (store *nodeStore) Load(dataPath string) (err error) {
 	if err = util.DecodeJsonFromFile(&nodes, store.filename); err != nil {
 		if os.IsNotExist(err) {
 			err = nil
-			nodes = map[string]*Node{}
 		}
 		return
 	}
@@ -118,7 +108,6 @@ func (store *storeUser) Load(dataPath string) (err error) {
 	if err = util.DecodeJsonFromFile(&userMap, store.filename); err != nil {
 		if os.IsNotExist(err) {
 			err = nil
-			userMap = map[string]*User{}
 		}
 		return
 	}
@@ -128,6 +117,68 @@ func (store *storeUser) Load(dataPath string) (err error) {
 func (store *storeUser) Save() {
 	_ = util.EncodeJsonToFile(userMap, store.filename)
 }
+
+type templateStore struct {
+	storeBase
+}
+
+func (store *templateStore) Load(dataPath string) (err error) {
+	store.filename = path.Join(dataPath, store.file)
+	if err = util.DecodeJsonFromFile(&temps, store.filename); err != nil {
+		if os.IsNotExist(err) {
+			err = nil
+		}
+		return
+	}
+	return
+}
+
+func (store *templateStore) Save() {
+	_ = util.EncodeJsonToFile(temps, store.filename)
+}
+
+type cluMgrStore struct {
+	storeBase
+}
+
+func (store *cluMgrStore) Load(dataPath string) (err error) {
+	store.filename = path.Join(dataPath, store.file)
+	if err = util.DecodeJsonFromFile(&cluMgr, store.filename); err != nil {
+		if os.IsNotExist(err) {
+			err = nil
+			cluMgr = &ClusterMgr{
+				GenID:    0,
+				Clusters: map[int]*Cluster{},
+			}
+		}
+		return
+	}
+	return
+}
+
+func (store *cluMgrStore) Save() {
+	_ = util.EncodeJsonToFile(cluMgr, store.filename)
+}
+
+type storeName string
+
+const (
+	snNode     storeName = "node"
+	snItemMgr  storeName = "item_mgr"
+	snUser     storeName = "user"
+	snAdmin    storeName = "admin"
+	snTemplate storeName = "template"
+	snCluMgr   storeName = "clu_mgr"
+)
+
+var (
+	admin   *User // web
+	userMap = map[string]*User{}
+	itemMgr *ItemMgr
+	nodes   = map[string]*Node{}
+	temps   = map[string]*Template{} // web
+	cluMgr  *ClusterMgr
+)
 
 func init() {
 	stores[snNode] = &nodeStore{storeBase{
@@ -141,5 +192,11 @@ func init() {
 	}}
 	stores[snAdmin] = &adminStore{storeBase{
 		file: "admin.json",
+	}}
+	stores[snTemplate] = &templateStore{storeBase{
+		file: "template.json",
+	}}
+	stores[snCluMgr] = &cluMgrStore{storeBase{
+		file: "clu_mgr.json",
 	}}
 }

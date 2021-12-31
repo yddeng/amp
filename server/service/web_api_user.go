@@ -7,8 +7,6 @@ import (
 )
 
 var (
-	admin     *User
-	userMap   = map[string]*User{}
 	userSlice []*User
 )
 
@@ -118,7 +116,7 @@ func (*userHandler) Nav(done *Done, user string) {
 	log.Printf("user/nav by(%s) \n", user)
 	defer func() { done.Done() }()
 
-	done.result.Data = append(allNav, newProjectNav(nil)...)
+	done.result.Data = allNav
 }
 
 func (*userHandler) List(done *Done, user string, req struct {

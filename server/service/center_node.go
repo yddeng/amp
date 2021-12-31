@@ -8,10 +8,6 @@ import (
 	"initial-server/protocol"
 )
 
-var (
-	nodes = map[string]*Node{}
-)
-
 type Node struct {
 	Name    string       `json:"name"`
 	Inet    string       `json:"inet"`
