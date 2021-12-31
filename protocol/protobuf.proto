@@ -3,6 +3,8 @@ option go_package = "protocol";
 
 message loginReq{
     string name = 1;
+    string inet = 2; // 内网地址
+    string net  = 3; // 公网地址
 }
 message loginResp{
     string code = 1;

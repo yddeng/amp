@@ -37,7 +37,7 @@ func (c *Center) startListener() error {
 	return c.acceptor.ServeFunc(func(conn net.Conn) {
 		dnet.NewTCPSession(conn,
 			dnet.WithCodec(new(protocol.Codec)),
-			dnet.WithTimeout(time.Second*5, 0),
+			//dnet.WithTimeout(time.Second*5, 0),
 			dnet.WithMessageCallback(func(session dnet.Session, data interface{}) {
 				centerTaskQueue.Submit(func() {
 					switch data.(type) {

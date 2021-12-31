@@ -40,6 +40,12 @@ func (this *Done) Wait() {
 	<-this.done
 }
 
+type webTask func()
+
+func (t webTask) Do() {
+	t()
+}
+
 func transBegin(ctx iris.Context, fn interface{}, args ...reflect.Value) {
 	val := reflect.ValueOf(fn)
 	if val.Kind() != reflect.Func {
@@ -52,7 +58,7 @@ func transBegin(ctx iris.Context, fn interface{}, args ...reflect.Value) {
 
 	done := newDone()
 	route := getCurrentRoute(ctx)
-	if err := webTransQueue.Submit(func() {
+	if err := webTransQueue.SubmitTask(webTask(func() {
 		user, ret := checkToken(ctx, route)
 		if ret.Code != 0 {
 			done.statue = 401
@@ -71,8 +77,10 @@ func transBegin(ctx iris.Context, fn interface{}, args ...reflect.Value) {
 			return
 		}
 		val.Call(append([]reflect.Value{reflect.ValueOf(done), reflect.ValueOf(user)}, args...))
-	}); err != nil {
-		panic(err)
+	}), true); err != nil {
+		done.result.Code = 1
+		done.result.Message = "当前访问人数"
+		done.Done()
 	}
 	done.Wait()
 

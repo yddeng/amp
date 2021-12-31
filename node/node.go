@@ -10,7 +10,7 @@ func main() {
 	logger.InitLogger(log)
 	c := client.NewClient(client.Config{
 		Name:     "client",
-		Center:   "127.0.0.1:40155",
+		Center:   "10.128.2.123:40155",
 		FilePath: "./data",
 	})
 

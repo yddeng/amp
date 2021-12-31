@@ -122,6 +122,8 @@ func (c *Client) dispatchMsg(session dnet.Session, msg *protocol.Message) {}
 
 type Config struct {
 	Name     string
+	Inet     string
+	Net      string
 	Center   string
 	FilePath string
 }

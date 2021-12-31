@@ -70,6 +70,7 @@ func Service(cfg Config) (err error) {
 		saveStore(snAdmin)
 	}
 
+	centerRun(cfg.CenterAddress)
 	webRun(cfg.WebAddress)
 	return
 }
