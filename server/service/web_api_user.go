@@ -88,7 +88,7 @@ type userHandler struct {
 }
 
 func (*userHandler) Info(done *Done, user string) {
-	log.Printf("user info by:%s \n", user)
+	log.Printf("user/info by(%s) \n", user)
 	defer func() { done.Done() }()
 	//u, _ := getUser(user)
 	//done.result.Data = struct {
@@ -147,7 +147,7 @@ func (*userHandler) Info(done *Done, user string) {
 }
 
 func (*userHandler) Nav(done *Done, user string) {
-	log.Printf("user nav by:%s \n", user)
+	log.Printf("user/nav by(%s) \n", user)
 	defer func() { done.Done() }()
 
 	done.result.Data = allNav
@@ -157,7 +157,7 @@ func (*userHandler) List(done *Done, user string, req struct {
 	PageNo   int `json:"pageNo"`
 	PageSize int `json:"pageSize"`
 }) {
-	log.Printf("user list by:%s %v\n", user, req)
+	log.Printf("user list by(%s) %v\n", user, req)
 	defer func() { done.Done() }()
 	//if user != admin.Username {
 	//	done.result.Code = 1
@@ -175,18 +175,7 @@ func (*userHandler) List(done *Done, user string, req struct {
 		sortUser()
 	}
 
-	start := (req.PageNo - 1) * req.PageSize
-	if start < 0 {
-		start = 0
-	}
-	if start > len(userSlice) {
-		start = len(userSlice)
-	}
-	end := start + req.PageSize
-	if end > len(userSlice) {
-		end = len(userSlice)
-	}
-
+	start, end := listRange(req.PageNo, req.PageSize, len(userSlice))
 	done.result.Data = struct {
 		PageNo     int     `json:"pageNo"`
 		PageSize   int     `json:"pageSize"`
@@ -203,7 +192,7 @@ func (*userHandler) Add(done *Done, user string, req struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }) {
-	log.Printf("user add by:%s %v \n", user, req)
+	log.Printf("user/add by(%s) %v \n", user, req)
 	defer func() { done.Done() }()
 	//if user != admin.Username {
 	//	done.result.Code = 1
@@ -223,7 +212,7 @@ func (*userHandler) Add(done *Done, user string, req struct {
 func (*userHandler) Delete(done *Done, user string, req struct {
 	Username []string `json:"username"`
 }) {
-	log.Printf("user delete by:%s %v\n", user, req)
+	log.Printf("user/delete by(%s) %v\n", user, req)
 	defer func() { done.Done() }()
 	//if user != admin.Username {
 	//	done.result.Code = 1

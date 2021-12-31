@@ -5,7 +5,12 @@ import (
 	"github.com/kataras/iris/v12/middleware/logger"
 	"log"
 	"os"
+	"time"
 )
+
+func NowUnix() int64 {
+	return time.Now().Unix()
+}
 
 func webRun(address string) {
 	/*

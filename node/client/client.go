@@ -99,7 +99,11 @@ func (c *Client) onConnected(conn net.Conn) {
 			}))
 
 		// login
-		if err := c.Go(&protocol.LoginReq{Name: c.cfg.Name}, func(i interface{}, e error) {
+		if err := c.Go(&protocol.LoginReq{
+			Name: c.cfg.Name,
+			Net:  c.cfg.Net,
+			Inet: c.cfg.Inet,
+		}, func(i interface{}, e error) {
 			if e != nil {
 				c.session.Close(e)
 				return

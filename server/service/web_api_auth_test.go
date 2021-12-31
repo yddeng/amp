@@ -46,14 +46,14 @@ func authLogin(t *testing.T, Username, Password string) string {
 	return ret
 }
 
-func TestAuth_Login(t *testing.T) {
+func TestAuthHandler_Login(t *testing.T) {
 	startWebListener(t)
 
 	ret := authLogin(t, "admin", "123456")
 	t.Log(ret)
 }
 
-func TestAuth_Logout(t *testing.T) {
+func TestAuthHandler_Logout(t *testing.T) {
 	startWebListener(t)
 
 	ret := authLogin(t, "admin", "123456")

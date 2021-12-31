@@ -19,8 +19,9 @@ type storeBase struct {
 type storeName string
 
 const (
-	snUser  storeName = "user"
-	snAdmin storeName = "admin"
+	snItemMgr storeName = "item_mgr"
+	snUser    storeName = "user"
+	snAdmin   storeName = "admin"
 )
 
 var stores = map[storeName]Store{}
@@ -46,6 +47,26 @@ func saveStore(names ...storeName) {
 			}
 		}
 	}
+}
+
+type itemMgrStore struct {
+	storeBase
+}
+
+func (store *itemMgrStore) Load(dataPath string) (err error) {
+	store.filename = path.Join(dataPath, store.file)
+	if err = util.DecodeJsonFromFile(&itemMgr, store.filename); err != nil {
+		if os.IsNotExist(err) {
+			err = nil
+			itemMgr = &ItemMgr{GenID: 0, Items: map[int]*Item{}}
+		}
+		return
+	}
+	return
+}
+
+func (store *itemMgrStore) Save() {
+	_ = util.EncodeJsonToFile(itemMgr, store.filename)
 }
 
 type adminStore struct {
@@ -88,6 +109,9 @@ func (store *storeUser) Save() {
 }
 
 func init() {
+	stores[snItemMgr] = &itemMgrStore{storeBase{
+		file: "item_mgr.json",
+	}}
 	stores[snUser] = &storeUser{storeBase{
 		file: "user.json",
 	}}

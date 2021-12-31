@@ -6,7 +6,6 @@ import (
 	"github.com/yddeng/dnet/drpc"
 	"initial-sever/logger"
 	"initial-sever/protocol"
-	"time"
 )
 
 var (
@@ -14,11 +13,11 @@ var (
 )
 
 type Node struct {
-	Name      string       `json:"name"`
-	Inet      string       `json:"inet"`
-	Net       string       `json:"net"`
-	Timestamp int64        `json:"timestamp"` // 登陆时间
-	session   dnet.Session `json:"_"`
+	Name    string       `json:"name"`
+	Inet    string       `json:"inet"`
+	Net     string       `json:"net"`
+	LoginAt int64        `json:"login_at"` // 登陆时间
+	session dnet.Session `json:"_"`
 }
 
 func (n *Node) Online() bool {
@@ -52,9 +51,10 @@ func (this *Center) onLogin(replier *drpc.Replier, req interface{}) {
 
 	client.Inet = msg.GetInet()
 	client.Net = msg.GetNet()
-	client.Timestamp = time.Now().Unix()
+	client.LoginAt = NowUnix()
 	client.session = channel.(*Node).session
 	client.session.SetContext(client)
 	logger.GetSugar().Infof("onLogin %s", client.session.RemoteAddr().String())
 	replier.Reply(&protocol.LoginResp{}, nil)
+	saveStore(snItemMgr)
 }

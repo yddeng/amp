@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestUser_Nav(t *testing.T) {
+func TestUserHandler_Nav(t *testing.T) {
 	startWebListener(t)
 
 	ret := authLogin(t, "admin", "123456")
@@ -23,7 +23,7 @@ func TestUser_Nav(t *testing.T) {
 	t.Log(ret)
 }
 
-func TestUser_Info(t *testing.T) {
+func TestUserHandler_Info(t *testing.T) {
 	startWebListener(t)
 
 	ret := authLogin(t, "admin", "123456")
@@ -39,7 +39,7 @@ func TestUser_Info(t *testing.T) {
 	t.Log(ret)
 }
 
-func TestUser_List(t *testing.T) {
+func TestUserHandler_List(t *testing.T) {
 	startWebListener(t)
 
 	ret := authLogin(t, "admin", "123456")
@@ -56,7 +56,7 @@ func TestUser_List(t *testing.T) {
 	t.Log(ret)
 }
 
-func TestUser_Add(t *testing.T) {
+func TestUserHandler_Add(t *testing.T) {
 	startWebListener(t)
 
 	ret := authLogin(t, "admin", "123456")
@@ -73,7 +73,7 @@ func TestUser_Add(t *testing.T) {
 	t.Log(ret)
 }
 
-func TestUser_Delete(t *testing.T) {
+func TestUserHandler_Delete(t *testing.T) {
 	startWebListener(t)
 
 	ret := authLogin(t, "admin", "123456")

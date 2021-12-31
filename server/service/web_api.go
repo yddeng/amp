@@ -211,4 +211,8 @@ func initHandler(app *iris.Application) {
 	nodeHandle := new(nodeHandler)
 	nodeRouter := app.Party("/node")
 	nodeRouter.Get("/list", warpHandle(nodeHandle.List))
+
+	itemHande := new(itemHandler)
+	itemRouter := app.Party("/item")
+	itemRouter.Get("/list", warpHandle(itemHande.List))
 }
