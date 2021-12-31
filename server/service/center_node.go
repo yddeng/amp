@@ -4,8 +4,8 @@ import (
 	"errors"
 	"github.com/yddeng/dnet"
 	"github.com/yddeng/dnet/drpc"
-	"initial-sever/logger"
-	"initial-sever/protocol"
+	"initial-server/logger"
+	"initial-server/protocol"
 )
 
 var (

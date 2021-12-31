@@ -1,7 +1,7 @@
 package service
 
 import (
-	"initial-sever/util"
+	"initial-server/util"
 )
 
 type Nav struct {
@@ -58,7 +58,7 @@ func newProjectNav(clus []*Cluster) []*Nav {
 			Title: "Initial项目",
 			Icon:  "from",
 		},
-		Redirect:  "/project/cluster/cluster_list",
+		Redirect:  "/project/cluster",
 		Component: "Project",
 	}, &Nav{
 		Name:     "template",
@@ -75,7 +75,6 @@ func newProjectNav(clus []*Cluster) []*Nav {
 		ParentId: 10000,
 		Meta: NavMeta{
 			Title: "集群组",
-			Icon:  "from",
 		},
 		Path:      "/project/cluster",
 		Component: "Cluster",

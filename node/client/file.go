@@ -1,8 +1,8 @@
 package client
 
 import (
-	"initial-sever/logger"
-	"initial-sever/util"
+	"initial-server/logger"
+	"initial-server/util"
 	"syscall"
 	"time"
 )

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"initial-sever/logger"
-	"initial-sever/node/client"
+	"initial-server/logger"
+	"initial-server/node/client"
 )
 
 func main() {

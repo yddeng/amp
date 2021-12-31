@@ -1,7 +1,7 @@
 package service
 
 import (
-	"initial-sever/util"
+	"initial-server/util"
 	"os"
 	"path"
 )

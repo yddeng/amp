@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"initial-sever/logger"
-	"initial-sever/server/service"
-	"initial-sever/util"
+	"initial-server/logger"
+	"initial-server/server/service"
+	"initial-server/util"
 	"os"
 	"os/signal"
 	"syscall"
