@@ -17,14 +17,16 @@ type Result struct {
 var webTransQueue = task.NewTaskPool(1, 2048)
 
 type Done struct {
+	route    string
 	statue   int
 	result   Result
 	done     chan struct{}
 	doneOnce sync.Once
 }
 
-func newDone() *Done {
+func newDone(route string) *Done {
 	return &Done{
+		route:  route,
 		statue: 200,
 		done:   make(chan struct{}),
 	}
@@ -56,8 +58,8 @@ func transBegin(ctx iris.Context, fn interface{}, args ...reflect.Value) {
 		panic("func argument error")
 	}
 
-	done := newDone()
 	route := getCurrentRoute(ctx)
+	done := newDone(route)
 	if err := webTransQueue.SubmitTask(webTask(func() {
 		user, ret := checkToken(ctx, route)
 		if ret.Code != 0 {
@@ -212,7 +214,29 @@ func initHandler(app *iris.Application) {
 	nodeRouter := app.Party("/node")
 	nodeRouter.Get("/list", warpHandle(nodeHandle.List))
 
-	itemHande := new(itemHandler)
-	itemRouter := app.Party("/item")
-	itemRouter.Get("/list", warpHandle(itemHande.List))
+	{
+		projectRouter := app.Party("/project")
+
+		clusterHandle := new(clusterHandler)
+		clusterRouter := projectRouter.Party("/cluster")
+		clusterRouter.Get("/list", warpHandle(clusterHandle.List))
+		clusterRouter.Post("/create", warpHandle(clusterHandle.Create))
+		clusterRouter.Post("/delete", warpHandle(clusterHandle.Delete))
+
+		itemHandle := new(itemHandler)
+		itemRoute := clusterRouter.Party("/item")
+		itemRoute.Get("/list", warpHandle(itemHandle.List))
+		itemRoute.Post("/create", warpHandle(itemHandle.Create))
+		itemRoute.Post("/delete", warpHandle(itemHandle.Delete))
+		itemRoute.Post("/start", warpHandle(itemHandle.Start))
+		itemRoute.Post("/single", warpHandle(itemHandle.Single))
+
+		templateHandle := new(templateHandler)
+		templateRoute := projectRouter.Party("/template")
+		templateRoute.Get("/list", warpHandle(templateHandle.List))
+		templateRoute.Get("/create", warpHandle(templateHandle.Create))
+		templateRoute.Get("/delete", warpHandle(templateHandle.Delete))
+		templateRoute.Get("/update", warpHandle(templateHandle.Update))
+
+	}
 }

@@ -6,12 +6,14 @@ type ItemMgr struct {
 }
 
 type Item struct {
-	ID         int    `json:"id"`
-	CreateAt   int64  `json:"create_at"`
-	CreateName string `json:"create_name"`
-	NodeName   string `json:"node_name"`
-	UpdateAt   int64  `json:"update_at"`
-	Online     bool   `json:"online"`
+	ID        int    `json:"id"`
+	Desc      string `json:"desc"`
+	ClusterID int    `json:"cluster_id"`
+	Node      string `json:"node"`
+	User      string `json:"user"`
+	CreateAt  int64  `json:"create_at"`
+	UpdateAt  int64  `json:"update_at"`
+	Online    bool   `json:"online"`
 }
 
 var (

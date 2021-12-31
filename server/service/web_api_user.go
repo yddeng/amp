@@ -2,46 +2,14 @@ package service
 
 import (
 	"encoding/json"
-	"initial-sever/util"
 	"log"
 	"sort"
 )
-
-type Nav struct {
-	Name     string `json:"name,omitempty"`
-	Path     string `json:"path,omitempty"`
-	Id       int    `json:"id"`
-	ParentId int    `json:"parentId"`
-	Meta     struct {
-		Title        string `json:"title,omitempty"`
-		Icon         string `json:"icon,omitempty"`
-		Show         bool   `json:"show,omitempty"`
-		HideHeader   bool   `json:"hideHeader,omitempty"`
-		HideChildren bool   `json:"hideChildren,omitempty"`
-	} `json:"meta,omitempty"`
-	Redirect  string `json:"redirect,omitempty"`
-	Component string `json:"component,omitempty"`
-}
-
-func findNav(routes map[string]struct{}) (navs []Nav) {
-	navs = make([]Nav, 0, len(routes))
-	for _, v := range allNav {
-		if _, ok := routes[v.Name]; ok {
-			navs = append(navs, v)
-		}
-	}
-	return
-}
-
-func loadNav(filename string) error {
-	return util.DecodeJsonFromFile(&allNav, filename)
-}
 
 var (
 	admin     *User
 	userMap   = map[string]*User{}
 	userSlice []*User
-	allNav    []Nav
 )
 
 func sortUser() {
@@ -150,14 +118,14 @@ func (*userHandler) Nav(done *Done, user string) {
 	log.Printf("user/nav by(%s) \n", user)
 	defer func() { done.Done() }()
 
-	done.result.Data = allNav
+	done.result.Data = append(allNav, newProjectNav(nil)...)
 }
 
 func (*userHandler) List(done *Done, user string, req struct {
 	PageNo   int `json:"pageNo"`
 	PageSize int `json:"pageSize"`
 }) {
-	log.Printf("user list by(%s) %v\n", user, req)
+	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 	//if user != admin.Username {
 	//	done.result.Code = 1
@@ -192,7 +160,7 @@ func (*userHandler) Add(done *Done, user string, req struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }) {
-	log.Printf("user/add by(%s) %v \n", user, req)
+	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 	//if user != admin.Username {
 	//	done.result.Code = 1
@@ -212,7 +180,7 @@ func (*userHandler) Add(done *Done, user string, req struct {
 func (*userHandler) Delete(done *Done, user string, req struct {
 	Username []string `json:"username"`
 }) {
-	log.Printf("user/delete by(%s) %v\n", user, req)
+	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 	//if user != admin.Username {
 	//	done.result.Code = 1

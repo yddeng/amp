@@ -52,9 +52,10 @@ func (this *Center) onLogin(replier *drpc.Replier, req interface{}) {
 	client.Inet = msg.GetInet()
 	client.Net = msg.GetNet()
 	client.LoginAt = NowUnix()
+
 	client.session = channel.(*Node).session
 	client.session.SetContext(client)
 	logger.GetSugar().Infof("onLogin %s", client.session.RemoteAddr().String())
 	replier.Reply(&protocol.LoginResp{}, nil)
-	saveStore(snItemMgr)
+	saveStore(snNode)
 }

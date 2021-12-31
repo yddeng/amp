@@ -12,7 +12,7 @@ func (*authHandler) Login(done *Done, user string, req struct {
 	Password string `json:"password"`
 }) {
 
-	log.Printf("auth/login %v\n", req)
+	log.Printf("%s %v\n", done.route, req)
 	defer func() { done.Done() }()
 
 	u, ok := getUser(req.Username)
@@ -30,7 +30,7 @@ func (*authHandler) Login(done *Done, user string, req struct {
 }
 
 func (*authHandler) Logout(done *Done, user string) {
-	log.Printf("auth/logout by(%s)\n", user)
+	log.Printf("%s by(%s) \n", done.route, user)
 	defer func() { done.Done() }()
 	if user == "" {
 		return

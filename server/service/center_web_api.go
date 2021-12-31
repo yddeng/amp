@@ -29,12 +29,12 @@ func getItemList(cb func(items []*Item)) {
 		rets := make([]*Item, 0, len(itemMgr.Items))
 		for _, v := range itemMgr.Items {
 			rets = append(rets, &Item{
-				ID:         v.ID,
-				CreateAt:   v.CreateAt,
-				CreateName: v.CreateName,
-				NodeName:   v.NodeName,
-				UpdateAt:   v.UpdateAt,
-				Online:     v.Online,
+				ID:       v.ID,
+				User:     v.User,
+				Node:     v.Node,
+				CreateAt: v.CreateAt,
+				UpdateAt: v.UpdateAt,
+				Online:   v.Online,
 			})
 		}
 		webTransQueue.Submit(cb, rets)

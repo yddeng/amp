@@ -26,7 +26,7 @@ func (*nodeHandler) List(done *Done, user string, req struct {
 	PageNo   int `json:"pageNo"`
 	PageSize int `json:"pageSize"`
 }) {
-	log.Printf("node/list by(%s) %v\n", user, req)
+	log.Printf("%s by(%s) %v\n", done.route, user, req)
 
 	getNodeInfo(func(nodes []*nodeInfo) {
 		sort.Slice(nodes, func(i, j int) bool {
