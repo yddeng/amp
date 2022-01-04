@@ -15,7 +15,7 @@
         "parentId": 0,
         "id": 1,
         "meta": {
-          "icon": "from",
+          "icon": "control",
           "title": "服务器管理"
         },
         "redirect": "/control/startpage",
@@ -57,8 +57,8 @@
         "parentId": 0,
         "id": 4,
         "meta": {
-          "icon": "from",
-          "title": "Initial"
+          "icon": "control",
+          "title": "项目管理"
         },
         "redirect": "/project/cluster",
         "component": "RouteView"
@@ -68,7 +68,7 @@
         "parentId": 4,
         "id": 41,
         "meta": {
-          "title": "集群管理"
+          "title": "Initial集群"
         },
         "component": "Cluster",
         "path": "/project/cluster"

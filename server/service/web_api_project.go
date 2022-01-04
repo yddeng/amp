@@ -1,7 +1,12 @@
 package service
 
 import (
+	"fmt"
+	"initial-server/util"
+	"io/ioutil"
 	"log"
+	"os"
+	"path"
 	"sort"
 )
 
@@ -9,9 +14,8 @@ type Cluster struct {
 	ID       int    `json:"id"`
 	Desc     string `json:"desc"`
 	User     string `json:"user"`
-	Node     string `json:"node"`
 	CreateAt int64  `json:"create_at"`
-	CfgTemp  string `json:"cfg_temp"`
+	Config   string `json:"config"`
 }
 
 type ClusterMgr struct {
@@ -22,33 +26,84 @@ type ClusterMgr struct {
 type clusterHandler struct {
 }
 
+func (*clusterHandler) storeConfig(cluster *Cluster) {
+	dir := fmt.Sprintf("cluster_%d", cluster.ID)
+	file := "common.toml"
+	curPath := path.Join(dataPath, dir)
+	_ = os.MkdirAll(curPath, os.ModePerm)
+	_ = ioutil.WriteFile(path.Join(curPath, file), []byte(cluster.Config), os.ModePerm)
+
+}
+
+func (*clusterHandler) deleteConfig(id int) {
+	dir := fmt.Sprintf("cluster_%d", id)
+	_ = os.RemoveAll(path.Join(dataPath, dir))
+}
+
 func (*clusterHandler) List(done *Done, user string, req struct {
 	PageNo   int `json:"pageNo"`
 	PageSize int `json:"pageSize"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	done.Done()
+	defer func() { done.Done() }()
+
+	s := make([]*Cluster, 0, len(cluMgr.Clusters))
+	for _, v := range cluMgr.Clusters {
+		s = append(s, v)
+	}
+	sort.Slice(s, func(i, j int) bool {
+		return s[i].ID < s[j].ID
+	})
+
+	start, end := listRange(req.PageNo, req.PageSize, len(s))
+	done.result.Data = s[start:end]
+
 }
 
-func (*clusterHandler) Create(done *Done, user string, req struct {
-	PageNo   int `json:"pageNo"`
-	PageSize int `json:"pageSize"`
+func (this *clusterHandler) Create(done *Done, user string, req struct {
+	Desc    string   `json:"desc"`
+	CfgTemp string   `json:"cfg_temp"`
+	Args    []string `json:"args"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	done.Done()
+	defer func() { done.Done() }()
+	temp, ok := temps[req.CfgTemp]
+	if !ok {
+		done.result.Code = 1
+		done.result.Message = "不存在的模版名"
+		return
+	}
+
+	data := util.Replace(temp.Data, req.Args)
+	cluMgr.GenID++
+	cluster := &Cluster{
+		ID:       cluMgr.GenID,
+		Desc:     req.Desc,
+		User:     user,
+		Config:   data,
+		CreateAt: NowUnix(),
+	}
+	cluMgr.Clusters[cluMgr.GenID] = cluster
+	saveStore(snCluMgr)
+	this.storeConfig(cluster)
 }
 
-func (*clusterHandler) Delete(done *Done, user string, req struct {
-	PageNo   int `json:"pageNo"`
-	PageSize int `json:"pageSize"`
+func (this *clusterHandler) Delete(done *Done, user string, req struct {
+	ID int `json:"id"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	done.Done()
+	defer func() { done.Done() }()
+	if _, ok := cluMgr.Clusters[req.ID]; !ok {
+		done.result.Code = 1
+		done.result.Message = "不存在的集群"
+	}
+	delete(cluMgr.Clusters, req.ID)
+	saveStore(snCluMgr)
+	this.deleteConfig(req.ID)
 }
 
 type Template struct {
 	Name     string `json:"name"`
-	Shell    string `json:"shell"`
 	Data     string `json:"data"`
 	User     string `json:"user"`
 	CreateAt int64  `json:"create_at"`
@@ -77,9 +132,8 @@ func (*templateHandler) List(done *Done, user string, req struct {
 }
 
 func (*templateHandler) Create(done *Done, user string, req struct {
-	Name  string `json:"name"`
-	Shell string `json:"shell"`
-	Data  string `json:"data"`
+	Name string `json:"name"`
+	Data string `json:"data"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
@@ -92,7 +146,6 @@ func (*templateHandler) Create(done *Done, user string, req struct {
 
 	temp := &Template{
 		Name:     req.Name,
-		Shell:    req.Shell,
 		Data:     req.Data,
 		User:     user,
 		CreateAt: NowUnix(),
@@ -102,9 +155,8 @@ func (*templateHandler) Create(done *Done, user string, req struct {
 }
 
 func (*templateHandler) Update(done *Done, user string, req struct {
-	Name  string `json:"name"`
-	Shell string `json:"shell"`
-	Data  string `json:"data"`
+	Name string `json:"name"`
+	Data string `json:"data"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
@@ -112,7 +164,6 @@ func (*templateHandler) Update(done *Done, user string, req struct {
 		done.result.Code = 1
 		done.result.Message = "不存在的模版名"
 	} else {
-		temp.Shell = req.Shell
 		temp.Data = req.Data
 		temp.User = user
 		saveStore(snTemplate)
@@ -132,6 +183,24 @@ func (*templateHandler) Delete(done *Done, user string, req struct {
 	saveStore(snTemplate)
 }
 
+type ItemMgr struct {
+	GenID int           `json:"gen_id"`
+	Items map[int]*Item `json:"items"`
+}
+
+type Item struct {
+	ID        int    `json:"id"`
+	Desc      string `json:"desc"`
+	User      string `json:"user"`
+	CreateAt  int64  `json:"create_at"`
+	UpdateAt  int64  `json:"update_at"`
+	Online    bool   `json:"online"`
+	Node      string `json:"node"`
+	ClusterID int    `json:"cluster_id"`
+	Shell     string `json:"shell"`
+	Config    string `json:"config"`
+}
+
 type itemHandler struct {
 }
 
@@ -140,19 +209,24 @@ func (*itemHandler) List(done *Done, user string, req struct {
 	PageSize int `json:"pageSize"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
+	defer func() { done.Done() }()
 
-	getItemList(func(items []*Item) {
-		sort.Slice(items, func(i, j int) bool {
-			return items[i].UpdateAt > items[j].UpdateAt
-		})
-		start, end := listRange(req.PageNo, req.PageSize, len(items))
-		done.result.Data = items[start:end]
-		done.Done()
+	s := make([]*Item, 0, len(itemMgr.Items))
+	for _, v := range itemMgr.Items {
+		s = append(s, v)
+	}
+	sort.Slice(s, func(i, j int) bool {
+		return s[i].UpdateAt > s[j].UpdateAt
 	})
+
+	start, end := listRange(req.PageNo, req.PageSize, len(s))
+	done.result.Data = s[start:end]
 }
 func (*itemHandler) Create(done *Done, user string, req struct {
-	PageNo   int `json:"pageNo"`
-	PageSize int `json:"pageSize"`
+	Desc      string `json:"desc"`
+	Node      string `json:"node"`
+	ClusterID int    `json:"cluster_id"`
+	Shell     string `json:"shell"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	done.Done()

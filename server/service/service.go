@@ -31,7 +31,10 @@ type WebConfig struct {
 	Nav []*Nav `json:"nav"`
 }
 
+var dataPath string
+
 func Service(cfg Config) (err error) {
+	dataPath = cfg.DataPath
 	_ = os.MkdirAll(cfg.DataPath, os.ModePerm)
 	if err = loadStore(cfg.DataPath); err != nil {
 		return

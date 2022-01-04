@@ -18,7 +18,7 @@ func DecodeJsonFromFile(i interface{}, filename string) error {
 
 // 序列化对象并保存
 func EncodeJsonToFile(i interface{}, filename string) error {
-	data, err := json.Marshal(i)
+	data, err := json.MarshalIndent(i, "", "  ")
 	if err != nil {
 		return err
 	}

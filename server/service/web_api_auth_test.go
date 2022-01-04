@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/tidwall/gjson"
 	"github.com/yddeng/dnet/dhttp"
+	"initial-server/util"
 	"testing"
 	"time"
 )
@@ -19,16 +20,15 @@ func startWebListener(t *testing.T) {
 		return
 	}
 
-	_ = Service(Config{
-		WebAddress:    address,
-		CenterAddress: "",
-		DataPath:      "../data",
-		NavPath:       "../nav.json",
-		Admin: struct {
-			Username string `json:"username"`
-			Password string `json:"password"`
-		}{Username: "admin", Password: "123456"},
-	})
+	var err error
+	var cfg Config
+	if err = util.DecodeJsonFromFile(&cfg, "../config.json"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err = Service(cfg); err != nil {
+		t.Fatal(err)
+	}
 
 	time.Sleep(time.Millisecond * 100)
 }

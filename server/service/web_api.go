@@ -206,7 +206,7 @@ func initHandler(app *iris.Application) {
 	userRouter := app.Party("/user")
 	userRouter.Get("/nav", warpHandle(userHandle.Nav))
 	userRouter.Get("/info", warpHandle(userHandle.Info))
-	userRouter.Post("/list", warpHandle(userHandle.List))
+	userRouter.Get("/list", warpHandle(userHandle.List))
 	userRouter.Post("/add", warpHandle(userHandle.Add))
 	userRouter.Post("/delete", warpHandle(userHandle.Delete))
 
@@ -234,9 +234,9 @@ func initHandler(app *iris.Application) {
 		templateHandle := new(templateHandler)
 		templateRoute := projectRouter.Party("/template")
 		templateRoute.Get("/list", warpHandle(templateHandle.List))
-		templateRoute.Get("/create", warpHandle(templateHandle.Create))
-		templateRoute.Get("/delete", warpHandle(templateHandle.Delete))
-		templateRoute.Get("/update", warpHandle(templateHandle.Update))
+		templateRoute.Post("/create", warpHandle(templateHandle.Create))
+		templateRoute.Post("/delete", warpHandle(templateHandle.Delete))
+		templateRoute.Post("/update", warpHandle(templateHandle.Update))
 
 	}
 }
