@@ -4,7 +4,6 @@ set -euv
 test -d initial || mkdir -p initial
 
 cp ../server/config.json initial/config.json
-cp ../server/nav.json initial/nav.json
 
 cd initial
 GOOS=linux GOARCH=amd64 go build ../../server/server.go

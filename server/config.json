@@ -1,10 +1,88 @@
 {
-  "web_address": "0.0.0.0:40156",
-  "center_address": "0.0.0.0:40155",
   "data_path": "./data",
-  "nav_path": "./nav.json",
-  "admin": {
-    "username": "admin",
-    "password": "123456"
+  "center_config": {
+    "address": "0.0.0.0:40155"
+  },
+  "web_config": {
+    "address": "0.0.0.0:40156",
+    "admin": {
+      "username": "admin",
+      "password": "123456"
+    },
+    "nav": [
+      {
+        "name": "control",
+        "parentId": 0,
+        "id": 1,
+        "meta": {
+          "icon": "from",
+          "title": "服务器管理"
+        },
+        "redirect": "/control/startpage",
+        "component": "RouteView"
+      },
+      {
+        "name": "startpage",
+        "parentId": 1,
+        "id": 11,
+        "meta": {
+          "title": "启动"
+        },
+        "component": "Startpage",
+        "path": "/control/startpage"
+      },
+      {
+        "name": "system",
+        "parentId": 0,
+        "id": 3,
+        "meta": {
+          "icon": "control",
+          "title": "系统管理"
+        },
+        "redirect": "/system/usermange",
+        "component": "RouteView"
+      },
+      {
+        "name": "usermange",
+        "parentId": 3,
+        "id": 31,
+        "meta": {
+          "title": "用户管理"
+        },
+        "component": "Usermange",
+        "path": "/system/usermange"
+      },
+      {
+        "name": "project",
+        "parentId": 0,
+        "id": 4,
+        "meta": {
+          "icon": "from",
+          "title": "Initial"
+        },
+        "redirect": "/project/cluster",
+        "component": "RouteView"
+      },
+      {
+        "name": "cluster",
+        "parentId": 4,
+        "id": 41,
+        "meta": {
+          "title": "集群管理"
+        },
+        "component": "Cluster",
+        "path": "/project/cluster"
+      },
+      {
+        "name": "config",
+        "parentId": 4,
+        "id": 42,
+        "meta": {
+          "title": "配置模版"
+        },
+        "component": "Config",
+        "path": "/project/config"
+      }
+    ]
   }
 }
