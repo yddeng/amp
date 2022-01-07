@@ -32,10 +32,16 @@ type Executor struct {
 }
 
 func (er *Executor) SendRequest(req *drpc.Request) error {
+	if er.session == nil {
+		return errors.New("session is nil")
+	}
 	return er.session.Send(req)
 }
 
 func (er *Executor) SendResponse(resp *drpc.Response) error {
+	if er.session == nil {
+		return errors.New("session is nil")
+	}
 	return er.session.Send(resp)
 }
 
@@ -86,6 +92,7 @@ func (er *Executor) onConnected(conn net.Conn) {
 			}),
 			dnet.WithCloseCallback(func(session dnet.Session, reason error) {
 				er.Submit(func() {
+					er.session.SetContext(nil)
 					er.session = nil
 					logger.GetSugar().Infof("session closed, reason: %s", reason)
 					er.dial()

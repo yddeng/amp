@@ -11,11 +11,13 @@ import (
 )
 
 type Cmd struct {
-	Name     string `json:"name"`
-	Dir      string `json:"dir"`
-	Context  string `json:"context"`
-	User     string `json:"user"`
-	CreateAt int64  `json:"create_at"`
+	Name     string            `json:"name"`
+	Dir      string            `json:"dir"`
+	Context  string            `json:"context"`
+	Args     map[string]string `json:"args"`
+	User     string            `json:"user"`
+	CreateAt int64             `json:"create_at"`
+	doing    bool
 }
 
 type cmdHandler struct {
@@ -41,9 +43,10 @@ func (*cmdHandler) List(done *Done, user string, req struct {
 }
 
 func (*cmdHandler) Create(done *Done, user string, req struct {
-	Name    string `json:"name"`
-	Dir     string `json:"dir"`
-	Context string `json:"context"`
+	Name    string            `json:"name"`
+	Dir     string            `json:"dir"`
+	Context string            `json:"context"`
+	Args    map[string]string `json:"args"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
@@ -54,10 +57,18 @@ func (*cmdHandler) Create(done *Done, user string, req struct {
 		return
 	}
 
+	// todo 用正则表达式判断
+	if strings.Count(req.Context, "{{") != len(req.Args) {
+		done.result.Code = 1
+		done.result.Message = "变量与默认值数量不一致"
+		return
+	}
+
 	cmd := &Cmd{
 		Name:     req.Name,
 		Dir:      req.Dir,
 		Context:  req.Context,
+		Args:     req.Args,
 		User:     user,
 		CreateAt: NowUnix(),
 	}
@@ -82,9 +93,10 @@ func (*cmdHandler) Delete(done *Done, user string, req struct {
 }
 
 func (*cmdHandler) Update(done *Done, user string, req struct {
-	Name    string `json:"name"`
-	Dir     string `json:"dir"`
-	Context string `json:"context"`
+	Name    string            `json:"name"`
+	Dir     string            `json:"dir"`
+	Context string            `json:"context"`
+	Args    map[string]string `json:"args"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
@@ -93,8 +105,16 @@ func (*cmdHandler) Update(done *Done, user string, req struct {
 		done.result.Code = 1
 		done.result.Message = "不存在的命令名"
 	} else {
+		// todo 用正则表达式判断
+		if strings.Count(req.Context, "{{") != len(req.Args) {
+			done.result.Code = 1
+			done.result.Message = "变量与默认值数量不一致"
+			return
+		}
+
 		cmd.Dir = req.Dir
 		cmd.Context = req.Context
+		cmd.Args = req.Args
 		saveStore(snCmd)
 	}
 }
@@ -115,9 +135,9 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 
 	cmd, ok := cmdMap[req.Name]
-	if !ok {
+	if !ok || cmd.doing {
 		done.result.Code = 1
-		done.result.Message = "不存在的命令名"
+		done.result.Message = "不存在的命令或正在执行"
 		done.Done()
 		return
 	}
@@ -152,6 +172,7 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		req.Timeout = cmdMaxTimeout
 	}
 
+	cmd.doing = true
 	rpcReq := &protocol.CmdExecReq{
 		Dir:     req.Dir,
 		Name:    "/bin/sh",
@@ -169,9 +190,11 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 				Output string `json:"output"`
 			}{Output: rpcResp.GetOutStr()}
 		}
+		cmd.doing = false
 		done.Done()
 	}); err != nil {
 		log.Println(err)
+		cmd.doing = false
 		done.Done()
 	}
 

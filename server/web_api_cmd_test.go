@@ -20,10 +20,11 @@ func TestCmdHandler_List(t *testing.T) {
 		req, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/cmd/create", address), "POST")
 		req.SetHeader("Access-Token", token)
 		req.WriteJSON(struct {
-			Name    string `json:"name"`
-			Dir     string `json:"dir"`
-			Context string `json:"context"`
-		}{Name: "test", Dir: "", Context: "sleep 11s;mkdir {{name}};echo ok"})
+			Name    string            `json:"name"`
+			Dir     string            `json:"dir"`
+			Context string            `json:"context"`
+			Args    map[string]string `json:"args"`
+		}{Name: "test", Dir: "", Context: "sleep 11s;mkdir {{name}};echo ok" /*, Args: map[string]string{"name": "tttt"}*/})
 
 		ret, err := req.ToString()
 		t.Log(err, ret)

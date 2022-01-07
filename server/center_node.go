@@ -21,10 +21,16 @@ func (n *Node) Online() bool {
 }
 
 func (n *Node) SendRequest(req *drpc.Request) error {
+	if n.session == nil {
+		return errors.New("session is nil")
+	}
 	return n.session.Send(req)
 }
 
 func (n *Node) SendResponse(resp *drpc.Response) error {
+	if n.session == nil {
+		return errors.New("session is nil")
+	}
 	return n.session.Send(resp)
 }
 
