@@ -44,7 +44,7 @@
       },
       {
         "name": "cmdmange",
-        "parentId": 3,
+        "parentId": 2,
         "id": 31,
         "meta": {
           "title": "我的命令"

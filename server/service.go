@@ -35,6 +35,7 @@ type WebConfig struct {
 var (
 	dataPath  string
 	taskQueue = task.NewTaskPool(1, 2048)
+	app       *iris.Application
 )
 
 func Service(cfg Config) (err error) {
@@ -47,6 +48,11 @@ func Service(cfg Config) (err error) {
 	centerRun(cfg.CenterConfig)
 	webRun(cfg.WebConfig)
 	return
+}
+
+func Stop() {
+	app.Shutdown(nil)
+	saveStore()
 }
 
 func webRun(cfg *WebConfig) {
@@ -64,7 +70,7 @@ func webRun(cfg *WebConfig) {
 	 使用warp函数处理过的方法，已经是在队列中执行。
 	*/
 
-	app := iris.New()
+	app = iris.New()
 	app.Use(logger.New())
 	// 跨域
 	app.Use(handleCORS)

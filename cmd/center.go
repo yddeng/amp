@@ -40,4 +40,5 @@ func main() {
 	case <-sigChan:
 	}
 	logger.GetSugar().Info("listen stopping. ")
+	server.Stop()
 }

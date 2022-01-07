@@ -7,8 +7,8 @@ cp ../cmd/center_config.json initial/center_config.json
 cp ../cmd/executor_config.json initial/executor_config.json
 
 cd initial
-GOOS=linux GOARCH=amd64 go build ../cmd/center.go
-GOOS=linux GOARCH=amd64 go build ../cmd/executor.go
+GOOS=linux GOARCH=amd64 go build ../../cmd/center.go
+GOOS=linux GOARCH=amd64 go build ../../cmd/executor.go
 cd ../
 
 tar -zcvf initial.tar.gz initial
