@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	file = flag.String("file", "./config.json", "config file")
+	file = flag.String("file", "./center_config.json", "config file")
 )
 
 func main() {

@@ -1,4 +1,4 @@
-package service
+package server
 
 import (
 	"initial-server/util"

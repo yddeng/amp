@@ -3,7 +3,7 @@ set -euv
 
 test -d initial || mkdir -p initial
 
-cp ../server/config.json initial/config.json
+cp ../server/center_config.json initial/center_config.json
 
 cd initial
 GOOS=linux GOARCH=amd64 go build ../../server/server.go

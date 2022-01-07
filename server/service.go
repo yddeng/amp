@@ -1,8 +1,9 @@
-package service
+package server
 
 import (
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/logger"
+	"github.com/yddeng/utils/task"
 	"log"
 	"os"
 	"time"
@@ -31,7 +32,10 @@ type WebConfig struct {
 	Nav []*Nav `json:"nav"`
 }
 
-var dataPath string
+var (
+	dataPath  string
+	taskQueue = task.NewTaskPool(1, 2048)
+)
 
 func Service(cfg Config) (err error) {
 	dataPath = cfg.DataPath

@@ -1,4 +1,6 @@
-package service
+package server
+
+import "time"
 
 type nodeInfo struct {
 	Name    string `json:"name"`
@@ -9,7 +11,7 @@ type nodeInfo struct {
 }
 
 func getNodeInfo(cb func(nodes []*nodeInfo)) {
-	centerTaskQueue.Submit(func() {
+	taskQueue.Submit(func() {
 		ninfos := make([]*nodeInfo, 0, len(nodes))
 		for _, n := range nodes {
 			ninfos = append(ninfos, &nodeInfo{
@@ -20,23 +22,7 @@ func getNodeInfo(cb func(nodes []*nodeInfo)) {
 				Online:  n.Online(),
 			})
 		}
-		webTransQueue.Submit(cb, ninfos)
-	})
-}
-
-func getItemList(cb func(items []*Item)) {
-	centerTaskQueue.Submit(func() {
-		rets := make([]*Item, 0, len(itemMgr.Items))
-		for _, v := range itemMgr.Items {
-			rets = append(rets, &Item{
-				ID:       v.ID,
-				User:     v.User,
-				Node:     v.Node,
-				CreateAt: v.CreateAt,
-				UpdateAt: v.UpdateAt,
-				Online:   v.Online,
-			})
-		}
-		webTransQueue.Submit(cb, rets)
+		time.Sleep(time.Second * 5)
+		taskQueue.Submit(cb, ninfos)
 	})
 }

@@ -1,8 +1,7 @@
-package service
+package server
 
 import (
 	"github.com/kataras/iris/v12"
-	"github.com/yddeng/utils/task"
 	"reflect"
 	"sync"
 )
@@ -13,8 +12,6 @@ type Result struct {
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
 }
-
-var webTransQueue = task.NewTaskPool(1, 2048)
 
 type Done struct {
 	route    string
@@ -60,7 +57,7 @@ func transBegin(ctx iris.Context, fn interface{}, args ...reflect.Value) {
 
 	route := getCurrentRoute(ctx)
 	done := newDone(route)
-	if err := webTransQueue.SubmitTask(webTask(func() {
+	if err := taskQueue.SubmitTask(webTask(func() {
 		user, ret := checkToken(ctx, route)
 		if ret.Code != 0 {
 			done.statue = 401

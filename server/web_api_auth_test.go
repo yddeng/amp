@@ -1,4 +1,4 @@
-package service
+package server
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ func startWebListener(t *testing.T) {
 
 	var err error
 	var cfg Config
-	if err = util.DecodeJsonFromFile(&cfg, "../config.json"); err != nil {
+	if err = util.DecodeJsonFromFile(&cfg, "../center_config.json"); err != nil {
 		t.Fatal(err)
 	}
 

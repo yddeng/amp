@@ -1,10 +1,9 @@
-package service
+package server
 
 import (
 	"github.com/golang/protobuf/proto"
 	"github.com/yddeng/dnet"
 	"github.com/yddeng/dnet/drpc"
-	"github.com/yddeng/utils/task"
 	"initial-server/logger"
 	"initial-server/protocol"
 	"log"
@@ -13,8 +12,7 @@ import (
 )
 
 var (
-	centerTaskQueue = task.NewTaskPool(1, 2048)
-	center          *Center
+	center *Center
 )
 
 type Center struct {
@@ -33,13 +31,17 @@ func newCenter(address string) *Center {
 	return c
 }
 
+func (c *Center) Go(n *Node, data proto.Message, callback func(interface{}, error)) error {
+	return c.rpcClient.Go(n, proto.MessageName(data), data, time.Second*5, callback)
+}
+
 func (c *Center) startListener() error {
 	return c.acceptor.ServeFunc(func(conn net.Conn) {
 		dnet.NewTCPSession(conn,
 			dnet.WithCodec(new(protocol.Codec)),
 			//dnet.WithTimeout(time.Second*5, 0),
 			dnet.WithMessageCallback(func(session dnet.Session, data interface{}) {
-				centerTaskQueue.Submit(func() {
+				taskQueue.Submit(func() {
 					switch data.(type) {
 					case *drpc.Request:
 						c.rpcServer.OnRPCRequest(&Node{session: session}, data.(*drpc.Request))
@@ -51,7 +53,7 @@ func (c *Center) startListener() error {
 				})
 			}),
 			dnet.WithCloseCallback(func(session dnet.Session, reason error) {
-				centerTaskQueue.Submit(func() {
+				taskQueue.Submit(func() {
 					logger.GetSugar().Infof("session closed, reason: %s\n", reason)
 					ctx := session.Context()
 					if ctx != nil {
@@ -80,7 +82,7 @@ func (this *Center) start() {
 		timer := time.NewTimer(time.Second)
 		for {
 			<-timer.C
-			centerTaskQueue.Submit(func() {
+			taskQueue.Submit(func() {
 				this.tick()
 				timer.Reset(time.Second)
 			})
