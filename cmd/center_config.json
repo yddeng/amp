@@ -32,6 +32,27 @@
         "path": "/control/startpage"
       },
       {
+        "name": "command",
+        "parentId": 0,
+        "id": 2,
+        "meta": {
+          "icon": "control",
+          "title": "计划任务"
+        },
+        "redirect": "/command/cmdmange",
+        "component": "RouteView"
+      },
+      {
+        "name": "cmdmange",
+        "parentId": 3,
+        "id": 31,
+        "meta": {
+          "title": "我的命令"
+        },
+        "component": "Cmdmange",
+        "path": "/command/cmdmange"
+      },
+      {
         "name": "system",
         "parentId": 0,
         "id": 3,

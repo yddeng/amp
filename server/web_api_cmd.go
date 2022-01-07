@@ -99,7 +99,11 @@ func (*cmdHandler) Update(done *Done, user string, req struct {
 	}
 }
 
-const cmdDefaultTimeout = 10
+const (
+	cmdDefaultTimeout = 60
+	cmdMinTimeout     = 10
+	cmdMaxTimeout     = 86400
+)
 
 func (*cmdHandler) Exec(done *Done, user string, req struct {
 	Name    string            `json:"name"`
@@ -119,9 +123,9 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 	}
 
 	node, ok := nodes[req.Node]
-	if !ok {
+	if !ok || !node.Online() {
 		done.result.Code = 1
-		done.result.Message = "执行客户端不存在"
+		done.result.Message = "执行客户端不存在或不在线"
 		done.Done()
 		return
 	}
@@ -131,9 +135,21 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		context = strings.ReplaceAll(context, fmt.Sprintf("{{%s}}", k), v)
 	}
 
+	// todo 用正则表达式判断
+	if strings.Contains(context, "{{") {
+		done.result.Code = 1
+		done.result.Message = "命令中存在未赋值变量"
+		done.Done()
+		return
+	}
+
 	// 超时时间
-	if req.Timeout < cmdDefaultTimeout {
+	if req.Timeout <= 0 {
 		req.Timeout = cmdDefaultTimeout
+	} else if req.Timeout < cmdMinTimeout {
+		req.Timeout = cmdMinTimeout
+	} else if req.Timeout > cmdMaxTimeout {
+		req.Timeout = cmdMaxTimeout
 	}
 
 	rpcReq := &protocol.CmdExecReq{
