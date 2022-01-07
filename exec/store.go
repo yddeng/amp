@@ -67,7 +67,7 @@ const (
 )
 
 var (
-	apps = map[int]*Application{}
+	apps = map[int32]*Application{}
 )
 
 func init() {

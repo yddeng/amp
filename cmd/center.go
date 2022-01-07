@@ -5,9 +5,11 @@ import (
 	"initial-server/logger"
 	"initial-server/server"
 	"initial-server/util"
+	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 var (
@@ -16,6 +18,8 @@ var (
 
 func main() {
 	flag.Parse()
+
+	rand.Seed(time.Now().UnixNano())
 
 	log := logger.NewZapLogger("server.log", "log", "debug", 100, 14, 1, true)
 	logger.InitLogger(log)
@@ -35,4 +39,5 @@ func main() {
 	select {
 	case <-sigChan:
 	}
+	logger.GetSugar().Info("listen stopping. ")
 }

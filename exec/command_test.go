@@ -10,56 +10,33 @@ import (
 	"time"
 )
 
-func TestCommand(t *testing.T) {
+func TestCommand_Run(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	num := rand.Intn(5) // + 5
 	t.Log(num)
 
 	pros := map[int]*Cmd{}
-	wg := sync.WaitGroup{}
 
 	for i := 0; i < num; i++ {
 		//file, err := exec.LookPath("go")
 		//t.Log(file, err)
-		cmd := Command("../test/test")
+		cmd := Command("./test/test")
 		if err := cmd.Run(func(cmd *Cmd, err error) {
-			wg.Done()
 			// 异步调用过来的
 			if err != nil {
 				// exit or signal
-				t.Error(err)
+				t.Error(cmd.Pid(), err)
 			} else {
-				t.Log("success", cmd.Done(), cmd.Pid(), cmd.ProcessState().ExitCode(), cmd.ProcessState().String())
+				t.Log(cmd.Pid(), "success")
 			}
 		}); err != nil {
 			t.Error(err)
 		} else {
 			pros[i] = cmd
-			wg.Add(1)
 		}
 	}
 
-	for {
-		time.Sleep(time.Millisecond * time.Duration(500+rand.Intn(500)))
-		find := false
-		for _, p := range pros {
-			if !p.Done() {
-				t.Log(p.Pid(), "kill")
-				if err := p.Signal(syscall.SIGTERM); err != nil {
-					t.Log(p.Pid(), "kill", err)
-				}
-				find = true
-				break
-			}
-		}
-		if !find {
-			t.Log("all done")
-			break
-		}
-	}
-
-	wg.Wait()
-
+	time.Sleep(time.Second)
 }
 
 func TestCommandWithCmd(t *testing.T) {
@@ -71,7 +48,7 @@ func TestCommandWithCmd(t *testing.T) {
 	wg := sync.WaitGroup{}
 
 	for i := 0; i < num; i++ {
-		ecmd := exec.Command("../test/test")
+		ecmd := exec.Command("./test/test")
 		errBuff := bytes.Buffer{}
 		ecmd.Stderr = &errBuff
 		outBuff := bytes.Buffer{}
@@ -122,7 +99,7 @@ func TestCommandWithCmd(t *testing.T) {
 }
 
 func TestShell(t *testing.T) {
-	shell := "cd ../test;mkdir test;echo ok"
+	shell := "cd ./test;mkdir test;echo ok"
 	ecmd := exec.Command("/bin/sh", "-c", shell)
 	errBuff := bytes.Buffer{}
 	ecmd.Stderr = &errBuff

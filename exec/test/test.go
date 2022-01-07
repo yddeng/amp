@@ -28,9 +28,12 @@ func main() {
 		pid := os.Getpid()
 		i := 1
 		for {
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)+100))
 			i++
 			fmt.Println(pid, "---", i)
+			if i == 100 {
+				break
+			}
 		}
 	}
 }

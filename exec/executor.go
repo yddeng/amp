@@ -2,253 +2,145 @@ package exec
 
 import (
 	"errors"
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/yddeng/dnet"
 	"github.com/yddeng/dnet/drpc"
 	"github.com/yddeng/utils/task"
 	"initial-server/logger"
 	"initial-server/protocol"
-	"io/ioutil"
-	"log"
+	"math/rand"
 	"net"
 	"os"
-	"os/exec"
-	"path"
-	"strconv"
-	"strings"
-	"syscall"
 	"time"
 )
 
-type Client struct {
+type Config struct {
+	Name     string `json:"name"`
+	Inet     string `json:"inet"`
+	Net      string `json:"net"`
+	Center   string `json:"center"`
+	DataPath string `json:"data_path"`
+}
+
+type Executor struct {
 	cfg       *Config
 	dialing   bool
-	taskPool  *task.TaskPool
 	session   dnet.Session
+	taskPool  *task.TaskPool
 	rpcServer *drpc.Server
 	rpcClient *drpc.Client
-
-	execInfos    map[int32]*execInfo
-	execFilename string
 }
 
-func (c *Client) SendRequest(req *drpc.Request) error {
-	return c.session.Send(req)
+func (er *Executor) SendRequest(req *drpc.Request) error {
+	return er.session.Send(req)
 }
 
-func (c *Client) SendResponse(resp *drpc.Response) error {
-	return c.session.Send(resp)
+func (er *Executor) SendResponse(resp *drpc.Response) error {
+	return er.session.Send(resp)
 }
 
-func (c *Client) Go(data proto.Message, callback func(interface{}, error)) error {
-	return c.rpcClient.Go(c, proto.MessageName(data), data, time.Second*5, callback)
+func (er *Executor) Go(data proto.Message, callback func(interface{}, error)) error {
+	return er.rpcClient.Go(er, proto.MessageName(data), data, time.Second*5, callback)
 }
 
-/*
-func (this *Client) Call(data proto.Message) (interface{}, error) {
-	return this.rpcClient.Call(this, proto.MessageName(data), data, time.Second*5)
+func (er *Executor) Submit(fn interface{}, args ...interface{}) error {
+	return er.taskPool.Submit(fn, args...)
 }
-*/
-func (c *Client) dial() {
-	if c.session != nil || c.dialing {
+
+func (er *Executor) dial() {
+	if er.session != nil || er.dialing {
 		return
 	}
 
-	c.dialing = true
+	er.dialing = true
 
 	go func() {
 		for {
-			conn, err := dnet.DialTCP(c.cfg.Center, time.Second*5)
+			conn, err := dnet.DialTCP(er.cfg.Center, time.Second*5)
 			if nil == err {
-				c.onConnected(conn)
+				er.onConnected(conn)
 				return
 			} else {
-				log.Println(err)
-				time.Sleep(1 * time.Second)
+				time.Sleep(time.Millisecond * time.Duration(rand.Intn(1000)+500))
 			}
 		}
 	}()
 }
 
-func (c *Client) onConnected(conn net.Conn) {
-	c.taskPool.Submit(func() {
-		c.dialing = false
-		c.session = dnet.NewTCPSession(conn,
+func (er *Executor) onConnected(conn net.Conn) {
+	er.Submit(func() {
+		er.dialing = false
+		er.session = dnet.NewTCPSession(conn,
 			dnet.WithCodec(new(protocol.Codec)),
 			dnet.WithMessageCallback(func(session dnet.Session, data interface{}) {
-				c.taskPool.Submit(func() {
+				er.Submit(func() {
 					switch data.(type) {
 					case *drpc.Request:
-						c.rpcServer.OnRPCRequest(c, data.(*drpc.Request))
+						er.rpcServer.OnRPCRequest(er, data.(*drpc.Request))
 					case *drpc.Response:
-						c.rpcClient.OnRPCResponse(data.(*drpc.Response))
+						er.rpcClient.OnRPCResponse(data.(*drpc.Response))
 					case *protocol.Message:
-						c.dispatchMsg(session, data.(*protocol.Message))
+						er.dispatchMsg(session, data.(*protocol.Message))
 					}
 				})
 			}),
 			dnet.WithCloseCallback(func(session dnet.Session, reason error) {
-				c.taskPool.Submit(func() {
-					c.session = nil
+				er.Submit(func() {
+					er.session = nil
 					logger.GetSugar().Infof("session closed, reason: %s\n", reason)
-					time.Sleep(time.Second)
-					c.dial()
+					er.dial()
 				})
 
 			}))
 
 		// login
-		if err := c.Go(&protocol.LoginReq{
-			Name: c.cfg.Name,
-			Net:  c.cfg.Net,
-			Inet: c.cfg.Inet,
-		}, func(i interface{}, e error) {
-			if e != nil {
-				c.session.Close(e)
-				return
+		if err := er.Go(&protocol.LoginReq{
+			Name: er.cfg.Name,
+			Net:  er.cfg.Net,
+			Inet: er.cfg.Inet,
+		}, func(i interface{}, err error) {
+			if err != nil {
+				er.session.Close(err)
+				panic(err)
 			}
 			resp := i.(*protocol.LoginResp)
 			if resp.GetCode() != "" {
-				e = errors.New(resp.GetCode())
-				c.session.Close(e)
-				panic(e)
+				err = errors.New(resp.GetCode())
+				er.session.Close(err)
+				panic(err)
 			}
 		}); err != nil {
-			c.session.Close(err)
+			er.session.Close(err)
+			panic(err)
 		}
 
 	})
 
 }
 
-func (c *Client) dispatchMsg(session dnet.Session, msg *protocol.Message) {}
+func (er *Executor) dispatchMsg(session dnet.Session, msg *protocol.Message) {}
 
-type Config struct {
-	Name     string
-	Inet     string
-	Net      string
-	Center   string
-	FilePath string
-}
+var er *Executor
 
-func NewClient(cfg Config) *Client {
-	c := new(Client)
-	c.cfg = &cfg
-	c.taskPool = task.NewTaskPool(1, 1024)
-	c.rpcClient = drpc.NewClient()
-	c.rpcServer = drpc.NewServer()
+func Start(cfg Config) (err error) {
 
-	os.MkdirAll(cfg.FilePath, os.ModePerm)
-	c.execFilename = path.Join(cfg.FilePath, dataFile)
-	c.execInfos = loadExecInfo(c.execFilename)
-
-	c.rpcServer.Register(proto.MessageName(&protocol.StartReq{}), c.onStart)
-	c.rpcServer.Register(proto.MessageName(&protocol.SignalReq{}), c.onSignal)
-	c.rpcServer.Register(proto.MessageName(&protocol.ItemStatueReq{}), c.onItemStatus)
-	c.rpcServer.Register(proto.MessageName(&protocol.PanicLogReq{}), c.onPanicLog)
-	return c
-}
-
-func (c *Client) Start() {
-	c.taskPool.Submit(c.dial)
-}
-
-func (c *Client) onStart(replier *drpc.Replier, req interface{}) {
-	msg := req.(*protocol.StartReq)
-	logger.GetSugar().Infof("onStart %v\n", msg)
-
-	itemID := msg.GetItemID()
-	info, ok := c.execInfos[itemID]
-	if ok && info.isAlive() {
-		replier.Reply(&protocol.StartResp{Code: "itemID is started"}, nil)
+	_ = os.MkdirAll(cfg.DataPath, os.ModePerm)
+	if err = loadStore(cfg.DataPath); err != nil {
 		return
 	}
 
-	shell := fmt.Sprintf("nohup %s deploy > /dev/null 2> %s/item_%d.log & echo $!", msg.GetArgs(), c.cfg.FilePath, itemID)
-	logger.GetSugar().Debug(itemID, shell)
-	cmd := exec.Command("sh", "-c", shell)
-	out, err := cmd.Output()
-	if err != nil {
-		replier.Reply(&protocol.StartResp{Code: err.Error()}, nil)
-		logger.GetSugar().Errorf(err.Error())
-		return
-	}
+	er = new(Executor)
+	er.cfg = &cfg
+	er.taskPool = task.NewTaskPool(1, 1024)
+	er.rpcClient = drpc.NewClient()
+	er.rpcServer = drpc.NewServer()
 
-	// 进程pid
-	str := strings.Split(string(out), "\n")[0]
-	pid, err := strconv.Atoi(str)
-	if nil != err {
-		logger.GetSugar().Error("strconv.Atoi pid error:", string(out), err)
-		replier.Reply(&protocol.StartResp{Code: "parseInt pid error"}, nil)
-		return
-	}
+	//er.rpcServer.Register(proto.MessageName(&protocol.StartReq{}), er.onStart)
+	//er.rpcServer.Register(proto.MessageName(&protocol.SignalReq{}), er.onSignal)
+	//er.rpcServer.Register(proto.MessageName(&protocol.ItemStatueReq{}), er.onItemStatus)
+	//er.rpcServer.Register(proto.MessageName(&protocol.PanicLogReq{}), er.onPanicLog)
 
-	c.addExecInfo(itemID, pid)
-	logger.GetSugar().Infof("start ok,itemID %d pid %d", itemID, pid)
-	replier.Reply(&protocol.StartResp{}, nil)
-}
+	er.Submit(er.dial)
 
-func (c *Client) onSignal(replier *drpc.Replier, req interface{}) {
-	msg := req.(*protocol.SignalReq)
-	logger.GetSugar().Infof("onSignal %v\n", msg)
-
-	itemID := msg.GetItemID()
-	p, ok := c.execInfos[itemID]
-	if !ok {
-		replier.Reply(&protocol.SignalResp{Code: "itemID not exist"}, nil)
-		return
-	}
-
-	signal := syscall.Signal(msg.GetSignal())
-	var err error
-	switch signal {
-	case syscall.SIGTERM:
-		if err = syscall.Kill(p.Pid, syscall.SIGTERM); err == nil {
-			c.delExecInfo(itemID)
-		}
-	case syscall.SIGKILL:
-		if err = syscall.Kill(p.Pid, syscall.SIGKILL); err == nil {
-			c.delExecInfo(itemID)
-		}
-	default:
-		err = syscall.Kill(p.Pid, signal)
-	}
-	if err != nil {
-		replier.Reply(&protocol.SignalResp{Code: err.Error()}, nil)
-		logger.GetSugar().Errorf(err.Error())
-		return
-	}
-
-	logger.GetSugar().Infof("signal ok, itemID %d", itemID)
-	replier.Reply(&protocol.SignalResp{}, nil)
-}
-
-func (c *Client) onItemStatus(replier *drpc.Replier, req interface{}) {
-	resp := &protocol.ItemStatueResp{
-		Items: make(map[int32]*protocol.ItemStatue, len(c.execInfos)),
-	}
-
-	for _, v := range c.execInfos {
-		resp.Items[v.ItemID] = &protocol.ItemStatue{
-			ItemID:    v.ItemID,
-			Pid:       int32(v.Pid),
-			Timestamp: v.Timestamp,
-			IsAlive:   v.isAlive(),
-		}
-	}
-	replier.Reply(resp, nil)
-}
-
-func (c *Client) onPanicLog(replier *drpc.Replier, req interface{}) {
-	msg := req.(*protocol.PanicLogReq)
-	logger.GetSugar().Infof("onPanicLog %v\n", msg)
-
-	filename := fmt.Sprintf("%s/item_%d.log", c.cfg.FilePath, msg.GetItemID())
-	if data, err := ioutil.ReadFile(filename); err != nil {
-		logger.GetSugar().Error(err)
-		replier.Reply(&protocol.PanicLogResp{Code: err.Error()}, nil)
-	} else {
-		replier.Reply(&protocol.PanicLogResp{Msg: string(data)}, nil)
-	}
+	return nil
 }

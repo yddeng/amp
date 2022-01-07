@@ -10,6 +10,7 @@ message loginResp{
     string code = 1;
 }
 
+
 message startReq{
     int32  itemID = 1;
     bytes  config = 2;
