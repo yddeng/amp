@@ -7,21 +7,6 @@ import (
 
 type nodeHandler struct{}
 
-func listRange(pageNo, pageSize, length int) (start int, end int) {
-	start = (pageNo - 1) * pageSize
-	if start < 0 {
-		start = 0
-	}
-	if start > length {
-		start = length
-	}
-	end = start + pageSize
-	if end > length {
-		end = length
-	}
-	return
-}
-
 func (*nodeHandler) List(done *Done, user string, req struct {
 	PageNo   int `json:"pageNo"`
 	PageSize int `json:"pageSize"`

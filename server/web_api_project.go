@@ -178,6 +178,7 @@ func (*templateHandler) Delete(done *Done, user string, req struct {
 	if _, ok := temps[req.Name]; !ok {
 		done.result.Code = 1
 		done.result.Message = "不存在的模版名"
+		return
 	}
 	delete(temps, req.Name)
 	saveStore(snTemplate)

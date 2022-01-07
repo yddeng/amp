@@ -82,26 +82,26 @@ func Unmarshal(namespace string, id uint16, buff []byte) (interface{}, error) {
 }
 
 const (
-	CmdLogin      = 1
-	CmdStart      = 2
-	CmdSignal     = 3
-	CmdItemStatue = 4
-	CmdPanicLog   = 5
+	CmdLogin     = 1
+	CmdCmdExec   = 6
+	CmdAppExec   = 7
+	CmdAppSignal = 8
+	CmdAppStatue = 9
 )
 
 func init() {
 	Register("req", &LoginReq{}, CmdLogin)
 	Register("resp", &LoginResp{}, CmdLogin)
 
-	Register("req", &StartReq{}, CmdStart)
-	Register("resp", &StartResp{}, CmdStart)
+	Register("req", &CmdExecReq{}, CmdCmdExec)
+	Register("resp", &CmdExecResp{}, CmdCmdExec)
 
-	Register("req", &SignalReq{}, CmdSignal)
-	Register("resp", &SignalResp{}, CmdSignal)
+	Register("req", &AppExecReq{}, CmdAppExec)
+	Register("resp", &AppExecResp{}, CmdAppExec)
 
-	Register("req", &ItemStatueReq{}, CmdItemStatue)
-	Register("resp", &ItemStatueResp{}, CmdItemStatue)
+	Register("req", &AppSignalReq{}, CmdAppSignal)
+	Register("resp", &AppSignalResp{}, CmdAppSignal)
 
-	Register("req", &PanicLogReq{}, CmdPanicLog)
-	Register("resp", &PanicLogResp{}, CmdPanicLog)
+	Register("req", &AppStatueReq{}, CmdAppStatue)
+	Register("resp", &AppStatueResp{}, CmdAppStatue)
 }

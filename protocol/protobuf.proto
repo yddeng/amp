@@ -10,41 +10,41 @@ message loginResp{
     string code = 1;
 }
 
-
-message startReq{
-    int32  itemID = 1;
-    bytes  config = 2;
-    string args   = 3;
+message cmdExecReq{
+    string dir  = 1; // 执行目录
+    string name = 2;
+    repeated string args = 3;
+    int32  timeout = 4;
 }
-message startResp{
-    string code = 1;
+message cmdExecResp{
+    string code   = 1;
+    string outStr = 2;
 }
 
-message signalReq{
-    int32 itemID = 1;
+message appExecReq{
+    int32 appID = 1;
+}
+message appExecResp{
+    string code   = 1;
+    string errStr = 2;
+}
+
+message appSignalReq{
+    int32 appID = 1;
     int32 signal = 2;
 }
-message signalResp{
+message appSignalResp{
     string code = 1;
 }
 
-
-message itemStatueReq{}
-message itemStatueResp{
-    map<int32,itemStatue>  items = 1;
+message appStatueReq{}
+message appStatueResp{
+    map<int32,appStatue>  apps = 1;
 }
 
-message itemStatue{
-    int32  itemID    = 1;
+message appStatue{
+    int32  appID     = 1;
     int32  pid       = 2;
-    int64  timestamp = 3;
+    int64  createAt  = 3;
     bool   isAlive   = 4;
-}
-
-message panicLogReq{
-    int32  itemID = 1;
-}
-message panicLogResp{
-    string code = 1;
-    string msg  = 2;
 }

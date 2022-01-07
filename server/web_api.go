@@ -193,6 +193,21 @@ func checkPermission(ctx iris.Context, route, user string) (ret Result) {
 	return
 }
 
+func listRange(pageNo, pageSize, length int) (start int, end int) {
+	start = (pageNo - 1) * pageSize
+	if start < 0 {
+		start = 0
+	}
+	if start > length {
+		start = length
+	}
+	end = start + pageSize
+	if end > length {
+		end = length
+	}
+	return
+}
+
 func initHandler(app *iris.Application) {
 	authHandle := new(authHandler)
 	authRouter := app.Party("/auth")
@@ -210,6 +225,14 @@ func initHandler(app *iris.Application) {
 	nodeHandle := new(nodeHandler)
 	nodeRouter := app.Party("/node")
 	nodeRouter.Get("/list", warpHandle(nodeHandle.List))
+
+	cmdHandle := new(cmdHandler)
+	cmdRouter := app.Party("/cmd")
+	cmdRouter.Get("/list", warpHandle(cmdHandle.List))
+	cmdRouter.Post("/create", warpHandle(cmdHandle.Create))
+	cmdRouter.Post("/delete", warpHandle(cmdHandle.Delete))
+	cmdRouter.Post("/update", warpHandle(cmdHandle.Update))
+	cmdRouter.Post("/exec", warpHandle(cmdHandle.Exec))
 
 	{
 		projectRouter := app.Party("/project")

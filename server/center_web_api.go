@@ -1,7 +1,5 @@
 package server
 
-import "time"
-
 type nodeInfo struct {
 	Name    string `json:"name"`
 	Inet    string `json:"inet"`
@@ -22,7 +20,6 @@ func getNodeInfo(cb func(nodes []*nodeInfo)) {
 				Online:  n.Online(),
 			})
 		}
-		time.Sleep(time.Second * 5)
 		taskQueue.Submit(cb, ninfos)
 	})
 }

@@ -160,6 +160,25 @@ func (store *cluMgrStore) Save() {
 	_ = util.EncodeJsonToFile(cluMgr, store.filename)
 }
 
+type cmdStore struct {
+	storeBase
+}
+
+func (store *cmdStore) Load(dataPath string) (err error) {
+	store.filename = path.Join(dataPath, store.file)
+	if err = util.DecodeJsonFromFile(&cmdMap, store.filename); err != nil {
+		if os.IsNotExist(err) {
+			err = nil
+		}
+		return
+	}
+	return
+}
+
+func (store *cmdStore) Save() {
+	_ = util.EncodeJsonToFile(cmdMap, store.filename)
+}
+
 type storeName string
 
 const (
@@ -169,6 +188,7 @@ const (
 	snAdmin    storeName = "admin"
 	snTemplate storeName = "template"
 	snCluMgr   storeName = "clu_mgr"
+	snCmd      storeName = "command"
 )
 
 var (
@@ -178,6 +198,7 @@ var (
 	nodes   = map[string]*Node{}
 	temps   = map[string]*Template{} // web
 	cluMgr  *ClusterMgr
+	cmdMap  = map[string]*Cmd{}
 )
 
 func init() {
@@ -198,5 +219,8 @@ func init() {
 	}}
 	stores[snCluMgr] = &cluMgrStore{storeBase{
 		file: "clu_mgr.json",
+	}}
+	stores[snCmd] = &cmdStore{storeBase{
+		file: "command.json",
 	}}
 }

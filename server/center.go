@@ -31,8 +31,8 @@ func newCenter(address string) *Center {
 	return c
 }
 
-func (c *Center) Go(n *Node, data proto.Message, callback func(interface{}, error)) error {
-	return c.rpcClient.Go(n, proto.MessageName(data), data, time.Second*5, callback)
+func (c *Center) Go(n *Node, data proto.Message, timeout time.Duration, callback func(interface{}, error)) error {
+	return c.rpcClient.Go(n, proto.MessageName(data), data, timeout, callback)
 }
 
 func (c *Center) startListener() error {

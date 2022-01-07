@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+	"time"
 )
 
 type Cmd struct {
@@ -19,11 +20,23 @@ func (cmd *Cmd) String() string {
 }
 
 // 异步执行
-func (cmd *Cmd) Run(fn func(cmd *Cmd, err error)) error {
+func (cmd *Cmd) Run(timeout int, fn func(cmd *Cmd, err error)) error {
 	cmd.doneFn = fn
 
 	if err := cmd.cmd.Start(); err != nil {
 		return err
+	}
+
+	if timeout > 0 {
+		go func() {
+			timer := time.NewTimer(time.Second * time.Duration(timeout))
+			select {
+			case <-cmd.done:
+				timer.Stop()
+			case <-timer.C:
+				_ = cmd.Kill()
+			}
+		}()
 	}
 
 	go func() {

@@ -1,6 +1,11 @@
 package exec
 
 import (
+	"bytes"
+	"github.com/yddeng/dnet/drpc"
+	"initial-server/logger"
+	"initial-server/protocol"
+	"os/exec"
 	"syscall"
 )
 
@@ -15,6 +20,67 @@ func (app *Application) isAlive() bool {
 		return true
 	}
 	return false
+}
+
+/*
+func (er *Executor) onAppExec(replier *drpc.Replier, req interface{}) {
+	msg := req.(*protocol.AppExecReq)
+	logger.GetSugar().Infof("onAppExec %v\n", msg)
+
+	ecmd := exec.Command(msg.GetName(), msg.GetArgs()...)
+	ecmd.Dir = msg.GetPath()
+
+	errBuff := bytes.Buffer{}
+	ecmd.Stderr = &errBuff
+	outBuff := bytes.Buffer{}
+	ecmd.Stdout = &outBuff
+
+	cmd := CommandWithCmd(ecmd)
+	if err := cmd.Run(func(cmd *Cmd, err error) {
+		er.Submit(func() {
+			if err != nil { // exit or signal
+				_ = replier.Reply(&protocol.CmdExecResp{Code: err.Error()}, nil)
+			} else {
+				_ = replier.Reply(&protocol.CmdExecResp{ErrStr: errBuff.String(), OutStr: outBuff.String()}, nil)
+			}
+		})
+	}); err != nil {
+		_ = replier.Reply(&protocol.CmdExecResp{Code: err.Error()}, nil)
+	}
+}
+*/
+
+func (er *Executor) onCmdExec(replier *drpc.Replier, req interface{}) {
+	msg := req.(*protocol.CmdExecReq)
+	logger.GetSugar().Infof("onCmdExec %v", msg)
+
+	ecmd := exec.Command(msg.GetName(), msg.GetArgs()...)
+	ecmd.Dir = msg.GetDir()
+
+	//errBuff := bytes.Buffer{}
+	outBuff := bytes.Buffer{}
+	ecmd.Stderr = &outBuff
+	ecmd.Stdout = &outBuff
+
+	cmd := CommandWithCmd(ecmd)
+	if err := cmd.Run(int(msg.GetTimeout()), func(cmd *Cmd, err error) {
+		er.Submit(func() {
+			if err != nil {
+				// exit or signal
+				if cmd.ProcessState().Exited() {
+					// 执行出错
+					_ = replier.Reply(&protocol.CmdExecResp{OutStr: outBuff.String()}, nil)
+				} else {
+					// 超时
+					_ = replier.Reply(&protocol.CmdExecResp{Code: err.Error()}, nil)
+				}
+			} else {
+				_ = replier.Reply(&protocol.CmdExecResp{OutStr: outBuff.String()}, nil)
+			}
+		})
+	}); err != nil {
+		_ = replier.Reply(&protocol.CmdExecResp{Code: err.Error()}, nil)
+	}
 }
 
 /*

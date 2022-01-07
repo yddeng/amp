@@ -87,7 +87,7 @@ func (er *Executor) onConnected(conn net.Conn) {
 			dnet.WithCloseCallback(func(session dnet.Session, reason error) {
 				er.Submit(func() {
 					er.session = nil
-					logger.GetSugar().Infof("session closed, reason: %s\n", reason)
+					logger.GetSugar().Infof("session closed, reason: %s", reason)
 					er.dial()
 				})
 
@@ -135,6 +135,7 @@ func Start(cfg Config) (err error) {
 	er.rpcClient = drpc.NewClient()
 	er.rpcServer = drpc.NewServer()
 
+	er.rpcServer.Register(proto.MessageName(&protocol.CmdExecReq{}), er.onCmdExec)
 	//er.rpcServer.Register(proto.MessageName(&protocol.StartReq{}), er.onStart)
 	//er.rpcServer.Register(proto.MessageName(&protocol.SignalReq{}), er.onSignal)
 	//er.rpcServer.Register(proto.MessageName(&protocol.ItemStatueReq{}), er.onItemStatus)

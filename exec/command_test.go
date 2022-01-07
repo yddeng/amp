@@ -21,7 +21,7 @@ func TestCommand_Run(t *testing.T) {
 		//file, err := exec.LookPath("go")
 		//t.Log(file, err)
 		cmd := Command("./test/test")
-		if err := cmd.Run(func(cmd *Cmd, err error) {
+		if err := cmd.Run(0, func(cmd *Cmd, err error) {
 			// 异步调用过来的
 			if err != nil {
 				// exit or signal
@@ -56,7 +56,7 @@ func TestCommandWithCmd(t *testing.T) {
 		cmd := CommandWithCmd(ecmd)
 		pros[i] = cmd
 		wg.Add(1)
-		if err := cmd.Run(func(cmd *Cmd, err error) {
+		if err := cmd.Run(0, func(cmd *Cmd, err error) {
 			wg.Done()
 			// 异步调用过来的
 			if err != nil {
@@ -99,26 +99,28 @@ func TestCommandWithCmd(t *testing.T) {
 }
 
 func TestShell(t *testing.T) {
-	shell := "cd ./test;mkdir test;echo ok"
+	shell := "set -euv;mkdir sh;sleep 3s;echo ok"
 	ecmd := exec.Command("/bin/sh", "-c", shell)
-	errBuff := bytes.Buffer{}
-	ecmd.Stderr = &errBuff
+	ecmd.Dir = "./test"
 	outBuff := bytes.Buffer{}
+	//errBuff := bytes.Buffer{}
+	ecmd.Stderr = &outBuff
 	ecmd.Stdout = &outBuff
 	cmd := CommandWithCmd(ecmd)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	if err := cmd.Run(func(cmd *Cmd, err error) {
+	if err := cmd.Run(2, func(cmd *Cmd, err error) {
 		// 异步调用过来的
 		if err != nil {
+			t.Error(err, "--", outBuff.String())
 			// exit or signal
 			if cmd.ProcessState().Exited() {
-				t.Error("exited", errBuff.String())
+				t.Error(outBuff.String())
 			} else {
-				t.Error("signal", errBuff.String())
+				t.Error(err)
 			}
 		} else {
-			t.Log("success", errBuff.String(), outBuff.String())
+			t.Log("success", outBuff.String())
 		}
 		wg.Done()
 	}); err != nil {
