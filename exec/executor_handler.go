@@ -71,8 +71,12 @@ func (er *Executor) onCmdExec(replier *drpc.Replier, req interface{}) {
 					// 执行出错
 					_ = replier.Reply(&protocol.CmdExecResp{OutStr: outBuff.String()}, nil)
 				} else {
-					// 超时
-					_ = replier.Reply(&protocol.CmdExecResp{Code: err.Error()}, nil)
+					if err.Error() == "signal: killed" {
+						// 超时 kill
+						_ = replier.Reply(&protocol.CmdExecResp{Code: "执行超时，已终止"}, nil)
+					} else {
+						_ = replier.Reply(&protocol.CmdExecResp{Code: err.Error()}, nil)
+					}
 				}
 			} else {
 				_ = replier.Reply(&protocol.CmdExecResp{OutStr: outBuff.String()}, nil)

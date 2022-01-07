@@ -23,7 +23,7 @@ func TestCmdHandler_List(t *testing.T) {
 			Name    string `json:"name"`
 			Dir     string `json:"dir"`
 			Context string `json:"context"`
-		}{Name: "test", Dir: "", Context: "sleep 11s;ps -ef | grep {{name}}"})
+		}{Name: "test", Dir: "", Context: "sleep 11s;mkdir {{name}};echo ok"})
 
 		ret, err := req.ToString()
 		t.Log(err, ret)
@@ -52,7 +52,7 @@ func TestCmdHandler_List(t *testing.T) {
 			Args    map[string]string `json:"args"`
 			Node    string            `json:"node"`
 			Timeout int               `json:"timeout"`
-		}{Name: "test", Args: map[string]string{"name": "initial"}, Node: "executor", Timeout: 12})
+		}{Name: "test", Args: map[string]string{"name": "tttt"}, Node: "executor", Timeout: 12})
 
 		ret, err := req.ToString()
 		t.Log(err, ret)
