@@ -1,0 +1,7 @@
+{
+  "name": "executor",
+  "net":      "",
+  "inet":     "10.128.2.123",
+  "center":   "10.128.2.123:40155",
+  "data_path": "./data"
+}

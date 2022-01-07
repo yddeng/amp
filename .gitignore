@@ -7,9 +7,11 @@
 .idea
 .DS_Store
 
-server/server
+cmd/center
+cmd/executor
 
 data/
 log/
 
 uplaod/initial/
+exec/test/test

@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"initial-server/logger"
-	"initial-server/server/service"
+	"initial-server/server"
 	"initial-server/util"
 	"os"
 	"os/signal"
@@ -21,12 +21,12 @@ func main() {
 	logger.InitLogger(log)
 
 	var err error
-	var cfg service.Config
+	var cfg server.Config
 	if err = util.DecodeJsonFromFile(&cfg, *file); err != nil {
 		panic(err)
 	}
 
-	if err = service.Service(cfg); err != nil {
+	if err = server.Service(cfg); err != nil {
 		panic(err)
 	}
 

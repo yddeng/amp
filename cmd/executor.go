@@ -1,14 +1,27 @@
 package main
 
 import (
+	"initial-server/exec"
 	"initial-server/logger"
-	"initial-server/node/client"
+	"initial-server/server"
+	"initial-server/util"
 )
 
 func main() {
 	log := logger.NewZapLogger("client.log", "log", "debug", 100, 14, 1, true)
 	logger.InitLogger(log)
-	c := client.NewClient(client.Config{
+
+	var err error
+	var cfg exec.Config
+	if err = util.DecodeJsonFromFile(&cfg, *file); err != nil {
+		panic(err)
+	}
+
+	if err = exec.Service(cfg); err != nil {
+		panic(err)
+	}
+
+	c := exec.NewClient(exec.Config{
 		Name:     "client",
 		Net:      "",
 		Inet:     "10.128.2.123",
