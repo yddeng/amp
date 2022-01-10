@@ -11,13 +11,25 @@ import (
 )
 
 type Cmd struct {
-	Name     string            `json:"name"`
-	Dir      string            `json:"dir"`
-	Context  string            `json:"context"`
-	Args     map[string]string `json:"args"`
-	User     string            `json:"user"`
-	CreateAt int64             `json:"create_at"`
-	doing    bool
+	Name     string              `json:"name"`
+	Dir      string              `json:"dir"`
+	Context  string              `json:"context"`
+	Args     map[string]string   `json:"args"`
+	User     string              `json:"user"`
+	CreateAt int64               `json:"create_at"`
+	LogID    int                 `json:"log_id"`
+	Logs     []*CmdLog           `json:"logs"`
+	doing    map[string]struct{} // 节点正在执行
+}
+
+type CmdLog struct {
+	ID       int    `json:"id"`
+	CreateAt int64  `json:"create_at"` // 执行时间
+	User     string `json:"user"`      // 执行用户
+	Node     string `json:"node"`      // 执行的节点
+	Context  string `json:"context"`   // 执行内容
+	ResultAt int64  `json:"result_at"` // 执行结果时间
+	Result   string `json:"result"`    // 执行结果
 }
 
 type cmdHandler struct {
@@ -123,6 +135,7 @@ const (
 	cmdDefaultTimeout = 60
 	cmdMinTimeout     = 10
 	cmdMaxTimeout     = 86400
+	cmdLogCapacity    = 20
 )
 
 func (*cmdHandler) Exec(done *Done, user string, req struct {
@@ -135,9 +148,9 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 
 	cmd, ok := cmdMap[req.Name]
-	if !ok || cmd.doing {
+	if !ok {
 		done.result.Code = 1
-		done.result.Message = "不存在的命令或正在执行"
+		done.result.Message = "不存在的命令"
 		done.Done()
 		return
 	}
@@ -146,6 +159,16 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 	if !ok || !node.Online() {
 		done.result.Code = 1
 		done.result.Message = "执行客户端不存在或不在线"
+		done.Done()
+		return
+	}
+
+	if cmd.doing == nil {
+		cmd.doing = map[string]struct{}{}
+	}
+	if _, ok := cmd.doing[req.Node]; ok {
+		done.result.Code = 1
+		done.result.Message = "当前命令正在该节点上执行"
 		done.Done()
 		return
 	}
@@ -172,7 +195,37 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		req.Timeout = cmdMaxTimeout
 	}
 
-	cmd.doing = true
+	// 执行日志
+	cmd.LogID++
+	logID := cmd.LogID
+	cmdLog := &CmdLog{
+		ID:       logID,
+		CreateAt: NowUnix(),
+		User:     user,
+		Node:     req.Node,
+		Context:  context,
+	}
+	cmd.Logs = append(cmd.Logs, cmdLog)
+	if len(cmd.Logs) > cmdLogCapacity {
+		cmd.Logs = cmd.Logs[1:]
+	}
+	saveStore(snCmd)
+
+	cmdResult := func(logID int, ret string) {
+		var _cmdLog *CmdLog
+		for _, v := range cmd.Logs {
+			if v.ID == logID {
+				_cmdLog = v
+			}
+		}
+		if _cmdLog != nil {
+			_cmdLog.ResultAt = NowUnix()
+			_cmdLog.Result = ret
+			saveStore(snCmd)
+		}
+	}
+
+	cmd.doing[req.Node] = struct{}{}
 	rpcReq := &protocol.CmdExecReq{
 		Dir:     req.Dir,
 		Name:    "/bin/sh",
@@ -185,17 +238,37 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		if rpcResp.GetCode() != "" {
 			done.result.Code = 1
 			done.result.Message = rpcResp.GetCode()
+			cmdResult(logID, rpcResp.GetCode())
 		} else {
 			done.result.Data = struct {
 				Output string `json:"output"`
 			}{Output: rpcResp.GetOutStr()}
+			cmdResult(logID, rpcResp.GetOutStr())
 		}
-		cmd.doing = false
+		delete(cmd.doing, req.Node)
 		done.Done()
 	}); err != nil {
 		log.Println(err)
-		cmd.doing = false
+		delete(cmd.doing, req.Node)
+		cmdResult(logID, err.Error())
 		done.Done()
 	}
 
+}
+
+func (*cmdHandler) Log(done *Done, user string, req struct {
+	Name     string `json:"name"`
+	PageNo   int    `json:"pageNo"`
+	PageSize int    `json:"pageSize"`
+}) {
+	log.Printf("%s by(%s) %v\n", done.route, user, req)
+	defer func() { done.Done() }()
+
+	if cmd, ok := cmdMap[req.Name]; !ok {
+		done.result.Code = 1
+		done.result.Message = "不存在的命令名"
+	} else {
+		start, end := listRange(req.PageNo, req.PageSize, len(cmd.Logs))
+		done.result.Data = cmd.Logs[start:end]
+	}
 }

@@ -129,7 +129,7 @@ func (this *LineBuffer) Write(p []byte) (n int, err error) {
 		if err != nil {
 			break
 		}
-		if len(this.line) > this.cnt {
+		if len(this.line) >= this.cnt {
 			this.line = append(this.line[1:], line)
 		} else {
 			this.line = append(this.line, line)

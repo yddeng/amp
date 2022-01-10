@@ -233,6 +233,7 @@ func initHandler(app *iris.Application) {
 	cmdRouter.Post("/delete", warpHandle(cmdHandle.Delete))
 	cmdRouter.Post("/update", warpHandle(cmdHandle.Update))
 	cmdRouter.Post("/exec", warpHandle(cmdHandle.Exec))
+	cmdRouter.Get("/log", warpHandle(cmdHandle.Log))
 
 	{
 		projectRouter := app.Party("/project")

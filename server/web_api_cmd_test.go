@@ -63,4 +63,18 @@ func TestCmdHandler_List(t *testing.T) {
 			fmt.Println(v)
 		}
 	}
+
+	{
+		//log
+		req, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/cmd/log", address), "GET")
+		req.SetHeader("Access-Token", token)
+		req.WriteJSON(struct {
+			Name     string `json:"name"`
+			PageNo   int    `json:"pageNo"`
+			PageSize int    `json:"pageSize"`
+		}{Name: "test", PageNo: 1, PageSize: 10})
+
+		ret, err := req.ToString()
+		t.Log(err, ret)
+	}
 }
