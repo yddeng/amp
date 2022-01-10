@@ -128,7 +128,16 @@ func (*templateHandler) List(done *Done, user string, req struct {
 	})
 
 	start, end := listRange(req.PageNo, req.PageSize, len(s))
-	done.result.Data = s[start:end]
+	done.result.Data = struct {
+		PageNo       int         `json:"pageNo"`
+		PageSize     int         `json:"pageSize"`
+		TotalCount   int         `json:"totalCount"`
+		TemplateList []*Template `json:"templateList"`
+	}{PageNo: req.PageNo,
+		PageSize:     req.PageSize,
+		TotalCount:   len(s),
+		TemplateList: s[start:end],
+	}
 }
 
 func (*templateHandler) Create(done *Done, user string, req struct {

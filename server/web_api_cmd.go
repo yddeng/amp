@@ -5,6 +5,7 @@ import (
 	"github.com/yddeng/dnet/drpc"
 	"initial-server/protocol"
 	"log"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -32,6 +33,19 @@ type CmdLog struct {
 	Result   string `json:"result"`    // 执行结果
 }
 
+// 返回变量名
+func cmdContextReg(str string) map[string]struct{} {
+	reg := regexp.MustCompile(`\{\{([^\s]+)\}\}`)
+	n := reg.FindAllString(str, -1)
+	names := map[string]struct{}{}
+	for _, name := range n {
+		if _, ok := names[name]; !ok {
+			names[name] = struct{}{}
+		}
+	}
+	return names
+}
+
 type cmdHandler struct {
 }
 
@@ -51,7 +65,16 @@ func (*cmdHandler) List(done *Done, user string, req struct {
 	})
 
 	start, end := listRange(req.PageNo, req.PageSize, len(s))
-	done.result.Data = s[start:end]
+	done.result.Data = struct {
+		PageNo     int    `json:"pageNo"`
+		PageSize   int    `json:"pageSize"`
+		TotalCount int    `json:"totalCount"`
+		CmdList    []*Cmd `json:"cmdList"`
+	}{PageNo: req.PageNo,
+		PageSize:   req.PageSize,
+		TotalCount: len(s),
+		CmdList:    s[start:end],
+	}
 }
 
 func (*cmdHandler) Create(done *Done, user string, req struct {
@@ -69,8 +92,7 @@ func (*cmdHandler) Create(done *Done, user string, req struct {
 		return
 	}
 
-	// todo 用正则表达式判断
-	if strings.Count(req.Context, "{{") != len(req.Args) {
+	if len(cmdContextReg(req.Context)) != len(req.Args) {
 		done.result.Code = 1
 		done.result.Message = "变量与默认值数量不一致"
 		return
@@ -117,8 +139,7 @@ func (*cmdHandler) Update(done *Done, user string, req struct {
 		done.result.Code = 1
 		done.result.Message = "不存在的命令名"
 	} else {
-		// todo 用正则表达式判断
-		if strings.Count(req.Context, "{{") != len(req.Args) {
+		if len(cmdContextReg(req.Context)) != len(req.Args) {
 			done.result.Code = 1
 			done.result.Message = "变量与默认值数量不一致"
 			return
@@ -178,8 +199,7 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		context = strings.ReplaceAll(context, fmt.Sprintf("{{%s}}", k), v)
 	}
 
-	// todo 用正则表达式判断
-	if strings.Contains(context, "{{") {
+	if len(cmdContextReg(context)) > 0 {
 		done.result.Code = 1
 		done.result.Message = "命令中存在未赋值变量"
 		done.Done()
@@ -269,6 +289,15 @@ func (*cmdHandler) Log(done *Done, user string, req struct {
 		done.result.Message = "不存在的命令名"
 	} else {
 		start, end := listRange(req.PageNo, req.PageSize, len(cmd.Logs))
-		done.result.Data = cmd.Logs[start:end]
+		done.result.Data = struct {
+			PageNo     int       `json:"pageNo"`
+			PageSize   int       `json:"pageSize"`
+			TotalCount int       `json:"totalCount"`
+			LogList    []*CmdLog `json:"logList"`
+		}{PageNo: req.PageNo,
+			PageSize:   req.PageSize,
+			TotalCount: len(cmd.Logs),
+			LogList:    cmd.Logs[start:end],
+		}
 	}
 }

@@ -18,7 +18,16 @@ func (*nodeHandler) List(done *Done, user string, req struct {
 			return nodes[i].LoginAt > nodes[j].LoginAt
 		})
 		start, end := listRange(req.PageNo, req.PageSize, len(nodes))
-		done.result.Data = nodes[start:end]
+		done.result.Data = struct {
+			PageNo     int         `json:"pageNo"`
+			PageSize   int         `json:"pageSize"`
+			TotalCount int         `json:"totalCount"`
+			NodeList   []*nodeInfo `json:"nodeList"`
+		}{PageNo: req.PageNo,
+			PageSize:   req.PageSize,
+			TotalCount: len(nodes),
+			NodeList:   nodes[start:end],
+		}
 		done.Done()
 	})
 }

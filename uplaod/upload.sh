@@ -4,7 +4,7 @@ set -euv
 test -d initial || mkdir -p initial
 
 cp ../cmd/center_config.json initial/center_config.json
-cp ../cmd/executor_config.json initial/executor_config.json
+#cp ../cmd/executor_config.json initial/executor_config.json
 
 cd initial
 GOOS=linux GOARCH=amd64 go build ../../cmd/center.go

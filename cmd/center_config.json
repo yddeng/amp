@@ -39,18 +39,18 @@
           "icon": "control",
           "title": "计划任务"
         },
-        "redirect": "/command/cmdmange",
+        "redirect": "/command/cmdmanage",
         "component": "RouteView"
       },
       {
-        "name": "cmdmange",
+        "name": "cmdmanage",
         "parentId": 2,
-        "id": 31,
+        "id": 21,
         "meta": {
           "title": "我的命令"
         },
-        "component": "Cmdmange",
-        "path": "/command/cmdmange"
+        "component": "Cmdmanage",
+        "path": "/command/cmdmanage"
       },
       {
         "name": "system",

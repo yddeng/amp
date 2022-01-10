@@ -54,7 +54,7 @@ func TestTemplateHandler_Create(t *testing.T) {
 
 	{
 		//list
-		req, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/project/template/list", address), "GET")
+		req, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/project/template/list", address), "POST")
 		req.SetHeader("Access-Token", token)
 		req.WriteJSON(struct {
 			PageNo   int `json:"pageNo"`

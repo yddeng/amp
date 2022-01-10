@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/tidwall/gjson"
 	"github.com/yddeng/dnet/dhttp"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -32,7 +33,7 @@ func TestCmdHandler_List(t *testing.T) {
 
 	{
 		//list
-		req, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/cmd/list", address), "GET")
+		req, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/cmd/list", address), "POST")
 		req.SetHeader("Access-Token", token)
 		req.WriteJSON(struct {
 			PageNo   int `json:"pageNo"`
@@ -66,7 +67,7 @@ func TestCmdHandler_List(t *testing.T) {
 
 	{
 		//log
-		req, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/cmd/log", address), "GET")
+		req, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/cmd/log", address), "POST")
 		req.SetHeader("Access-Token", token)
 		req.WriteJSON(struct {
 			Name     string `json:"name"`
@@ -77,4 +78,20 @@ func TestCmdHandler_List(t *testing.T) {
 		ret, err := req.ToString()
 		t.Log(err, ret)
 	}
+}
+
+func TestCmdHandler_Reg(t *testing.T) {
+	str := `test {{name}}  {{na me}} 
+{{ failed}} {{failed }} {{ failed }}
+{{ failed} } { { failed}} { { failed} }
+{{name}} `
+	reg := regexp.MustCompile(`\{\{([^\s]+)\}\}`)
+	n := reg.FindAllString(str, -1)
+	names := map[string]struct{}{}
+	for _, name := range n {
+		if _, ok := names[name]; !ok {
+			names[name] = struct{}{}
+		}
+	}
+	t.Log(n, names)
 }
