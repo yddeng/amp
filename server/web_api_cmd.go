@@ -18,8 +18,7 @@ type Cmd struct {
 	Args     map[string]string   `json:"args"`
 	User     string              `json:"user"`
 	CreateAt int64               `json:"create_at"`
-	LogID    int                 `json:"log_id"`
-	Logs     []*CmdLog           `json:"logs"`
+	CallNo   int                 `json:"call_no"`
 	doing    map[string]struct{} // 节点正在执行
 }
 
@@ -33,9 +32,14 @@ type CmdLog struct {
 	Result   string `json:"result"`    // 执行结果
 }
 
-// 返回变量名
+type CmdMgr struct {
+	CmdMap  map[string]*Cmd      `json:"cmd_map"`
+	CmdLogs map[string][]*CmdLog `json:"cmd_logs"`
+}
+
+// 以字母下划线开头，后接数字下划线和字母
 func cmdContextReg(str string) map[string]struct{} {
-	reg := regexp.MustCompile(`\{\{([^\s]+)\}\}`)
+	reg := regexp.MustCompile(`\{\{(_*[a-zA-Z]+[_a-zA-Z0-9]*)\}\}`)
 	n := reg.FindAllString(str, -1)
 	names := map[string]struct{}{}
 	for _, name := range n {
@@ -56,8 +60,8 @@ func (*cmdHandler) List(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
-	s := make([]*Cmd, 0, len(cmdMap))
-	for _, v := range cmdMap {
+	s := make([]*Cmd, 0, len(cmdMgr.CmdMap))
+	for _, v := range cmdMgr.CmdMap {
 		s = append(s, v)
 	}
 	sort.Slice(s, func(i, j int) bool {
@@ -86,7 +90,7 @@ func (*cmdHandler) Create(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
-	if _, ok := cmdMap[req.Name]; ok {
+	if _, ok := cmdMgr.CmdMap[req.Name]; ok {
 		done.result.Code = 1
 		done.result.Message = "名字重复"
 		return
@@ -107,8 +111,8 @@ func (*cmdHandler) Create(done *Done, user string, req struct {
 		CreateAt: NowUnix(),
 	}
 
-	cmdMap[req.Name] = cmd
-	saveStore(snCmd)
+	cmdMgr.CmdMap[req.Name] = cmd
+	saveStore(snCmdMgr)
 }
 
 func (*cmdHandler) Delete(done *Done, user string, req struct {
@@ -117,13 +121,14 @@ func (*cmdHandler) Delete(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
-	if _, ok := cmdMap[req.Name]; !ok {
+	if _, ok := cmdMgr.CmdMap[req.Name]; !ok {
 		done.result.Code = 1
 		done.result.Message = "不存在的命令名"
 		return
 	}
-	delete(cmdMap, req.Name)
-	saveStore(snCmd)
+	delete(cmdMgr.CmdMap, req.Name)
+	delete(cmdMgr.CmdLogs, req.Name)
+	saveStore(snCmdMgr)
 }
 
 func (*cmdHandler) Update(done *Done, user string, req struct {
@@ -135,7 +140,7 @@ func (*cmdHandler) Update(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
-	if cmd, ok := cmdMap[req.Name]; !ok {
+	if cmd, ok := cmdMgr.CmdMap[req.Name]; !ok {
 		done.result.Code = 1
 		done.result.Message = "不存在的命令名"
 	} else {
@@ -148,7 +153,7 @@ func (*cmdHandler) Update(done *Done, user string, req struct {
 		cmd.Dir = req.Dir
 		cmd.Context = req.Context
 		cmd.Args = req.Args
-		saveStore(snCmd)
+		saveStore(snCmdMgr)
 	}
 }
 
@@ -168,7 +173,7 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 
-	cmd, ok := cmdMap[req.Name]
+	cmd, ok := cmdMgr.CmdMap[req.Name]
 	if !ok {
 		done.result.Code = 1
 		done.result.Message = "不存在的命令"
@@ -216,32 +221,33 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 	}
 
 	// 执行日志
-	cmd.LogID++
-	logID := cmd.LogID
+	cmd.CallNo++
+	callNo := cmd.CallNo
 	cmdLog := &CmdLog{
-		ID:       logID,
+		ID:       callNo,
 		CreateAt: NowUnix(),
 		User:     user,
 		Node:     req.Node,
 		Context:  context,
 	}
-	cmd.Logs = append(cmd.Logs, cmdLog)
-	if len(cmd.Logs) > cmdLogCapacity {
-		cmd.Logs = cmd.Logs[1:]
-	}
-	saveStore(snCmd)
 
-	cmdResult := func(logID int, ret string) {
+	cmdMgr.CmdLogs[req.Name] = append(cmdMgr.CmdLogs[req.Name], cmdLog)
+	if len(cmdMgr.CmdLogs[req.Name]) > cmdLogCapacity {
+		cmdMgr.CmdLogs[req.Name] = cmdMgr.CmdLogs[req.Name][1:]
+	}
+	saveStore(snCmdMgr)
+
+	cmdResult := func(callNo int, ret string) {
 		var _cmdLog *CmdLog
-		for _, v := range cmd.Logs {
-			if v.ID == logID {
+		for _, v := range cmdMgr.CmdLogs[req.Name] {
+			if v.ID == callNo {
 				_cmdLog = v
 			}
 		}
 		if _cmdLog != nil {
 			_cmdLog.ResultAt = NowUnix()
 			_cmdLog.Result = ret
-			saveStore(snCmd)
+			saveStore(snCmdMgr)
 		}
 	}
 
@@ -258,19 +264,19 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		if rpcResp.GetCode() != "" {
 			done.result.Code = 1
 			done.result.Message = rpcResp.GetCode()
-			cmdResult(logID, rpcResp.GetCode())
+			cmdResult(callNo, rpcResp.GetCode())
 		} else {
 			done.result.Data = struct {
 				Output string `json:"output"`
 			}{Output: rpcResp.GetOutStr()}
-			cmdResult(logID, rpcResp.GetOutStr())
+			cmdResult(callNo, rpcResp.GetOutStr())
 		}
 		delete(cmd.doing, req.Node)
 		done.Done()
 	}); err != nil {
 		log.Println(err)
 		delete(cmd.doing, req.Node)
-		cmdResult(logID, err.Error())
+		cmdResult(callNo, err.Error())
 		done.Done()
 	}
 
@@ -284,11 +290,11 @@ func (*cmdHandler) Log(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
-	if cmd, ok := cmdMap[req.Name]; !ok {
+	if logs, ok := cmdMgr.CmdLogs[req.Name]; !ok {
 		done.result.Code = 1
 		done.result.Message = "不存在的命令名"
 	} else {
-		start, end := listRange(req.PageNo, req.PageSize, len(cmd.Logs))
+		start, end := listRange(req.PageNo, req.PageSize, len(logs))
 		done.result.Data = struct {
 			PageNo     int       `json:"pageNo"`
 			PageSize   int       `json:"pageSize"`
@@ -296,8 +302,8 @@ func (*cmdHandler) Log(done *Done, user string, req struct {
 			LogList    []*CmdLog `json:"logList"`
 		}{PageNo: req.PageNo,
 			PageSize:   req.PageSize,
-			TotalCount: len(cmd.Logs),
-			LogList:    cmd.Logs[start:end],
+			TotalCount: len(logs),
+			LogList:    logs[start:end],
 		}
 	}
 }

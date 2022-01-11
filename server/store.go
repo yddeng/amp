@@ -80,42 +80,27 @@ func (store *itemMgrStore) Save() {
 	_ = util.EncodeJsonToFile(itemMgr, store.filename)
 }
 
-type adminStore struct {
+type userMgrStore struct {
 	storeBase
 }
 
-func (store *adminStore) Load(dataPath string) (err error) {
+func (store *userMgrStore) Load(dataPath string) (err error) {
 	store.filename = path.Join(dataPath, store.file)
-	if err = util.DecodeJsonFromFile(&admin, store.filename); err != nil {
+	if err = util.DecodeJsonFromFile(&userMgr, store.filename); err != nil {
 		if os.IsNotExist(err) {
 			err = nil
+			userMgr = &UserMgr{
+				Admin:   nil,
+				UserMap: map[string]*User{},
+			}
 		}
 		return
 	}
 	return
 }
 
-func (store *adminStore) Save() {
-	_ = util.EncodeJsonToFile(admin, store.filename)
-}
-
-type storeUser struct {
-	storeBase
-}
-
-func (store *storeUser) Load(dataPath string) (err error) {
-	store.filename = path.Join(dataPath, store.file)
-	if err = util.DecodeJsonFromFile(&userMap, store.filename); err != nil {
-		if os.IsNotExist(err) {
-			err = nil
-		}
-		return
-	}
-	return
-}
-
-func (store *storeUser) Save() {
-	_ = util.EncodeJsonToFile(userMap, store.filename)
+func (store *userMgrStore) Save() {
+	_ = util.EncodeJsonToFile(userMgr, store.filename)
 }
 
 type templateStore struct {
@@ -160,45 +145,47 @@ func (store *cluMgrStore) Save() {
 	_ = util.EncodeJsonToFile(cluMgr, store.filename)
 }
 
-type cmdStore struct {
+type cmdMgrStore struct {
 	storeBase
 }
 
-func (store *cmdStore) Load(dataPath string) (err error) {
+func (store *cmdMgrStore) Load(dataPath string) (err error) {
 	store.filename = path.Join(dataPath, store.file)
-	if err = util.DecodeJsonFromFile(&cmdMap, store.filename); err != nil {
+	if err = util.DecodeJsonFromFile(&cmdMgr, store.filename); err != nil {
 		if os.IsNotExist(err) {
 			err = nil
+			cmdMgr = &CmdMgr{
+				CmdMap:  map[string]*Cmd{},
+				CmdLogs: map[string][]*CmdLog{},
+			}
 		}
 		return
 	}
 	return
 }
 
-func (store *cmdStore) Save() {
-	_ = util.EncodeJsonToFile(cmdMap, store.filename)
+func (store *cmdMgrStore) Save() {
+	_ = util.EncodeJsonToFile(cmdMgr, store.filename)
 }
 
 type storeName string
 
 const (
 	snNode     storeName = "node"
+	snUserMgr  storeName = "user_mgr"
+	snCmdMgr   storeName = "cmd_mgr"
 	snItemMgr  storeName = "item_mgr"
-	snUser     storeName = "user"
-	snAdmin    storeName = "admin"
 	snTemplate storeName = "template"
 	snCluMgr   storeName = "clu_mgr"
-	snCmd      storeName = "command"
 )
 
 var (
-	admin   *User // web
-	userMap = map[string]*User{}
+	userMgr *UserMgr
 	itemMgr *ItemMgr
 	nodes   = map[string]*Node{}
 	temps   = map[string]*Template{} // web
 	cluMgr  *ClusterMgr
-	cmdMap  = map[string]*Cmd{}
+	cmdMgr  *CmdMgr
 )
 
 func init() {
@@ -208,11 +195,8 @@ func init() {
 	stores[snItemMgr] = &itemMgrStore{storeBase{
 		file: "item_mgr.json",
 	}}
-	stores[snUser] = &storeUser{storeBase{
-		file: "user.json",
-	}}
-	stores[snAdmin] = &adminStore{storeBase{
-		file: "admin.json",
+	stores[snUserMgr] = &userMgrStore{storeBase{
+		file: "user_mgr.json",
 	}}
 	stores[snTemplate] = &templateStore{storeBase{
 		file: "template.json",
@@ -220,7 +204,7 @@ func init() {
 	stores[snCluMgr] = &cluMgrStore{storeBase{
 		file: "clu_mgr.json",
 	}}
-	stores[snCmd] = &cmdStore{storeBase{
-		file: "command.json",
+	stores[snCmdMgr] = &cmdMgrStore{storeBase{
+		file: "cmd_mgr.json",
 	}}
 }

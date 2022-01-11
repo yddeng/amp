@@ -15,7 +15,15 @@ func (*authHandler) Login(done *Done, user string, req struct {
 	log.Printf("%s %v\n", done.route, req)
 	defer func() { done.Done() }()
 
-	u, ok := getUser(req.Username)
+	var u *User
+	var ok bool
+	if userMgr.Admin.Username == req.Username {
+		u = userMgr.Admin
+		ok = true
+	} else {
+		u, ok = userMgr.UserMap[req.Username]
+	}
+
 	if !ok || u.Password != req.Password {
 		done.result.Code = 1
 		done.result.Message = "用户或密码错误"

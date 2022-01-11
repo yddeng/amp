@@ -57,12 +57,12 @@ func Stop() {
 
 func webRun(cfg *WebConfig) {
 	allNav = cfg.Nav
-	if admin == nil {
-		admin = &User{
+	if userMgr.Admin == nil {
+		userMgr.Admin = &User{
 			Username: cfg.Admin.Username,
 			Password: cfg.Admin.Password,
 		}
-		saveStore(snAdmin)
+		saveStore(snUserMgr)
 	}
 
 	/*

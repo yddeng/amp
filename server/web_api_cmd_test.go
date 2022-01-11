@@ -84,8 +84,10 @@ func TestCmdHandler_Reg(t *testing.T) {
 	str := `test {{name}}  {{na me}} 
 {{ failed}} {{failed }} {{ failed }}
 {{ failed} } { { failed}} { { failed} }
-{{name}} `
-	reg := regexp.MustCompile(`\{\{([^\s]+)\}\}`)
+{{name}} 
+{{{fds}} {{*}} {{9f}} {{_df}} {{+sf}} {{_}} {{f}} {{_9}} {{A6}}`
+	// 以字母下划线开头，后接数字下划线和字母
+	reg := regexp.MustCompile(`\{\{(_*[a-zA-Z]+[_a-zA-Z0-9]*)\}\}`)
 	n := reg.FindAllString(str, -1)
 	names := map[string]struct{}{}
 	for _, name := range n {

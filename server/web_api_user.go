@@ -6,48 +6,15 @@ import (
 	"sort"
 )
 
-var (
-	userSlice []*User
-)
-
-func sortUser() {
-	sort.Slice(userSlice, func(i, j int) bool {
-		return userSlice[i].Username < userSlice[j].Username
-	})
-}
-
-func getUser(username string) (u *User, ok bool) {
-	if admin.Username == username {
-		return admin, true
-	}
-	u, ok = userMap[username]
-	return
-}
-
-func addUser(username, password string) {
-	u := &User{Username: username, Password: password}
-	userMap[u.Username] = u
-	userSlice = append(userSlice, u)
-	sortUser()
-	saveStore(snUser)
-}
-
-func deleteUser(username string) {
-	if _, ok := userMap[username]; ok {
-		delete(userMap, username)
-		for i, u := range userSlice {
-			if u.Username == username {
-				userSlice = append(userSlice[:i], userSlice[i+1:]...)
-			}
-		}
-	}
-	saveStore(snUser)
-}
-
 type User struct {
 	Username string              `json:"username,omitempty"`
 	Password string              `json:"password,omitempty"`
 	Routes   map[string]struct{} `json:"routes"`
+}
+
+type UserMgr struct {
+	Admin   *User            `json:"admin"`
+	UserMap map[string]*User `json:"user_map"`
 }
 
 type userHandler struct {
@@ -131,17 +98,15 @@ func (*userHandler) List(done *Done, user string, req struct {
 	//	return
 	//}
 
-	if userSlice == nil {
-		userSlice = make([]*User, 0, len(userMap))
-		for _, u := range userMap {
-			if u.Username != admin.Username {
-				userSlice = append(userSlice, u)
-			}
-		}
-		sortUser()
+	s := make([]*User, 0, len(userMgr.UserMap))
+	for _, v := range userMgr.UserMap {
+		s = append(s, v)
 	}
+	sort.Slice(s, func(i, j int) bool {
+		return s[i].Username < s[j].Username
+	})
 
-	start, end := listRange(req.PageNo, req.PageSize, len(userSlice))
+	start, end := listRange(req.PageNo, req.PageSize, len(s))
 	done.result.Data = struct {
 		PageNo     int     `json:"pageNo"`
 		PageSize   int     `json:"pageSize"`
@@ -149,8 +114,8 @@ func (*userHandler) List(done *Done, user string, req struct {
 		UserList   []*User `json:"userList"`
 	}{PageNo: req.PageNo,
 		PageSize:   req.PageSize,
-		TotalCount: len(userSlice),
-		UserList:   userSlice[start:end]}
+		TotalCount: len(s),
+		UserList:   s[start:end]}
 	return
 }
 
@@ -166,13 +131,17 @@ func (*userHandler) Add(done *Done, user string, req struct {
 	//	return
 	//}
 
-	if _, ok := getUser(req.Username); ok {
+	if _, ok := userMgr.UserMap[req.Username]; ok {
 		done.result.Code = 1
 		done.result.Message = "用户名已存在"
 		return
 	}
 
-	addUser(req.Username, req.Password)
+	userMgr.UserMap[req.Username] = &User{
+		Username: req.Username,
+		Password: req.Password,
+	}
+	saveStore(snUserMgr)
 }
 
 func (*userHandler) Delete(done *Done, user string, req struct {
@@ -186,7 +155,10 @@ func (*userHandler) Delete(done *Done, user string, req struct {
 	//	return
 	//}
 
-	for _, username := range req.Username {
-		deleteUser(username)
+	if len(req.Username) > 0 {
+		for _, username := range req.Username {
+			delete(userMgr.UserMap, username)
+		}
+		saveStore(snUserMgr)
 	}
 }
