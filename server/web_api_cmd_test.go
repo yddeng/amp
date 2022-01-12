@@ -18,6 +18,13 @@ func TestCmdHandler_List(t *testing.T) {
 	token := gjson.Get(ret, "data.token").String()
 	{
 		//create
+		shStr := `
+set -euv
+# 注释
+sleep 11s
+mkdir {{name}}
+echo ok`
+
 		req, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/cmd/create", address), "POST")
 		req.SetHeader("Access-Token", token)
 		req.WriteJSON(struct {
@@ -25,7 +32,7 @@ func TestCmdHandler_List(t *testing.T) {
 			Dir     string            `json:"dir"`
 			Context string            `json:"context"`
 			Args    map[string]string `json:"args"`
-		}{Name: "test", Dir: "", Context: "sleep 11s;mkdir {{name}};echo ok", Args: map[string]string{"name": "tttt"}})
+		}{Name: "test", Dir: "", Context: shStr, Args: map[string]string{"name": "tttt"}})
 
 		ret, err := req.ToString()
 		t.Log(err, ret)
@@ -54,11 +61,11 @@ func TestCmdHandler_List(t *testing.T) {
 			Args    map[string]string `json:"args"`
 			Node    string            `json:"node"`
 			Timeout int               `json:"timeout"`
-		}{Name: "test", Args: map[string]string{"name": "tttt"}, Node: "executor", Timeout: 12})
+		}{Name: "test", Dir: "", Args: map[string]string{"name": "tttt"}, Node: "executor", Timeout: 12})
 
 		ret, err := req.ToString()
 		t.Log(err, ret)
-		out := gjson.Get(ret, "data.output").String()
+		out := gjson.Get(ret, "data.result").String()
 		lines := strings.Split(out, "\n")
 		for _, v := range lines {
 			fmt.Println(v)

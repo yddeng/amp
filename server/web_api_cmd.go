@@ -237,16 +237,10 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 	}
 	saveStore(snCmdMgr)
 
-	cmdResult := func(callNo int, ret string) {
-		var _cmdLog *CmdLog
-		for _, v := range cmdMgr.CmdLogs[req.Name] {
-			if v.ID == callNo {
-				_cmdLog = v
-			}
-		}
-		if _cmdLog != nil {
-			_cmdLog.ResultAt = NowUnix()
-			_cmdLog.Result = ret
+	cmdResult := func(cmdLog *CmdLog, ret string) {
+		cmdLog.ResultAt = NowUnix()
+		cmdLog.Result = ret
+		if cmd.CallNo-cmdLog.ID < cmdLogCapacity {
 			saveStore(snCmdMgr)
 		}
 	}
@@ -264,19 +258,17 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		if rpcResp.GetCode() != "" {
 			done.result.Code = 1
 			done.result.Message = rpcResp.GetCode()
-			cmdResult(callNo, rpcResp.GetCode())
+			cmdResult(cmdLog, rpcResp.GetCode())
 		} else {
-			done.result.Data = struct {
-				Output string `json:"output"`
-			}{Output: rpcResp.GetOutStr()}
-			cmdResult(callNo, rpcResp.GetOutStr())
+			cmdResult(cmdLog, rpcResp.GetOutStr())
+			done.result.Data = cmdLog
 		}
 		delete(cmd.doing, req.Node)
 		done.Done()
 	}); err != nil {
 		log.Println(err)
 		delete(cmd.doing, req.Node)
-		cmdResult(callNo, err.Error())
+		cmdResult(cmdLog, err.Error())
 		done.Done()
 	}
 

@@ -53,6 +53,28 @@
         "path": "/command/cmdmanage"
       },
       {
+        "name": "cmdexec",
+        "parentId": 2,
+        "id": 22,
+        "meta": {
+          "title": "执行命令",
+          "show": false
+        },
+        "component": "Cmdexec",
+        "path": "/command/cmdexec"
+      },
+      {
+        "name": "cmdlog",
+        "parentId": 2,
+        "id": 23,
+        "meta": {
+          "title": "命令日志",
+          "show": false
+        },
+        "component": "Cmdlog",
+        "path": "/command/cmdlog"
+      },
+      {
         "name": "system",
         "parentId": 0,
         "id": 3,
