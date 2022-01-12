@@ -5,21 +5,21 @@ import (
 )
 
 type Nav struct {
-	Name      string  `json:"name,omitempty"`
-	Path      string  `json:"path,omitempty"`
+	Name      string  `json:"name"`
+	Path      string  `json:"path"`
 	Id        int     `json:"id"`
 	ParentId  int     `json:"parentId"`
-	Meta      NavMeta `json:"meta,omitempty"`
-	Redirect  string  `json:"redirect,omitempty"`
-	Component string  `json:"component,omitempty"`
+	Meta      NavMeta `json:"meta"`
+	Redirect  string  `json:"redirect"`
+	Component string  `json:"component"`
 }
 
 type NavMeta struct {
-	Title        string `json:"title,omitempty"`
-	Icon         string `json:"icon,omitempty"`
-	Show         bool   `json:"show,omitempty"`
-	HideHeader   bool   `json:"hideHeader,omitempty"`
-	HideChildren bool   `json:"hideChildren,omitempty"`
+	Title        string `json:"title"`
+	Icon         string `json:"icon"`
+	Show         bool   `json:"show"`
+	HideHeader   bool   `json:"hideHeader"`
+	HideChildren bool   `json:"hideChildren"`
 }
 
 func findNav(routes map[string]struct{}) (navs []*Nav) {

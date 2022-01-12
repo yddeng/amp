@@ -22,16 +22,6 @@ type Cmd struct {
 	doing    map[string]struct{} // 节点正在执行
 }
 
-type CmdLog struct {
-	ID       int    `json:"id"`
-	CreateAt int64  `json:"create_at"` // 执行时间
-	User     string `json:"user"`      // 执行用户
-	Node     string `json:"node"`      // 执行的节点
-	Context  string `json:"context"`   // 执行内容
-	ResultAt int64  `json:"result_at"` // 执行结果时间
-	Result   string `json:"result"`    // 执行结果
-}
-
 type CmdMgr struct {
 	CmdMap  map[string]*Cmd      `json:"cmd_map"`
 	CmdLogs map[string][]*CmdLog `json:"cmd_logs"`
@@ -164,6 +154,17 @@ const (
 	cmdLogCapacity    = 20
 )
 
+type CmdLog struct {
+	ID       int    `json:"id"`
+	CreateAt int64  `json:"create_at"` // 执行时间
+	User     string `json:"user"`      // 执行用户
+	Node     string `json:"node"`      // 执行的节点
+	Timeout  int    `json:"timeout"`   // 执行超时时间
+	Context  string `json:"context"`   // 执行内容
+	ResultAt int64  `json:"result_at"` // 执行结果时间
+	Result   string `json:"result"`    // 执行结果
+}
+
 func (*cmdHandler) Exec(done *Done, user string, req struct {
 	Name    string            `json:"name"`
 	Dir     string            `json:"dir"`
@@ -221,21 +222,14 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 	}
 
 	// 执行日志
-	cmd.CallNo++
-	callNo := cmd.CallNo
+
 	cmdLog := &CmdLog{
-		ID:       callNo,
 		CreateAt: NowUnix(),
+		Timeout:  req.Timeout,
 		User:     user,
 		Node:     req.Node,
 		Context:  context,
 	}
-
-	cmdMgr.CmdLogs[req.Name] = append(cmdMgr.CmdLogs[req.Name], cmdLog)
-	if len(cmdMgr.CmdLogs[req.Name]) > cmdLogCapacity {
-		cmdMgr.CmdLogs[req.Name] = cmdMgr.CmdLogs[req.Name][1:]
-	}
-	saveStore(snCmdMgr)
 
 	cmdResult := func(cmdLog *CmdLog, ret string) {
 		cmdLog.ResultAt = NowUnix()
@@ -245,7 +239,6 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		}
 	}
 
-	cmd.doing[req.Node] = struct{}{}
 	rpcReq := &protocol.CmdExecReq{
 		Dir:     req.Dir,
 		Name:    "/bin/sh",
@@ -254,6 +247,12 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 	}
 	timeout := time.Second*time.Duration(req.Timeout) + drpc.DefaultRPCTimeout
 	if err := center.Go(node, rpcReq, timeout, func(i interface{}, e error) {
+		if e != nil {
+			done.result.Code = 1
+			done.result.Message = e.Error()
+			cmdResult(cmdLog, e.Error())
+			return
+		}
 		rpcResp := i.(*protocol.CmdExecResp)
 		if rpcResp.GetCode() != "" {
 			done.result.Code = 1
@@ -267,9 +266,18 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		done.Done()
 	}); err != nil {
 		log.Println(err)
-		delete(cmd.doing, req.Node)
-		cmdResult(cmdLog, err.Error())
+		done.result.Code = 1
+		done.result.Message = err.Error()
 		done.Done()
+	} else {
+		cmd.doing[req.Node] = struct{}{}
+		cmd.CallNo++
+		cmdLog.ID = cmd.CallNo
+		cmdMgr.CmdLogs[req.Name] = append(cmdMgr.CmdLogs[req.Name], cmdLog)
+		if len(cmdMgr.CmdLogs[req.Name]) > cmdLogCapacity {
+			cmdMgr.CmdLogs[req.Name] = cmdMgr.CmdLogs[req.Name][1:]
+		}
+		saveStore(snCmdMgr)
 	}
 
 }

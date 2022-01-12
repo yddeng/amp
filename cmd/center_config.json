@@ -16,7 +16,8 @@
         "id": 1,
         "meta": {
           "icon": "control",
-          "title": "服务器管理"
+          "title": "服务器管理",
+          "show": true
         },
         "redirect": "/control/startpage",
         "component": "RouteView"
@@ -26,7 +27,8 @@
         "parentId": 1,
         "id": 11,
         "meta": {
-          "title": "启动"
+          "title": "启动",
+          "show": true
         },
         "component": "Startpage",
         "path": "/control/startpage"
@@ -37,7 +39,8 @@
         "id": 2,
         "meta": {
           "icon": "control",
-          "title": "计划任务"
+          "title": "计划任务",
+          "show": true
         },
         "redirect": "/command/cmdmanage",
         "component": "RouteView"
@@ -47,7 +50,8 @@
         "parentId": 2,
         "id": 21,
         "meta": {
-          "title": "我的命令"
+          "title": "我的命令",
+          "show": true
         },
         "component": "Cmdmanage",
         "path": "/command/cmdmanage"
@@ -80,7 +84,8 @@
         "id": 3,
         "meta": {
           "icon": "control",
-          "title": "系统管理"
+          "title": "系统管理",
+          "show": true
         },
         "redirect": "/system/usermange",
         "component": "RouteView"
@@ -90,7 +95,8 @@
         "parentId": 3,
         "id": 31,
         "meta": {
-          "title": "用户管理"
+          "title": "用户管理",
+          "show": true
         },
         "component": "Usermange",
         "path": "/system/usermange"
@@ -101,7 +107,8 @@
         "id": 4,
         "meta": {
           "icon": "control",
-          "title": "项目管理"
+          "title": "项目管理",
+          "show": true
         },
         "redirect": "/project/cluster",
         "component": "RouteView"
@@ -111,7 +118,8 @@
         "parentId": 4,
         "id": 41,
         "meta": {
-          "title": "Initial集群"
+          "title": "Initial集群",
+          "show": true
         },
         "component": "Cluster",
         "path": "/project/cluster"
@@ -121,7 +129,8 @@
         "parentId": 4,
         "id": 42,
         "meta": {
-          "title": "配置模版"
+          "title": "配置模版",
+          "show": true
         },
         "component": "Config",
         "path": "/project/config"
