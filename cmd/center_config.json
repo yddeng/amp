@@ -83,8 +83,8 @@
       },
       {
         "name": "group",
-        "parentId": 4,
-        "id": 41,
+        "parentId": 3,
+        "id": 31,
         "meta": {
           "title": "进程组",
           "show": true
@@ -94,13 +94,13 @@
       },
       {
         "name": "list",
-        "parentId": 4,
-        "id": 42,
+        "parentId": 3,
+        "id": 32,
         "meta": {
           "title": "进程列表",
           "show": true
         },
-        "component": "list",
+        "component": "List",
         "path": "/process/list"
       },
       {

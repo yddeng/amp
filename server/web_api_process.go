@@ -33,28 +33,22 @@ type Process struct {
 	StartRetries int              `json:"start_retries"`  // 当进程启动失败后，最大尝试启动的次数。。当超过3次后，supervisor将把 此进程的状态置为FAIL	默认值为3 。。非必须设置
 	StopWaitSecs int              `json:"stop_wait_secs"` // 这个是当我们向子进程发送stopsignal信号后，到系统返回信息	给supervisord，所等待的最大时间。 超过这个时间，supervisord会向该	子进程发送一个强制kill的信号。
 	State        ProcessState     `json:"state"`
+	Groups       []string         `json:"groups"`
 	User         string           `json:"user"`
 	CreateAt     int64            `json:"create_at"`
 }
 
-type ProcessGroup struct {
-	Process map[int]*Process
-}
-
 type ProcessMgr struct {
-	GenID   int                      `json:"gen_id"`
-	Process map[int]*Process         `json:"process"`
-	Group   []string                 `json:"group"` // 程序组
-	Groups  map[string]*ProcessGroup `json:"_"`     // 运行时设置
+	GenID   int                 `json:"gen_id"`
+	Process map[int]*Process    `json:"process"`
+	Group   map[string]struct{} `json:"group"` // 程序组
 }
 
 type processHandler struct {
 }
 
 func (*processHandler) List(done *Done, user string, req struct {
-	Group    string `json:"group"`
-	PageNo   int    `json:"pageNo"`
-	PageSize int    `json:"pageSize"`
+	Group string `json:"group"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
@@ -62,13 +56,13 @@ func (*processHandler) List(done *Done, user string, req struct {
 }
 
 func (*processHandler) Create(done *Done, user string, req struct {
-	ID           int              `json:"id"`
 	Dir          string           `json:"dir"`
 	Config       []*ProcessConfig `json:"config"`
 	Command      string           `json:"command"`
 	Priority     int              `json:"priority"`
 	StartRetries int              `json:"start_retries"`
 	StopWaitSecs int              `json:"stop_wait_secs"`
+	Groups       []string         `json:"groups"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()

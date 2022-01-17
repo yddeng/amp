@@ -10,7 +10,6 @@ import (
 	"initial-server/protocol"
 	"math/rand"
 	"net"
-	"os"
 	"time"
 )
 
@@ -130,12 +129,6 @@ func (er *Executor) dispatchMsg(session dnet.Session, msg *protocol.Message) {}
 var er *Executor
 
 func Start(cfg Config) (err error) {
-
-	_ = os.MkdirAll(cfg.DataPath, os.ModePerm)
-	if err = loadStore(cfg.DataPath); err != nil {
-		return
-	}
-
 	er = new(Executor)
 	er.cfg = &cfg
 	er.taskPool = task.NewTaskPool(1, 1024)

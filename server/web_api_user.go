@@ -72,12 +72,31 @@ func (*userHandler) Info(done *Done, user string) {
 `
 	var info map[string]interface{}
 	if err := json.Unmarshal([]byte(str), &info); err != nil {
-		done.result.Code = 1
 		done.result.Message = err.Error()
 		return
 	}
 	done.result.Data = info
 }
+
+type Nav struct {
+	Name      string  `json:"name"`
+	Path      string  `json:"path"`
+	Id        int     `json:"id"`
+	ParentId  int     `json:"parentId"`
+	Meta      NavMeta `json:"meta"`
+	Redirect  string  `json:"redirect"`
+	Component string  `json:"component"`
+}
+
+type NavMeta struct {
+	Title        string `json:"title"`
+	Icon         string `json:"icon"`
+	Show         bool   `json:"show"`
+	HideHeader   bool   `json:"hideHeader"`
+	HideChildren bool   `json:"hideChildren"`
+}
+
+var allNav []*Nav
 
 func (*userHandler) Nav(done *Done, user string) {
 	log.Printf("%s by(%s)\n", done.route, user)
@@ -93,7 +112,6 @@ func (*userHandler) List(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 	//if user != admin.Username {
-	//	done.result.Code = 1
 	//	done.result.Message = "无权限"
 	//	return
 	//}
@@ -126,13 +144,11 @@ func (*userHandler) Add(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 	//if user != admin.Username {
-	//	done.result.Code = 1
 	//	done.result.Message = "无权限"
 	//	return
 	//}
 
 	if _, ok := userMgr.UserMap[req.Username]; ok {
-		done.result.Code = 1
 		done.result.Message = "用户名已存在"
 		return
 	}
@@ -150,7 +166,6 @@ func (*userHandler) Delete(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 	//if user != admin.Username {
-	//	done.result.Code = 1
 	//	done.result.Message = "无权限"
 	//	return
 	//}

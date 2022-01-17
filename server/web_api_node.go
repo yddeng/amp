@@ -39,7 +39,6 @@ func (*nodeHandler) Remove(done *Done, user string, req struct {
 	defer func() { done.Done() }()
 	n, ok := nodes[req.Name]
 	if !ok || n.Online() {
-		done.result.Code = 1
 		done.result.Message = "当前状态不允许移除"
 		return
 	}

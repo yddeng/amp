@@ -31,6 +31,9 @@ func newDone(route string) *Done {
 
 func (this *Done) Done() {
 	this.doneOnce.Do(func() {
+		if this.result.Message != "" {
+			this.result.Code = 1
+		}
 		close(this.done)
 	})
 }
@@ -61,7 +64,6 @@ func transBegin(ctx iris.Context, fn interface{}, args ...reflect.Value) {
 		user, ret := checkToken(ctx, route)
 		if ret.Code != 0 {
 			done.statue = 401
-			done.result.Code = ret.Code
 			done.result.Message = ret.Message
 			done.Done()
 			return
@@ -70,14 +72,12 @@ func transBegin(ctx iris.Context, fn interface{}, args ...reflect.Value) {
 		ret = checkPermission(ctx, route, user)
 		if ret.Code != 0 {
 			done.statue = 403
-			done.result.Code = ret.Code
 			done.result.Message = ret.Message
 			done.Done()
 			return
 		}
 		val.Call(append([]reflect.Value{reflect.ValueOf(done), reflect.ValueOf(user)}, args...))
 	}), true); err != nil {
-		done.result.Code = 1
 		done.result.Message = "当前访问人数"
 		done.Done()
 	}

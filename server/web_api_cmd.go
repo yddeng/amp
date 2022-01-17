@@ -81,13 +81,11 @@ func (*cmdHandler) Create(done *Done, user string, req struct {
 	defer func() { done.Done() }()
 
 	if _, ok := cmdMgr.CmdMap[req.Name]; ok {
-		done.result.Code = 1
 		done.result.Message = "名字重复"
 		return
 	}
 
 	if len(cmdContextReg(req.Context)) != len(req.Args) {
-		done.result.Code = 1
 		done.result.Message = "变量与默认值数量不一致"
 		return
 	}
@@ -112,7 +110,6 @@ func (*cmdHandler) Delete(done *Done, user string, req struct {
 	defer func() { done.Done() }()
 
 	if _, ok := cmdMgr.CmdMap[req.Name]; !ok {
-		done.result.Code = 1
 		done.result.Message = "不存在的命令名"
 		return
 	}
@@ -131,11 +128,9 @@ func (*cmdHandler) Update(done *Done, user string, req struct {
 	defer func() { done.Done() }()
 
 	if cmd, ok := cmdMgr.CmdMap[req.Name]; !ok {
-		done.result.Code = 1
 		done.result.Message = "不存在的命令名"
 	} else {
 		if len(cmdContextReg(req.Context)) != len(req.Args) {
-			done.result.Code = 1
 			done.result.Message = "变量与默认值数量不一致"
 			return
 		}
@@ -178,7 +173,6 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 
 	cmd, ok := cmdMgr.CmdMap[req.Name]
 	if !ok {
-		done.result.Code = 1
 		done.result.Message = "不存在的命令"
 		done.Done()
 		return
@@ -186,7 +180,6 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 
 	node, ok := nodes[req.Node]
 	if !ok || !node.Online() {
-		done.result.Code = 1
 		done.result.Message = "执行客户端不存在或不在线"
 		done.Done()
 		return
@@ -196,7 +189,6 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		cmd.doing = map[string]struct{}{}
 	}
 	if _, ok := cmd.doing[req.Node]; ok {
-		done.result.Code = 1
 		done.result.Message = "当前命令正在该节点上执行"
 		done.Done()
 		return
@@ -208,7 +200,6 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 	}
 
 	if len(cmdContextReg(context)) > 0 {
-		done.result.Code = 1
 		done.result.Message = "命令中存在未赋值变量"
 		done.Done()
 		return
@@ -251,14 +242,13 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 	timeout := time.Second*time.Duration(req.Timeout) + drpc.DefaultRPCTimeout
 	if err := center.Go(node, rpcReq, timeout, func(i interface{}, e error) {
 		if e != nil {
-			done.result.Code = 1
 			done.result.Message = e.Error()
 			cmdResult(cmdLog, e.Error())
+			done.Done()
 			return
 		}
 		rpcResp := i.(*protocol.CmdExecResp)
 		if rpcResp.GetCode() != "" {
-			done.result.Code = 1
 			done.result.Message = rpcResp.GetCode()
 			cmdResult(cmdLog, rpcResp.GetCode())
 		} else {
@@ -269,7 +259,6 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		done.Done()
 	}); err != nil {
 		log.Println(err)
-		done.result.Code = 1
 		done.result.Message = err.Error()
 		done.Done()
 	} else {
@@ -294,7 +283,6 @@ func (*cmdHandler) Log(done *Done, user string, req struct {
 	defer func() { done.Done() }()
 
 	if logs, ok := cmdMgr.CmdLogs[req.Name]; !ok {
-		done.result.Code = 1
 		done.result.Message = "不存在的命令名"
 	} else {
 		start, end := listRange(req.PageNo, req.PageSize, len(logs))

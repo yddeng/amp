@@ -25,7 +25,6 @@ func (*authHandler) Login(done *Done, user string, req struct {
 	}
 
 	if !ok || u.Password != req.Password {
-		done.result.Code = 1
 		done.result.Message = "用户或密码错误"
 		return
 	}

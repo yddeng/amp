@@ -3,7 +3,7 @@ set -euv
 
 test -d initial || mkdir -p initial
 
-#cp ../cmd/center_config.json initial/center_config.json
+cp ../cmd/center_config.json initial/center_config.json
 #cp ../cmd/executor_config.json initial/executor_config.json
 
 cd initial
