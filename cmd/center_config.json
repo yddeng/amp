@@ -1,37 +1,28 @@
 {
   "data_path": "./data",
+  "cmd_log_capacity": 20,
   "center_config": {
     "address": "0.0.0.0:40155"
   },
   "web_config": {
     "address": "0.0.0.0:40156",
+    "app": "/Users/yidongdeng/vuep/initial/dist/",
     "admin": {
       "username": "admin",
       "password": "123456"
     },
     "nav": [
       {
-        "name": "control",
+        "name": "home",
         "parentId": 0,
         "id": 1,
         "meta": {
           "icon": "control",
-          "title": "服务器管理",
+          "title": "首页",
           "show": true
         },
-        "redirect": "/control/startpage",
-        "component": "RouteView"
-      },
-      {
-        "name": "startpage",
-        "parentId": 1,
-        "id": 11,
-        "meta": {
-          "title": "启动",
-          "show": true
-        },
-        "component": "Startpage",
-        "path": "/control/startpage"
+        "path": "/home",
+        "component": "Home"
       },
       {
         "name": "command",
@@ -79,9 +70,43 @@
         "path": "/command/cmdlog"
       },
       {
-        "name": "system",
+        "name": "process",
         "parentId": 0,
         "id": 3,
+        "meta": {
+          "icon": "control",
+          "title": "进程控制",
+          "show": true
+        },
+        "redirect": "/process/group",
+        "component": "RouteView"
+      },
+      {
+        "name": "group",
+        "parentId": 4,
+        "id": 41,
+        "meta": {
+          "title": "进程组",
+          "show": true
+        },
+        "component": "Group",
+        "path": "/process/group"
+      },
+      {
+        "name": "list",
+        "parentId": 4,
+        "id": 42,
+        "meta": {
+          "title": "进程列表",
+          "show": true
+        },
+        "component": "list",
+        "path": "/process/list"
+      },
+      {
+        "name": "system",
+        "parentId": 0,
+        "id": 4,
         "meta": {
           "icon": "control",
           "title": "系统管理",
@@ -92,48 +117,14 @@
       },
       {
         "name": "usermange",
-        "parentId": 3,
-        "id": 31,
+        "parentId": 4,
+        "id": 41,
         "meta": {
           "title": "用户管理",
           "show": true
         },
         "component": "Usermange",
         "path": "/system/usermange"
-      },
-      {
-        "name": "project",
-        "parentId": 0,
-        "id": 4,
-        "meta": {
-          "icon": "control",
-          "title": "项目管理",
-          "show": true
-        },
-        "redirect": "/project/cluster",
-        "component": "RouteView"
-      },
-      {
-        "name": "cluster",
-        "parentId": 4,
-        "id": 41,
-        "meta": {
-          "title": "Initial集群",
-          "show": true
-        },
-        "component": "Cluster",
-        "path": "/project/cluster"
-      },
-      {
-        "name": "config",
-        "parentId": 4,
-        "id": 42,
-        "meta": {
-          "title": "配置模版",
-          "show": true
-        },
-        "component": "Config",
-        "path": "/project/config"
       }
     ]
   }

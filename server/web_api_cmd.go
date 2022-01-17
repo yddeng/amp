@@ -55,7 +55,7 @@ func (*cmdHandler) List(done *Done, user string, req struct {
 		s = append(s, v)
 	}
 	sort.Slice(s, func(i, j int) bool {
-		return s[i].CreateAt > s[j].CreateAt
+		return s[i].CallNo > s[j].CallNo
 	})
 
 	start, end := listRange(req.PageNo, req.PageSize, len(s))
@@ -151,13 +151,15 @@ const (
 	cmdDefaultTimeout = 60
 	cmdMinTimeout     = 10
 	cmdMaxTimeout     = 86400
-	cmdLogCapacity    = 20
 )
+
+var cmdLogCapacity int = 10
 
 type CmdLog struct {
 	ID       int    `json:"id"`
 	CreateAt int64  `json:"create_at"` // 执行时间
 	User     string `json:"user"`      // 执行用户
+	Dir      string `json:"dir"`       // 执行目录
 	Node     string `json:"node"`      // 执行的节点
 	Timeout  int    `json:"timeout"`   // 执行超时时间
 	Context  string `json:"context"`   // 执行内容
@@ -228,6 +230,7 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		Timeout:  req.Timeout,
 		User:     user,
 		Node:     req.Node,
+		Dir:      req.Dir,
 		Context:  context,
 	}
 
@@ -273,9 +276,9 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		cmd.doing[req.Node] = struct{}{}
 		cmd.CallNo++
 		cmdLog.ID = cmd.CallNo
-		cmdMgr.CmdLogs[req.Name] = append(cmdMgr.CmdLogs[req.Name], cmdLog)
+		cmdMgr.CmdLogs[req.Name] = append([]*CmdLog{cmdLog}, cmdMgr.CmdLogs[req.Name]...)
 		if len(cmdMgr.CmdLogs[req.Name]) > cmdLogCapacity {
-			cmdMgr.CmdLogs[req.Name] = cmdMgr.CmdLogs[req.Name][1:]
+			cmdMgr.CmdLogs[req.Name] = cmdMgr.CmdLogs[req.Name][:cmdLogCapacity]
 		}
 		saveStore(snCmdMgr)
 	}

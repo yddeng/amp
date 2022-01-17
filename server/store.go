@@ -60,26 +60,6 @@ func (store *nodeStore) Save() {
 	_ = util.EncodeJsonToFile(nodes, store.filename)
 }
 
-type itemMgrStore struct {
-	storeBase
-}
-
-func (store *itemMgrStore) Load(dataPath string) (err error) {
-	store.filename = path.Join(dataPath, store.file)
-	if err = util.DecodeJsonFromFile(&itemMgr, store.filename); err != nil {
-		if os.IsNotExist(err) {
-			err = nil
-			itemMgr = &ItemMgr{GenID: 0, Items: map[int]*Item{}}
-		}
-		return
-	}
-	return
-}
-
-func (store *itemMgrStore) Save() {
-	_ = util.EncodeJsonToFile(itemMgr, store.filename)
-}
-
 type userMgrStore struct {
 	storeBase
 }
@@ -103,37 +83,17 @@ func (store *userMgrStore) Save() {
 	_ = util.EncodeJsonToFile(userMgr, store.filename)
 }
 
-type templateStore struct {
+type processMgrStore struct {
 	storeBase
 }
 
-func (store *templateStore) Load(dataPath string) (err error) {
+func (store *processMgrStore) Load(dataPath string) (err error) {
 	store.filename = path.Join(dataPath, store.file)
-	if err = util.DecodeJsonFromFile(&temps, store.filename); err != nil {
+	if err = util.DecodeJsonFromFile(&processMgr, store.filename); err != nil {
 		if os.IsNotExist(err) {
 			err = nil
-		}
-		return
-	}
-	return
-}
-
-func (store *templateStore) Save() {
-	_ = util.EncodeJsonToFile(temps, store.filename)
-}
-
-type cluMgrStore struct {
-	storeBase
-}
-
-func (store *cluMgrStore) Load(dataPath string) (err error) {
-	store.filename = path.Join(dataPath, store.file)
-	if err = util.DecodeJsonFromFile(&cluMgr, store.filename); err != nil {
-		if os.IsNotExist(err) {
-			err = nil
-			cluMgr = &ClusterMgr{
-				GenID:    0,
-				Clusters: map[int]*Cluster{},
+			processMgr = &ProcessMgr{
+				GenID: 0,
 			}
 		}
 		return
@@ -141,8 +101,8 @@ func (store *cluMgrStore) Load(dataPath string) (err error) {
 	return
 }
 
-func (store *cluMgrStore) Save() {
-	_ = util.EncodeJsonToFile(cluMgr, store.filename)
+func (store *processMgrStore) Save() {
+	_ = util.EncodeJsonToFile(processMgr, store.filename)
 }
 
 type cmdMgrStore struct {
@@ -171,40 +131,30 @@ func (store *cmdMgrStore) Save() {
 type storeName string
 
 const (
-	snNode     storeName = "node"
-	snUserMgr  storeName = "user_mgr"
-	snCmdMgr   storeName = "cmd_mgr"
-	snItemMgr  storeName = "item_mgr"
-	snTemplate storeName = "template"
-	snCluMgr   storeName = "clu_mgr"
+	snNode       storeName = "node"
+	snUserMgr    storeName = "user_mgr"
+	snCmdMgr     storeName = "cmd_mgr"
+	snProcessMgr storeName = "process_mgr"
 )
 
 var (
-	userMgr *UserMgr
-	itemMgr *ItemMgr
-	nodes   = map[string]*Node{}
-	temps   = map[string]*Template{} // web
-	cluMgr  *ClusterMgr
-	cmdMgr  *CmdMgr
+	userMgr    *UserMgr
+	nodes      = map[string]*Node{}
+	cmdMgr     *CmdMgr
+	processMgr *ProcessMgr
 )
 
 func init() {
 	stores[snNode] = &nodeStore{storeBase{
 		file: "node.json",
 	}}
-	stores[snItemMgr] = &itemMgrStore{storeBase{
-		file: "item_mgr.json",
-	}}
 	stores[snUserMgr] = &userMgrStore{storeBase{
 		file: "user_mgr.json",
 	}}
-	stores[snTemplate] = &templateStore{storeBase{
-		file: "template.json",
-	}}
-	stores[snCluMgr] = &cluMgrStore{storeBase{
-		file: "clu_mgr.json",
-	}}
 	stores[snCmdMgr] = &cmdMgrStore{storeBase{
 		file: "cmd_mgr.json",
+	}}
+	stores[snProcessMgr] = &processMgrStore{storeBase{
+		file: "process_mgr.json",
 	}}
 }

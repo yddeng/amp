@@ -21,7 +21,7 @@ type userHandler struct {
 }
 
 func (*userHandler) Info(done *Done, user string) {
-	log.Printf("user/info by(%s) \n", user)
+	log.Printf("%s by(%s)\n", done.route, user)
 	defer func() { done.Done() }()
 	//u, _ := getUser(user)
 	//done.result.Data = struct {
@@ -80,7 +80,7 @@ func (*userHandler) Info(done *Done, user string) {
 }
 
 func (*userHandler) Nav(done *Done, user string) {
-	log.Printf("user/nav by(%s) \n", user)
+	log.Printf("%s by(%s)\n", done.route, user)
 	defer func() { done.Done() }()
 
 	done.result.Data = allNav

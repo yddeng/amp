@@ -3,12 +3,17 @@ set -euv
 
 test -d initial || mkdir -p initial
 
-cp ../cmd/center_config.json initial/center_config.json
+#cp ../cmd/center_config.json initial/center_config.json
 #cp ../cmd/executor_config.json initial/executor_config.json
 
 cd initial
+test -d dist || mkdir -p dist
+cp -r /Users/yidongdeng/vuep/initial/dist/* ./dist/
+cd ../
+
+cd initial
 GOOS=linux GOARCH=amd64 go build ../../cmd/center.go
-GOOS=linux GOARCH=amd64 go build ../../cmd/executor.go
+#GOOS=linux GOARCH=amd64 go build ../../cmd/executor.go
 cd ../
 
 tar -zcvf initial.tar.gz initial

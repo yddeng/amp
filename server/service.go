@@ -6,6 +6,7 @@ import (
 	"github.com/yddeng/utils/task"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -14,9 +15,10 @@ func NowUnix() int64 {
 }
 
 type Config struct {
-	DataPath     string        `json:"data_path"`
-	CenterConfig *CenterConfig `json:"center_config"`
-	WebConfig    *WebConfig    `json:"web_config"`
+	DataPath       string        `json:"data_path"`
+	CmdLogCapacity int           `json:"cmd_log_capacity"`
+	CenterConfig   *CenterConfig `json:"center_config"`
+	WebConfig      *WebConfig    `json:"web_config"`
 }
 
 type CenterConfig struct {
@@ -25,6 +27,7 @@ type CenterConfig struct {
 
 type WebConfig struct {
 	Address string `json:"address"`
+	App     string `json:"app"`
 	Admin   struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
@@ -44,6 +47,7 @@ func Service(cfg Config) (err error) {
 	if err = loadStore(cfg.DataPath); err != nil {
 		return
 	}
+	cmdLogCapacity = cfg.CmdLogCapacity
 
 	centerRun(cfg.CenterConfig)
 	webRun(cfg.WebConfig)
@@ -74,6 +78,28 @@ func webRun(cfg *WebConfig) {
 	app.Use(logger.New())
 	// 跨域
 	app.Use(handleCORS)
+
+	dir := app.Party("/")
+	dir.HandleDir("", cfg.App, iris.DirOptions{
+		IndexName: "index.html",
+		Gzip:      false,
+		ShowList:  false,
+	})
+
+	// 代理
+	redirect := func(ctx iris.Context) {
+		log.Print(ctx.Method(), ctx.Path())
+		if strings.HasPrefix(ctx.Path(), "/api") {
+			name := strings.TrimPrefix(ctx.Path(), "/api")
+			if name != "" {
+				ctx.Exec(ctx.Method(), name)
+				return
+			}
+		}
+	}
+	api := app.Party("/api")
+	api.Get("/*", redirect)
+	api.Post("/*", redirect)
 
 	app.Get("/test", func(ctx iris.Context) {
 		var ret Result

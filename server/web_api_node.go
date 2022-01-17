@@ -31,3 +31,19 @@ func (*nodeHandler) List(done *Done, user string, req struct {
 		done.Done()
 	})
 }
+
+func (*nodeHandler) Remove(done *Done, user string, req struct {
+	Name string `json:"name"`
+}) {
+	log.Printf("%s by(%s) %v\n", done.route, user, req)
+	defer func() { done.Done() }()
+	n, ok := nodes[req.Name]
+	if !ok || n.Online() {
+		done.result.Code = 1
+		done.result.Message = "当前状态不允许移除"
+		return
+	}
+
+	delete(nodes, req.Name)
+	saveStore(snNode)
+}

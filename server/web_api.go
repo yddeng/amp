@@ -225,6 +225,7 @@ func initHandler(app *iris.Application) {
 	nodeHandle := new(nodeHandler)
 	nodeRouter := app.Party("/node")
 	nodeRouter.Post("/list", warpHandle(nodeHandle.List))
+	nodeRouter.Post("/remove", warpHandle(nodeHandle.Remove))
 
 	cmdHandle := new(cmdHandler)
 	cmdRouter := app.Party("/cmd")
@@ -235,29 +236,10 @@ func initHandler(app *iris.Application) {
 	cmdRouter.Post("/exec", warpHandle(cmdHandle.Exec))
 	cmdRouter.Post("/log", warpHandle(cmdHandle.Log))
 
-	{
-		projectRouter := app.Party("/project")
-
-		clusterHandle := new(clusterHandler)
-		clusterRouter := projectRouter.Party("/cluster")
-		clusterRouter.Post("/list", warpHandle(clusterHandle.List))
-		clusterRouter.Post("/create", warpHandle(clusterHandle.Create))
-		clusterRouter.Post("/delete", warpHandle(clusterHandle.Delete))
-
-		itemHandle := new(itemHandler)
-		itemRoute := clusterRouter.Party("/item")
-		itemRoute.Post("/list", warpHandle(itemHandle.List))
-		itemRoute.Post("/create", warpHandle(itemHandle.Create))
-		itemRoute.Post("/delete", warpHandle(itemHandle.Delete))
-		itemRoute.Post("/start", warpHandle(itemHandle.Start))
-		itemRoute.Post("/single", warpHandle(itemHandle.Single))
-
-		templateHandle := new(templateHandler)
-		templateRoute := projectRouter.Party("/template")
-		templateRoute.Post("/list", warpHandle(templateHandle.List))
-		templateRoute.Post("/create", warpHandle(templateHandle.Create))
-		templateRoute.Post("/delete", warpHandle(templateHandle.Delete))
-		templateRoute.Post("/update", warpHandle(templateHandle.Update))
-
-	}
+	processHandle := new(processHandler)
+	processRouter := app.Party("/process")
+	processRouter.Post("/list", warpHandle(processHandle.List))
+	processRouter.Post("/create", warpHandle(processHandle.Create))
+	processRouter.Post("/delete", warpHandle(processHandle.Delete))
+	processRouter.Post("/group", warpHandle(processHandle.Group))
 }
