@@ -121,5 +121,21 @@ func webRun(cfg *WebConfig) {
 
 func centerRun(cfg *CenterConfig) {
 	center = newCenter(cfg.Address)
-	center.start()
+	go func() {
+		if err := center.startListener(); err != nil {
+			panic(err)
+		}
+	}()
+
+	go func() {
+		timer := time.NewTimer(time.Second)
+		for {
+			<-timer.C
+			taskQueue.Submit(func() {
+				processTick()
+				timer.Reset(time.Second)
+			})
+		}
+	}()
+
 }

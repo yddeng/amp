@@ -21,30 +21,38 @@ message cmdExecResp{
     string outStr = 2;
 }
 
-message appExecReq{
-    int32 appID = 1;
+message processExecReq{
+    map<string,string> config = 1;
+    string name   = 2;
+    repeated string args = 3;
+    string dir    = 4;
+    string stderr = 5;
 }
-message appExecResp{
-    string code   = 1;
-    string errStr = 2;
+message processExecResp{
+    string code  = 1;
+    int32  pid   = 2;
 }
 
-message appSignalReq{
-    int32 appID = 1;
+message processSignalReq{
+    int32 pid    = 1;
     int32 signal = 2;
 }
-message appSignalResp{
+message processSignalResp{
     string code = 1;
 }
 
-message appStatueReq{}
-message appStatueResp{
-    map<int32,appStatue>  apps = 1;
+message processIsAliveReq{
+    map<int32, int32> pid = 1;
+}
+message processIsAliveResp{
+    map<int32,bool>   alive = 1;
 }
 
-message appStatue{
-    int32  appID     = 1;
-    int32  pid       = 2;
-    int64  createAt  = 3;
-    bool   isAlive   = 4;
+message logFileReq{
+    string filename = 1;
+    int32  payload  = 2;
 }
+message logFileResp{
+    bytes  context = 1;
+}
+

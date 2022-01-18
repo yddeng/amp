@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"initial-server/util"
 	"os"
 	"path"
@@ -19,9 +20,9 @@ type storeBase struct {
 var stores = map[storeName]Store{}
 
 func loadStore(dataPath string) (err error) {
-	for _, store := range stores {
+	for name, store := range stores {
 		if err = store.Load(dataPath); err != nil {
-			return
+			return errors.New(string(name) + " : " + err.Error())
 		}
 	}
 	return
@@ -93,7 +94,9 @@ func (store *processMgrStore) Load(dataPath string) (err error) {
 		if os.IsNotExist(err) {
 			err = nil
 			processMgr = &ProcessMgr{
-				GenID: 0,
+				GenID:   0,
+				Groups:  map[string]struct{}{},
+				Process: map[int]*Process{},
 			}
 		}
 		return

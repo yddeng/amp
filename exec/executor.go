@@ -74,6 +74,7 @@ func (er *Executor) dial() {
 
 func (er *Executor) onConnected(conn net.Conn) {
 	er.Submit(func() {
+		logger.GetSugar().Infof("onConnected center %s", conn.RemoteAddr().String())
 		er.dialing = false
 		er.session = dnet.NewTCPSession(conn,
 			dnet.WithCodec(new(protocol.Codec)),
@@ -136,10 +137,10 @@ func Start(cfg Config) (err error) {
 	er.rpcServer = drpc.NewServer()
 
 	er.rpcServer.Register(proto.MessageName(&protocol.CmdExecReq{}), er.onCmdExec)
-	//er.rpcServer.Register(proto.MessageName(&protocol.StartReq{}), er.onStart)
-	//er.rpcServer.Register(proto.MessageName(&protocol.SignalReq{}), er.onSignal)
-	//er.rpcServer.Register(proto.MessageName(&protocol.ItemStatueReq{}), er.onItemStatus)
-	//er.rpcServer.Register(proto.MessageName(&protocol.PanicLogReq{}), er.onPanicLog)
+	er.rpcServer.Register(proto.MessageName(&protocol.ProcessExecReq{}), er.onProcExec)
+	er.rpcServer.Register(proto.MessageName(&protocol.ProcessSignalReq{}), er.onProcSignal)
+	er.rpcServer.Register(proto.MessageName(&protocol.ProcessIsAliveReq{}), er.onProcIsAlive)
+	er.rpcServer.Register(proto.MessageName(&protocol.LogFileReq{}), er.onLogFile)
 
 	er.Submit(er.dial)
 

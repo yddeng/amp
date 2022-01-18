@@ -82,11 +82,12 @@ func Unmarshal(namespace string, id uint16, buff []byte) (interface{}, error) {
 }
 
 const (
-	CmdLogin     = 1
-	CmdCmdExec   = 6
-	CmdAppExec   = 7
-	CmdAppSignal = 8
-	CmdAppStatue = 9
+	CmdLogin      = 1
+	CmdCmdExec    = 2
+	CmdProcStart  = 3
+	CmdProcSignal = 4
+	CmdProcAlive  = 5
+	CmdLogFile    = 6
 )
 
 func init() {
@@ -96,12 +97,15 @@ func init() {
 	Register("req", &CmdExecReq{}, CmdCmdExec)
 	Register("resp", &CmdExecResp{}, CmdCmdExec)
 
-	Register("req", &AppExecReq{}, CmdAppExec)
-	Register("resp", &AppExecResp{}, CmdAppExec)
+	Register("req", &ProcessExecReq{}, CmdProcStart)
+	Register("resp", &ProcessExecResp{}, CmdProcStart)
 
-	Register("req", &AppSignalReq{}, CmdAppSignal)
-	Register("resp", &AppSignalResp{}, CmdAppSignal)
+	Register("req", &ProcessSignalReq{}, CmdProcSignal)
+	Register("resp", &ProcessSignalResp{}, CmdProcSignal)
 
-	Register("req", &AppStatueReq{}, CmdAppStatue)
-	Register("resp", &AppStatueResp{}, CmdAppStatue)
+	Register("req", &ProcessIsAliveReq{}, CmdProcAlive)
+	Register("resp", &ProcessIsAliveResp{}, CmdProcAlive)
+
+	Register("req", &LogFileReq{}, CmdLogFile)
+	Register("resp", &LogFileResp{}, CmdLogFile)
 }

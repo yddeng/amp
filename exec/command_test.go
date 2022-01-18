@@ -2,7 +2,9 @@ package exec
 
 import (
 	"bytes"
+	"io/ioutil"
 	"math/rand"
+	"os"
 	"os/exec"
 	"sync"
 	"syscall"
@@ -129,4 +131,38 @@ func TestShell(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestCmd_Pid(t *testing.T) {
+	ecmd := exec.Command("./test")
+	ecmd.Dir = "./test"
+
+	f, err := os.OpenFile("test_err.log", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	//errout := bytes.Buffer{}
+	ecmd.Stderr = f
+	ecmd.Stdout = f
+	defer f.Close()
+
+	err = ecmd.Start()
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Log(ecmd.Process.Pid, ecmd.ProcessState)
+	time.AfterFunc(time.Second, func() {
+		os.Exit(0)
+	})
+	err = ecmd.Wait()
+
+	data, err := ioutil.ReadFile("test_err.log")
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Log("end", err, "-", string(data), "-")
+
 }

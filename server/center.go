@@ -66,26 +66,3 @@ func (c *Center) startListener() error {
 	})
 
 }
-
-func (this *Center) tick() {
-
-}
-
-func (this *Center) start() {
-	go func() {
-		if err := this.startListener(); err != nil {
-			panic(err)
-		}
-	}()
-
-	go func() {
-		timer := time.NewTimer(time.Second)
-		for {
-			<-timer.C
-			taskQueue.Submit(func() {
-				this.tick()
-				timer.Reset(time.Second)
-			})
-		}
-	}()
-}

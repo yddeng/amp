@@ -2,53 +2,16 @@ package exec
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/yddeng/dnet/drpc"
 	"initial-server/logger"
 	"initial-server/protocol"
+	"io/ioutil"
+	"os"
 	"os/exec"
+	"path"
 	"syscall"
 )
-
-type Application struct {
-	AppID    int32 `json:"app_id"`
-	Pid      int   `json:"pid"`
-	CreateAt int64 `json:"create_at"`
-}
-
-func (app *Application) isAlive() bool {
-	if err := syscall.Kill(app.Pid, 0); err == nil {
-		return true
-	}
-	return false
-}
-
-/*
-func (er *Executor) onAppExec(replier *drpc.Replier, req interface{}) {
-	msg := req.(*protocol.AppExecReq)
-	logger.GetSugar().Infof("onAppExec %v\n", msg)
-
-	ecmd := exec.Command(msg.GetName(), msg.GetArgs()...)
-	ecmd.Dir = msg.GetPath()
-
-	errBuff := bytes.Buffer{}
-	ecmd.Stderr = &errBuff
-	outBuff := bytes.Buffer{}
-	ecmd.Stdout = &outBuff
-
-	cmd := CommandWithCmd(ecmd)
-	if err := cmd.Run(func(cmd *Cmd, err error) {
-		er.Submit(func() {
-			if err != nil { // exit or signal
-				_ = replier.Reply(&protocol.CmdExecResp{Code: err.Error()}, nil)
-			} else {
-				_ = replier.Reply(&protocol.CmdExecResp{ErrStr: errBuff.String(), OutStr: outBuff.String()}, nil)
-			}
-		})
-	}); err != nil {
-		_ = replier.Reply(&protocol.CmdExecResp{Code: err.Error()}, nil)
-	}
-}
-*/
 
 func (er *Executor) onCmdExec(replier *drpc.Replier, req interface{}) {
 	msg := req.(*protocol.CmdExecReq)
@@ -87,103 +50,107 @@ func (er *Executor) onCmdExec(replier *drpc.Replier, req interface{}) {
 	}
 }
 
-/*
-func (er *Executor) onStart(replier *drpc.Replier, req interface{}) {
-	msg := req.(*protocol.StartReq)
-	logger.GetSugar().Infof("onStart %v\n", msg)
-
-	itemID := msg.GetItemID()
-	info, ok := apps[itemID]
-	if ok && info.isAlive() {
-		replier.Reply(&protocol.StartResp{Code: "itemID is started"}, nil)
-		return
-	}
-
-	shell := fmt.Sprintf("nohup %s deploy > /dev/null 2> %s/item_%d.log & echo $!", msg.GetArgs(), er.cfg.FilePath, itemID)
-	logger.GetSugar().Debug(itemID, shell)
-	cmd := exec.Command("sh", "-c", shell)
-	out, err := cmd.Output()
-	if err != nil {
-		replier.Reply(&protocol.StartResp{Code: err.Error()}, nil)
-		logger.GetSugar().Errorf(err.Error())
-		return
-	}
-
-	// 进程pid
-	str := strings.Split(string(out), "\n")[0]
-	pid, err := strconv.Atoi(str)
-	if nil != err {
-		logger.GetSugar().Error("strconv.Atoi pid error:", string(out), err)
-		replier.Reply(&protocol.StartResp{Code: "parseInt pid error"}, nil)
-		return
-	}
-
-	er.addExecInfo(itemID, pid)
-	logger.GetSugar().Infof("start ok,itemID %d pid %d", itemID, pid)
-	replier.Reply(&protocol.StartResp{}, nil)
+func makeStderr(dir string, id int32) string {
+	return fmt.Sprintf("%s/%d/stderr.log", dir, id)
 }
 
-func (er *Executor) onSignal(replier *drpc.Replier, req interface{}) {
-	msg := req.(*protocol.SignalReq)
-	logger.GetSugar().Infof("onSignal %v\n", msg)
+func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
+	msg := req.(*protocol.ProcessExecReq)
+	logger.GetSugar().Infof("onProcExec %v", msg)
 
-	itemID := msg.GetItemID()
-	p, ok := er.execInfos[itemID]
-	if !ok {
-		replier.Reply(&protocol.SignalResp{Code: "itemID not exist"}, nil)
-		return
+	if len(msg.GetConfig()) > 0 {
+		for name, ctx := range msg.GetConfig() {
+			_ = os.MkdirAll(path.Dir(name), os.ModePerm)
+			_ = ioutil.WriteFile(name, []byte(ctx), os.ModePerm)
+		}
 	}
 
-	signal := syscall.Signal(msg.GetSignal())
+	ecmd := exec.Command(msg.GetName(), msg.GetArgs()...)
+	ecmd.Dir = msg.GetDir()
+
+	// 错误信息重定向
+	var errFile *os.File
 	var err error
-	switch signal {
-	case syscall.SIGTERM:
-		if err = syscall.Kill(p.Pid, syscall.SIGTERM); err == nil {
-			er.delExecInfo(itemID)
+	if msg.GetStderr() != "" {
+		_ = os.MkdirAll(path.Dir(msg.GetStderr()), os.ModePerm)
+		errFile, err = os.OpenFile(msg.GetStderr(), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+		if err != nil {
+			_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
+			return
 		}
-	case syscall.SIGKILL:
-		if err = syscall.Kill(p.Pid, syscall.SIGKILL); err == nil {
-			er.delExecInfo(itemID)
+		ecmd.Stderr = errFile
+	}
+
+	cmd := CommandWithCmd(ecmd)
+	if err = cmd.Run(0, func(cmd *Cmd, err error) {
+		er.Submit(func() {
+			if errFile != nil {
+				_ = errFile.Close()
+			}
+		})
+	}); err != nil {
+		if errFile != nil {
+			_ = errFile.Close()
 		}
-	default:
-		err = syscall.Kill(p.Pid, signal)
-	}
-	if err != nil {
-		replier.Reply(&protocol.SignalResp{Code: err.Error()}, nil)
-		logger.GetSugar().Errorf(err.Error())
-		return
-	}
-
-	logger.GetSugar().Infof("signal ok, itemID %d", itemID)
-	replier.Reply(&protocol.SignalResp{}, nil)
-}
-
-func (er *Executor) onItemStatus(replier *drpc.Replier, req interface{}) {
-	resp := &protocol.ItemStatueResp{
-		Items: make(map[int32]*protocol.ItemStatue, len(er.execInfos)),
-	}
-
-	for _, v := range er.execInfos {
-		resp.Items[v.ItemID] = &protocol.ItemStatue{
-			ItemID:    v.ItemID,
-			Pid:       int32(v.Pid),
-			Timestamp: v.Timestamp,
-			IsAlive:   v.isAlive(),
-		}
-	}
-	replier.Reply(resp, nil)
-}
-
-func (er *Executor) onPanicLog(replier *drpc.Replier, req interface{}) {
-	msg := req.(*protocol.PanicLogReq)
-	logger.GetSugar().Infof("onPanicLog %v\n", msg)
-
-	filename := fmt.Sprintf("%s/item_%d.log", er.cfg.FilePath, msg.GetItemID())
-	if data, err := ioutil.ReadFile(filename); err != nil {
-		logger.GetSugar().Error(err)
-		replier.Reply(&protocol.PanicLogResp{Code: err.Error()}, nil)
+		_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
 	} else {
-		replier.Reply(&protocol.PanicLogResp{Msg: string(data)}, nil)
+		_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(cmd.Pid())}, nil)
 	}
 }
-*/
+
+func (er *Executor) onProcSignal(replier *drpc.Replier, req interface{}) {
+	msg := req.(*protocol.ProcessSignalReq)
+	logger.GetSugar().Infof("onProcSignal %v", msg)
+
+	if err := syscall.Kill(int(msg.GetPid()), syscall.Signal(msg.GetSignal())); err != nil {
+		_ = replier.Reply(&protocol.ProcessSignalResp{Code: err.Error()}, nil)
+	} else {
+		_ = replier.Reply(&protocol.ProcessSignalResp{}, nil)
+	}
+}
+
+func (er *Executor) onProcIsAlive(replier *drpc.Replier, req interface{}) {
+	msg := req.(*protocol.ProcessIsAliveReq)
+	logger.GetSugar().Infof("onProcIsAlive %v", msg)
+
+	ret := map[int32]bool{}
+	for id, pid := range msg.GetPid() {
+		if err := syscall.Kill(int(pid), 0); err == nil {
+			ret[id] = true
+		} else {
+			ret[id] = false
+		}
+	}
+
+	_ = replier.Reply(&protocol.ProcessIsAliveResp{Alive: ret}, nil)
+
+}
+
+func (er *Executor) onLogFile(replier *drpc.Replier, req interface{}) {
+	msg := req.(*protocol.LogFileReq)
+	logger.GetSugar().Infof("onLogFile %v", msg)
+
+	if file, err := os.Open(msg.GetFilename()); err == nil {
+		payload := int64(msg.GetPayload())
+		if payload > protocol.BuffSize-(protocol.HeadSize+100) {
+			payload = protocol.BuffSize - (protocol.HeadSize + 100)
+		}
+		info, _ := file.Stat()
+		size := info.Size()
+
+		off := int64(0)
+		if payload >= size {
+			off = 0
+			payload = size
+		} else {
+			off = size - payload
+		}
+
+		data := make([]byte, payload)
+		if _, err := file.ReadAt(data, off); err == nil {
+			_ = replier.Reply(&protocol.LogFileResp{Context: data}, nil)
+			return
+		}
+	}
+	_ = replier.Reply(&protocol.LogFileResp{Context: nil}, nil)
+}

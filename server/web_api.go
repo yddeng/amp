@@ -241,5 +241,7 @@ func initHandler(app *iris.Application) {
 	processRouter.Post("/list", warpHandle(processHandle.List))
 	processRouter.Post("/create", warpHandle(processHandle.Create))
 	processRouter.Post("/delete", warpHandle(processHandle.Delete))
-	processRouter.Post("/group", warpHandle(processHandle.Group))
+	processRouter.Post("/update", warpHandle(processHandle.Update))
+	processRouter.Post("/start", warpHandle(processHandle.Start))
+	processRouter.Post("/stop", warpHandle(processHandle.Stop))
 }

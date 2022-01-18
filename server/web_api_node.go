@@ -5,6 +5,14 @@ import (
 	"sort"
 )
 
+type nodeInfo struct {
+	Name    string `json:"name"`
+	Inet    string `json:"inet"`
+	Net     string `json:"net"`
+	LoginAt int64  `json:"login_at"` // 登陆时间
+	Online  bool   `json:"online"`
+}
+
 type nodeHandler struct{}
 
 func (*nodeHandler) List(done *Done, user string, req struct {
@@ -13,23 +21,36 @@ func (*nodeHandler) List(done *Done, user string, req struct {
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 
-	getNodeInfo(func(nodes []*nodeInfo) {
-		sort.Slice(nodes, func(i, j int) bool {
-			return nodes[i].LoginAt > nodes[j].LoginAt
+	s := make([]*nodeInfo, 0, len(nodes))
+	for _, n := range nodes {
+		s = append(s, &nodeInfo{
+			Name:    n.Name,
+			Inet:    n.Inet,
+			Net:     n.Net,
+			LoginAt: n.LoginAt,
+			Online:  n.Online(),
 		})
-		start, end := listRange(req.PageNo, req.PageSize, len(nodes))
-		done.result.Data = struct {
-			PageNo     int         `json:"pageNo"`
-			PageSize   int         `json:"pageSize"`
-			TotalCount int         `json:"totalCount"`
-			NodeList   []*nodeInfo `json:"nodeList"`
-		}{PageNo: req.PageNo,
-			PageSize:   req.PageSize,
-			TotalCount: len(nodes),
-			NodeList:   nodes[start:end],
+	}
+	sort.Slice(s, func(i, j int) bool {
+		if s[i].Online == s[j].Online {
+			return s[i].LoginAt > s[j].LoginAt
+		} else {
+			return s[i].Online
 		}
-		done.Done()
 	})
+
+	start, end := listRange(req.PageNo, req.PageSize, len(nodes))
+	done.result.Data = struct {
+		PageNo     int         `json:"pageNo"`
+		PageSize   int         `json:"pageSize"`
+		TotalCount int         `json:"totalCount"`
+		NodeList   []*nodeInfo `json:"nodeList"`
+	}{PageNo: req.PageNo,
+		PageSize:   req.PageSize,
+		TotalCount: len(s),
+		NodeList:   s[start:end],
+	}
+	done.Done()
 }
 
 func (*nodeHandler) Remove(done *Done, user string, req struct {

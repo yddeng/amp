@@ -224,309 +224,372 @@ func (m *CmdExecResp) GetOutStr() string {
 	return ""
 }
 
-type AppExecReq struct {
-	AppID                int32    `protobuf:"varint,1,opt,name=appID,proto3" json:"appID,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+type ProcessExecReq struct {
+	Config               map[string]string `protobuf:"bytes,1,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Name                 string            `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Args                 []string          `protobuf:"bytes,3,rep,name=args,proto3" json:"args,omitempty"`
+	Dir                  string            `protobuf:"bytes,4,opt,name=dir,proto3" json:"dir,omitempty"`
+	Stderr               string            `protobuf:"bytes,5,opt,name=stderr,proto3" json:"stderr,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
 }
 
-func (m *AppExecReq) Reset()         { *m = AppExecReq{} }
-func (m *AppExecReq) String() string { return proto.CompactTextString(m) }
-func (*AppExecReq) ProtoMessage()    {}
-func (*AppExecReq) Descriptor() ([]byte, []int) {
+func (m *ProcessExecReq) Reset()         { *m = ProcessExecReq{} }
+func (m *ProcessExecReq) String() string { return proto.CompactTextString(m) }
+func (*ProcessExecReq) ProtoMessage()    {}
+func (*ProcessExecReq) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c77a803fcbc0c059, []int{4}
 }
 
-func (m *AppExecReq) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AppExecReq.Unmarshal(m, b)
+func (m *ProcessExecReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ProcessExecReq.Unmarshal(m, b)
 }
-func (m *AppExecReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AppExecReq.Marshal(b, m, deterministic)
+func (m *ProcessExecReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ProcessExecReq.Marshal(b, m, deterministic)
 }
-func (m *AppExecReq) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AppExecReq.Merge(m, src)
+func (m *ProcessExecReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProcessExecReq.Merge(m, src)
 }
-func (m *AppExecReq) XXX_Size() int {
-	return xxx_messageInfo_AppExecReq.Size(m)
+func (m *ProcessExecReq) XXX_Size() int {
+	return xxx_messageInfo_ProcessExecReq.Size(m)
 }
-func (m *AppExecReq) XXX_DiscardUnknown() {
-	xxx_messageInfo_AppExecReq.DiscardUnknown(m)
+func (m *ProcessExecReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProcessExecReq.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_AppExecReq proto.InternalMessageInfo
+var xxx_messageInfo_ProcessExecReq proto.InternalMessageInfo
 
-func (m *AppExecReq) GetAppID() int32 {
+func (m *ProcessExecReq) GetConfig() map[string]string {
 	if m != nil {
-		return m.AppID
-	}
-	return 0
-}
-
-type AppExecResp struct {
-	Code                 string   `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
-	ErrStr               string   `protobuf:"bytes,2,opt,name=errStr,proto3" json:"errStr,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *AppExecResp) Reset()         { *m = AppExecResp{} }
-func (m *AppExecResp) String() string { return proto.CompactTextString(m) }
-func (*AppExecResp) ProtoMessage()    {}
-func (*AppExecResp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c77a803fcbc0c059, []int{5}
-}
-
-func (m *AppExecResp) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AppExecResp.Unmarshal(m, b)
-}
-func (m *AppExecResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AppExecResp.Marshal(b, m, deterministic)
-}
-func (m *AppExecResp) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AppExecResp.Merge(m, src)
-}
-func (m *AppExecResp) XXX_Size() int {
-	return xxx_messageInfo_AppExecResp.Size(m)
-}
-func (m *AppExecResp) XXX_DiscardUnknown() {
-	xxx_messageInfo_AppExecResp.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AppExecResp proto.InternalMessageInfo
-
-func (m *AppExecResp) GetCode() string {
-	if m != nil {
-		return m.Code
-	}
-	return ""
-}
-
-func (m *AppExecResp) GetErrStr() string {
-	if m != nil {
-		return m.ErrStr
-	}
-	return ""
-}
-
-type AppSignalReq struct {
-	AppID                int32    `protobuf:"varint,1,opt,name=appID,proto3" json:"appID,omitempty"`
-	Signal               int32    `protobuf:"varint,2,opt,name=signal,proto3" json:"signal,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *AppSignalReq) Reset()         { *m = AppSignalReq{} }
-func (m *AppSignalReq) String() string { return proto.CompactTextString(m) }
-func (*AppSignalReq) ProtoMessage()    {}
-func (*AppSignalReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c77a803fcbc0c059, []int{6}
-}
-
-func (m *AppSignalReq) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AppSignalReq.Unmarshal(m, b)
-}
-func (m *AppSignalReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AppSignalReq.Marshal(b, m, deterministic)
-}
-func (m *AppSignalReq) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AppSignalReq.Merge(m, src)
-}
-func (m *AppSignalReq) XXX_Size() int {
-	return xxx_messageInfo_AppSignalReq.Size(m)
-}
-func (m *AppSignalReq) XXX_DiscardUnknown() {
-	xxx_messageInfo_AppSignalReq.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AppSignalReq proto.InternalMessageInfo
-
-func (m *AppSignalReq) GetAppID() int32 {
-	if m != nil {
-		return m.AppID
-	}
-	return 0
-}
-
-func (m *AppSignalReq) GetSignal() int32 {
-	if m != nil {
-		return m.Signal
-	}
-	return 0
-}
-
-type AppSignalResp struct {
-	Code                 string   `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *AppSignalResp) Reset()         { *m = AppSignalResp{} }
-func (m *AppSignalResp) String() string { return proto.CompactTextString(m) }
-func (*AppSignalResp) ProtoMessage()    {}
-func (*AppSignalResp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c77a803fcbc0c059, []int{7}
-}
-
-func (m *AppSignalResp) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AppSignalResp.Unmarshal(m, b)
-}
-func (m *AppSignalResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AppSignalResp.Marshal(b, m, deterministic)
-}
-func (m *AppSignalResp) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AppSignalResp.Merge(m, src)
-}
-func (m *AppSignalResp) XXX_Size() int {
-	return xxx_messageInfo_AppSignalResp.Size(m)
-}
-func (m *AppSignalResp) XXX_DiscardUnknown() {
-	xxx_messageInfo_AppSignalResp.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AppSignalResp proto.InternalMessageInfo
-
-func (m *AppSignalResp) GetCode() string {
-	if m != nil {
-		return m.Code
-	}
-	return ""
-}
-
-type AppStatueReq struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *AppStatueReq) Reset()         { *m = AppStatueReq{} }
-func (m *AppStatueReq) String() string { return proto.CompactTextString(m) }
-func (*AppStatueReq) ProtoMessage()    {}
-func (*AppStatueReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c77a803fcbc0c059, []int{8}
-}
-
-func (m *AppStatueReq) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AppStatueReq.Unmarshal(m, b)
-}
-func (m *AppStatueReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AppStatueReq.Marshal(b, m, deterministic)
-}
-func (m *AppStatueReq) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AppStatueReq.Merge(m, src)
-}
-func (m *AppStatueReq) XXX_Size() int {
-	return xxx_messageInfo_AppStatueReq.Size(m)
-}
-func (m *AppStatueReq) XXX_DiscardUnknown() {
-	xxx_messageInfo_AppStatueReq.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AppStatueReq proto.InternalMessageInfo
-
-type AppStatueResp struct {
-	Apps                 map[int32]*AppStatue `protobuf:"bytes,1,rep,name=apps,proto3" json:"apps,omitempty" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
-	XXX_unrecognized     []byte               `json:"-"`
-	XXX_sizecache        int32                `json:"-"`
-}
-
-func (m *AppStatueResp) Reset()         { *m = AppStatueResp{} }
-func (m *AppStatueResp) String() string { return proto.CompactTextString(m) }
-func (*AppStatueResp) ProtoMessage()    {}
-func (*AppStatueResp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c77a803fcbc0c059, []int{9}
-}
-
-func (m *AppStatueResp) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AppStatueResp.Unmarshal(m, b)
-}
-func (m *AppStatueResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AppStatueResp.Marshal(b, m, deterministic)
-}
-func (m *AppStatueResp) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AppStatueResp.Merge(m, src)
-}
-func (m *AppStatueResp) XXX_Size() int {
-	return xxx_messageInfo_AppStatueResp.Size(m)
-}
-func (m *AppStatueResp) XXX_DiscardUnknown() {
-	xxx_messageInfo_AppStatueResp.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AppStatueResp proto.InternalMessageInfo
-
-func (m *AppStatueResp) GetApps() map[int32]*AppStatue {
-	if m != nil {
-		return m.Apps
+		return m.Config
 	}
 	return nil
 }
 
-type AppStatue struct {
-	AppID                int32    `protobuf:"varint,1,opt,name=appID,proto3" json:"appID,omitempty"`
+func (m *ProcessExecReq) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ProcessExecReq) GetArgs() []string {
+	if m != nil {
+		return m.Args
+	}
+	return nil
+}
+
+func (m *ProcessExecReq) GetDir() string {
+	if m != nil {
+		return m.Dir
+	}
+	return ""
+}
+
+func (m *ProcessExecReq) GetStderr() string {
+	if m != nil {
+		return m.Stderr
+	}
+	return ""
+}
+
+type ProcessExecResp struct {
+	Code                 string   `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
 	Pid                  int32    `protobuf:"varint,2,opt,name=pid,proto3" json:"pid,omitempty"`
-	CreateAt             int64    `protobuf:"varint,3,opt,name=createAt,proto3" json:"createAt,omitempty"`
-	IsAlive              bool     `protobuf:"varint,4,opt,name=isAlive,proto3" json:"isAlive,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *AppStatue) Reset()         { *m = AppStatue{} }
-func (m *AppStatue) String() string { return proto.CompactTextString(m) }
-func (*AppStatue) ProtoMessage()    {}
-func (*AppStatue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c77a803fcbc0c059, []int{10}
+func (m *ProcessExecResp) Reset()         { *m = ProcessExecResp{} }
+func (m *ProcessExecResp) String() string { return proto.CompactTextString(m) }
+func (*ProcessExecResp) ProtoMessage()    {}
+func (*ProcessExecResp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c77a803fcbc0c059, []int{5}
 }
 
-func (m *AppStatue) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AppStatue.Unmarshal(m, b)
+func (m *ProcessExecResp) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ProcessExecResp.Unmarshal(m, b)
 }
-func (m *AppStatue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AppStatue.Marshal(b, m, deterministic)
+func (m *ProcessExecResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ProcessExecResp.Marshal(b, m, deterministic)
 }
-func (m *AppStatue) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AppStatue.Merge(m, src)
+func (m *ProcessExecResp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProcessExecResp.Merge(m, src)
 }
-func (m *AppStatue) XXX_Size() int {
-	return xxx_messageInfo_AppStatue.Size(m)
+func (m *ProcessExecResp) XXX_Size() int {
+	return xxx_messageInfo_ProcessExecResp.Size(m)
 }
-func (m *AppStatue) XXX_DiscardUnknown() {
-	xxx_messageInfo_AppStatue.DiscardUnknown(m)
+func (m *ProcessExecResp) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProcessExecResp.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_AppStatue proto.InternalMessageInfo
+var xxx_messageInfo_ProcessExecResp proto.InternalMessageInfo
 
-func (m *AppStatue) GetAppID() int32 {
+func (m *ProcessExecResp) GetCode() string {
 	if m != nil {
-		return m.AppID
+		return m.Code
 	}
-	return 0
+	return ""
 }
 
-func (m *AppStatue) GetPid() int32 {
+func (m *ProcessExecResp) GetPid() int32 {
 	if m != nil {
 		return m.Pid
 	}
 	return 0
 }
 
-func (m *AppStatue) GetCreateAt() int64 {
+type ProcessSignalReq struct {
+	Pid                  int32    `protobuf:"varint,1,opt,name=pid,proto3" json:"pid,omitempty"`
+	Signal               int32    `protobuf:"varint,2,opt,name=signal,proto3" json:"signal,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ProcessSignalReq) Reset()         { *m = ProcessSignalReq{} }
+func (m *ProcessSignalReq) String() string { return proto.CompactTextString(m) }
+func (*ProcessSignalReq) ProtoMessage()    {}
+func (*ProcessSignalReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c77a803fcbc0c059, []int{6}
+}
+
+func (m *ProcessSignalReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ProcessSignalReq.Unmarshal(m, b)
+}
+func (m *ProcessSignalReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ProcessSignalReq.Marshal(b, m, deterministic)
+}
+func (m *ProcessSignalReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProcessSignalReq.Merge(m, src)
+}
+func (m *ProcessSignalReq) XXX_Size() int {
+	return xxx_messageInfo_ProcessSignalReq.Size(m)
+}
+func (m *ProcessSignalReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProcessSignalReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProcessSignalReq proto.InternalMessageInfo
+
+func (m *ProcessSignalReq) GetPid() int32 {
 	if m != nil {
-		return m.CreateAt
+		return m.Pid
 	}
 	return 0
 }
 
-func (m *AppStatue) GetIsAlive() bool {
+func (m *ProcessSignalReq) GetSignal() int32 {
 	if m != nil {
-		return m.IsAlive
+		return m.Signal
 	}
-	return false
+	return 0
+}
+
+type ProcessSignalResp struct {
+	Code                 string   `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ProcessSignalResp) Reset()         { *m = ProcessSignalResp{} }
+func (m *ProcessSignalResp) String() string { return proto.CompactTextString(m) }
+func (*ProcessSignalResp) ProtoMessage()    {}
+func (*ProcessSignalResp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c77a803fcbc0c059, []int{7}
+}
+
+func (m *ProcessSignalResp) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ProcessSignalResp.Unmarshal(m, b)
+}
+func (m *ProcessSignalResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ProcessSignalResp.Marshal(b, m, deterministic)
+}
+func (m *ProcessSignalResp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProcessSignalResp.Merge(m, src)
+}
+func (m *ProcessSignalResp) XXX_Size() int {
+	return xxx_messageInfo_ProcessSignalResp.Size(m)
+}
+func (m *ProcessSignalResp) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProcessSignalResp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProcessSignalResp proto.InternalMessageInfo
+
+func (m *ProcessSignalResp) GetCode() string {
+	if m != nil {
+		return m.Code
+	}
+	return ""
+}
+
+type ProcessIsAliveReq struct {
+	Pid                  map[int32]int32 `protobuf:"bytes,1,rep,name=pid,proto3" json:"pid,omitempty" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
+}
+
+func (m *ProcessIsAliveReq) Reset()         { *m = ProcessIsAliveReq{} }
+func (m *ProcessIsAliveReq) String() string { return proto.CompactTextString(m) }
+func (*ProcessIsAliveReq) ProtoMessage()    {}
+func (*ProcessIsAliveReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c77a803fcbc0c059, []int{8}
+}
+
+func (m *ProcessIsAliveReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ProcessIsAliveReq.Unmarshal(m, b)
+}
+func (m *ProcessIsAliveReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ProcessIsAliveReq.Marshal(b, m, deterministic)
+}
+func (m *ProcessIsAliveReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProcessIsAliveReq.Merge(m, src)
+}
+func (m *ProcessIsAliveReq) XXX_Size() int {
+	return xxx_messageInfo_ProcessIsAliveReq.Size(m)
+}
+func (m *ProcessIsAliveReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProcessIsAliveReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProcessIsAliveReq proto.InternalMessageInfo
+
+func (m *ProcessIsAliveReq) GetPid() map[int32]int32 {
+	if m != nil {
+		return m.Pid
+	}
+	return nil
+}
+
+type ProcessIsAliveResp struct {
+	Alive                map[int32]bool `protobuf:"bytes,1,rep,name=alive,proto3" json:"alive,omitempty" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *ProcessIsAliveResp) Reset()         { *m = ProcessIsAliveResp{} }
+func (m *ProcessIsAliveResp) String() string { return proto.CompactTextString(m) }
+func (*ProcessIsAliveResp) ProtoMessage()    {}
+func (*ProcessIsAliveResp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c77a803fcbc0c059, []int{9}
+}
+
+func (m *ProcessIsAliveResp) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ProcessIsAliveResp.Unmarshal(m, b)
+}
+func (m *ProcessIsAliveResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ProcessIsAliveResp.Marshal(b, m, deterministic)
+}
+func (m *ProcessIsAliveResp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProcessIsAliveResp.Merge(m, src)
+}
+func (m *ProcessIsAliveResp) XXX_Size() int {
+	return xxx_messageInfo_ProcessIsAliveResp.Size(m)
+}
+func (m *ProcessIsAliveResp) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProcessIsAliveResp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProcessIsAliveResp proto.InternalMessageInfo
+
+func (m *ProcessIsAliveResp) GetAlive() map[int32]bool {
+	if m != nil {
+		return m.Alive
+	}
+	return nil
+}
+
+type LogFileReq struct {
+	Filename             string   `protobuf:"bytes,1,opt,name=filename,proto3" json:"filename,omitempty"`
+	Payload              int32    `protobuf:"varint,2,opt,name=payload,proto3" json:"payload,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *LogFileReq) Reset()         { *m = LogFileReq{} }
+func (m *LogFileReq) String() string { return proto.CompactTextString(m) }
+func (*LogFileReq) ProtoMessage()    {}
+func (*LogFileReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c77a803fcbc0c059, []int{10}
+}
+
+func (m *LogFileReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_LogFileReq.Unmarshal(m, b)
+}
+func (m *LogFileReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_LogFileReq.Marshal(b, m, deterministic)
+}
+func (m *LogFileReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LogFileReq.Merge(m, src)
+}
+func (m *LogFileReq) XXX_Size() int {
+	return xxx_messageInfo_LogFileReq.Size(m)
+}
+func (m *LogFileReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_LogFileReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LogFileReq proto.InternalMessageInfo
+
+func (m *LogFileReq) GetFilename() string {
+	if m != nil {
+		return m.Filename
+	}
+	return ""
+}
+
+func (m *LogFileReq) GetPayload() int32 {
+	if m != nil {
+		return m.Payload
+	}
+	return 0
+}
+
+type LogFileResp struct {
+	Context              []byte   `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *LogFileResp) Reset()         { *m = LogFileResp{} }
+func (m *LogFileResp) String() string { return proto.CompactTextString(m) }
+func (*LogFileResp) ProtoMessage()    {}
+func (*LogFileResp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c77a803fcbc0c059, []int{11}
+}
+
+func (m *LogFileResp) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_LogFileResp.Unmarshal(m, b)
+}
+func (m *LogFileResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_LogFileResp.Marshal(b, m, deterministic)
+}
+func (m *LogFileResp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LogFileResp.Merge(m, src)
+}
+func (m *LogFileResp) XXX_Size() int {
+	return xxx_messageInfo_LogFileResp.Size(m)
+}
+func (m *LogFileResp) XXX_DiscardUnknown() {
+	xxx_messageInfo_LogFileResp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LogFileResp proto.InternalMessageInfo
+
+func (m *LogFileResp) GetContext() []byte {
+	if m != nil {
+		return m.Context
+	}
+	return nil
 }
 
 func init() {
@@ -534,42 +597,50 @@ func init() {
 	proto.RegisterType((*LoginResp)(nil), "loginResp")
 	proto.RegisterType((*CmdExecReq)(nil), "cmdExecReq")
 	proto.RegisterType((*CmdExecResp)(nil), "cmdExecResp")
-	proto.RegisterType((*AppExecReq)(nil), "appExecReq")
-	proto.RegisterType((*AppExecResp)(nil), "appExecResp")
-	proto.RegisterType((*AppSignalReq)(nil), "appSignalReq")
-	proto.RegisterType((*AppSignalResp)(nil), "appSignalResp")
-	proto.RegisterType((*AppStatueReq)(nil), "appStatueReq")
-	proto.RegisterType((*AppStatueResp)(nil), "appStatueResp")
-	proto.RegisterMapType((map[int32]*AppStatue)(nil), "appStatueResp.AppsEntry")
-	proto.RegisterType((*AppStatue)(nil), "appStatue")
+	proto.RegisterType((*ProcessExecReq)(nil), "processExecReq")
+	proto.RegisterMapType((map[string]string)(nil), "processExecReq.ConfigEntry")
+	proto.RegisterType((*ProcessExecResp)(nil), "processExecResp")
+	proto.RegisterType((*ProcessSignalReq)(nil), "processSignalReq")
+	proto.RegisterType((*ProcessSignalResp)(nil), "processSignalResp")
+	proto.RegisterType((*ProcessIsAliveReq)(nil), "processIsAliveReq")
+	proto.RegisterMapType((map[int32]int32)(nil), "processIsAliveReq.PidEntry")
+	proto.RegisterType((*ProcessIsAliveResp)(nil), "processIsAliveResp")
+	proto.RegisterMapType((map[int32]bool)(nil), "processIsAliveResp.AliveEntry")
+	proto.RegisterType((*LogFileReq)(nil), "logFileReq")
+	proto.RegisterType((*LogFileResp)(nil), "logFileResp")
 }
 
 func init() { proto.RegisterFile("protobuf.proto", fileDescriptor_c77a803fcbc0c059) }
 
 var fileDescriptor_c77a803fcbc0c059 = []byte{
-	// 375 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x52, 0x31, 0xaf, 0xda, 0x30,
-	0x18, 0x54, 0x30, 0xa1, 0xc9, 0x47, 0x8b, 0x90, 0x55, 0x55, 0x11, 0x4b, 0x23, 0x77, 0x61, 0xa8,
-	0x18, 0xe8, 0xd2, 0x56, 0x5d, 0x68, 0x61, 0xe8, 0x6a, 0xb6, 0x4e, 0x35, 0x89, 0x8b, 0xac, 0x86,
-	0xc4, 0x38, 0x0e, 0x7a, 0xac, 0xef, 0x97, 0x3f, 0x7d, 0xb6, 0x89, 0x40, 0x7a, 0xd9, 0xee, 0x2e,
-	0xdf, 0xdd, 0xd9, 0xf9, 0x0c, 0x33, 0x6d, 0x1a, 0xdb, 0x1c, 0xba, 0x7f, 0x2b, 0x07, 0xd8, 0x16,
-	0x92, 0xaa, 0x39, 0xaa, 0x9a, 0xcb, 0x33, 0xa5, 0x30, 0xae, 0xc5, 0x49, 0x66, 0x51, 0x1e, 0x2d,
-	0x53, 0xee, 0x30, 0x6a, 0xaa, 0x96, 0x36, 0x1b, 0x79, 0x0d, 0x31, 0x9d, 0x03, 0x41, 0x89, 0x38,
-	0x09, 0x21, 0xfb, 0x08, 0x69, 0x48, 0x69, 0x35, 0x5a, 0x8a, 0xa6, 0xec, 0x63, 0x10, 0xb3, 0xbf,
-	0x00, 0xc5, 0xa9, 0xdc, 0x3d, 0xc9, 0x02, 0x8b, 0xe6, 0x40, 0x4a, 0x65, 0xc2, 0x00, 0xc2, 0xbe,
-	0x7a, 0xf4, 0x58, 0x2d, 0xcc, 0xb1, 0xcd, 0x48, 0x4e, 0x50, 0x43, 0x4c, 0x33, 0x78, 0x63, 0xd5,
-	0x49, 0x36, 0x9d, 0xcd, 0xc6, 0x79, 0xb4, 0x8c, 0xf9, 0x8d, 0xb2, 0x6f, 0x30, 0xed, 0x1b, 0x5e,
-	0x3f, 0x04, 0xfd, 0x00, 0x93, 0xa6, 0xb3, 0x7b, 0x6b, 0x42, 0x4d, 0x60, 0x8c, 0x01, 0x08, 0xad,
-	0x6f, 0x87, 0x7b, 0x0f, 0xb1, 0xd0, 0xfa, 0xf7, 0xd6, 0x59, 0x63, 0xee, 0x09, 0xc6, 0xf7, 0x33,
-	0xc3, 0xf1, 0xd2, 0x98, 0xbb, 0x78, 0xcf, 0xd8, 0x0f, 0x78, 0x2b, 0xb4, 0xde, 0xab, 0x63, 0x2d,
-	0xaa, 0xc1, 0x02, 0x74, 0xb7, 0x6e, 0xc4, 0xb9, 0x63, 0x1e, 0x18, 0xfb, 0x04, 0xef, 0xee, 0xdc,
-	0x03, 0xbf, 0x77, 0xe6, 0x2b, 0xac, 0xb0, 0x9d, 0xe4, 0xf2, 0xcc, 0x9e, 0x23, 0xef, 0x0a, 0x42,
-	0xab, 0xe9, 0x67, 0x18, 0x0b, 0xad, 0xdb, 0x2c, 0xca, 0xc9, 0x72, 0xba, 0xce, 0x56, 0x0f, 0x5f,
-	0x57, 0x1b, 0xad, 0xdb, 0x5d, 0x6d, 0xcd, 0x95, 0xbb, 0xa9, 0xc5, 0x2f, 0x48, 0x7b, 0x09, 0xb7,
-	0xf5, 0x5f, 0x5e, 0xc3, 0x69, 0x11, 0xd2, 0x1c, 0xe2, 0x8b, 0xa8, 0x3a, 0xbf, 0xae, 0xe9, 0x1a,
-	0xee, 0xd2, 0xfc, 0x87, 0xef, 0xa3, 0xaf, 0x11, 0x53, 0x90, 0xf6, 0xfa, 0xc0, 0xa5, 0xe7, 0x40,
-	0xb4, 0x2a, 0xc3, 0x8d, 0x11, 0xd2, 0x05, 0x24, 0x85, 0x91, 0xc2, 0xca, 0x8d, 0x7f, 0x60, 0x84,
-	0xf7, 0x1c, 0x97, 0xaf, 0xda, 0x4d, 0xa5, 0x2e, 0xd2, 0x2d, 0x3f, 0xe1, 0x37, 0xfa, 0x13, 0xfe,
-	0x24, 0xee, 0x39, 0x17, 0x4d, 0x75, 0x98, 0x38, 0xf4, 0xe5, 0x25, 0x00, 0x00, 0xff, 0xff, 0xe1,
-	0x60, 0xde, 0x09, 0xea, 0x02, 0x00, 0x00,
+	// 463 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0xc1, 0x6e, 0xd3, 0x40,
+	0x10, 0xd5, 0xc6, 0x71, 0x70, 0x27, 0x08, 0xc2, 0x0a, 0x55, 0x56, 0x90, 0x20, 0xda, 0x4b, 0x73,
+	0xc1, 0x07, 0x8a, 0xa0, 0x45, 0x5c, 0x28, 0x14, 0x89, 0x1b, 0x72, 0x6f, 0x9c, 0x70, 0xed, 0x8d,
+	0xb5, 0xea, 0xc6, 0x6b, 0xbc, 0x9b, 0xaa, 0xe6, 0xcc, 0x17, 0xf2, 0x45, 0x68, 0xd6, 0xbb, 0x8e,
+	0x5d, 0x5a, 0xc1, 0xed, 0xbd, 0xf1, 0x9b, 0x79, 0x33, 0xcf, 0x36, 0x3c, 0xaa, 0x1b, 0x65, 0xd4,
+	0xe5, 0x6e, 0x93, 0x58, 0xc0, 0x3e, 0x41, 0x24, 0x55, 0x29, 0xaa, 0x94, 0xff, 0xa0, 0x14, 0xa6,
+	0x55, 0xb6, 0xe5, 0x31, 0x59, 0x91, 0xf5, 0x41, 0x6a, 0x31, 0xd6, 0x44, 0xc5, 0x4d, 0x3c, 0xe9,
+	0x6a, 0x88, 0xe9, 0x02, 0x02, 0x2c, 0x05, 0xb6, 0x84, 0x90, 0xbd, 0x80, 0x03, 0x37, 0x45, 0xd7,
+	0xd8, 0x92, 0xab, 0xa2, 0x1f, 0x83, 0x98, 0x7d, 0x07, 0xc8, 0xb7, 0xc5, 0xf9, 0x0d, 0xcf, 0xd1,
+	0x68, 0x01, 0x41, 0x21, 0x1a, 0x27, 0x40, 0xd8, 0x5b, 0x4f, 0xc6, 0xd6, 0x59, 0x53, 0xea, 0x38,
+	0x58, 0x05, 0x58, 0x43, 0x4c, 0x63, 0x78, 0x60, 0xc4, 0x96, 0xab, 0x9d, 0x89, 0xa7, 0x2b, 0xb2,
+	0x0e, 0x53, 0x4f, 0xd9, 0x29, 0xcc, 0x7b, 0x87, 0xbb, 0x97, 0xa0, 0x87, 0x30, 0x53, 0x3b, 0x73,
+	0x61, 0x1a, 0x67, 0xe3, 0x18, 0xfb, 0x4d, 0x6c, 0x2c, 0x39, 0xd7, 0xda, 0x6f, 0x78, 0x0c, 0xb3,
+	0x5c, 0x55, 0x1b, 0x51, 0xc6, 0x64, 0x15, 0xac, 0xe7, 0xaf, 0x9e, 0x25, 0x63, 0x41, 0xf2, 0xd1,
+	0x3e, 0x3d, 0xaf, 0x4c, 0xd3, 0xa6, 0x4e, 0xfa, 0xdf, 0x47, 0xb8, 0xf3, 0xa7, 0xfb, 0xf3, 0x0f,
+	0x61, 0xa6, 0x4d, 0xc1, 0x9b, 0x26, 0x0e, 0xbb, 0xcd, 0x3a, 0xb6, 0x3c, 0x85, 0xf9, 0xc0, 0x08,
+	0x1b, 0xaf, 0x78, 0xeb, 0x73, 0xbb, 0xe2, 0x2d, 0x7d, 0x0a, 0xe1, 0x75, 0x26, 0x77, 0xde, 0xb3,
+	0x23, 0xef, 0x26, 0x27, 0x84, 0xbd, 0x85, 0xc7, 0xa3, 0x95, 0xef, 0xc9, 0x64, 0x01, 0x41, 0x2d,
+	0x0a, 0xdb, 0x1e, 0xa6, 0x08, 0xd9, 0x7b, 0x58, 0xb8, 0xc6, 0x0b, 0x51, 0x56, 0x99, 0x74, 0x2f,
+	0x0c, 0x55, 0xa4, 0x57, 0xd9, 0x8d, 0xed, 0x63, 0xd7, 0xea, 0x18, 0x3b, 0x82, 0x27, 0xb7, 0xba,
+	0xef, 0xf9, 0x22, 0x7e, 0xf6, 0xc2, 0x2f, 0xfa, 0x83, 0x14, 0xd7, 0x1c, 0x7d, 0x5e, 0x7a, 0x9f,
+	0x51, 0xe6, 0x7b, 0x41, 0xf2, 0x55, 0x14, 0x5d, 0xe6, 0xa8, 0x5b, 0xbe, 0x81, 0xc8, 0x17, 0x86,
+	0xd9, 0x84, 0x77, 0x64, 0x13, 0x0e, 0xb3, 0xf9, 0x45, 0x80, 0xde, 0x9e, 0xad, 0x6b, 0xfa, 0x1a,
+	0xc2, 0x0c, 0x89, 0xf3, 0x7f, 0x9e, 0xfc, 0xad, 0x49, 0x2c, 0xea, 0x56, 0xe8, 0xc4, 0xcb, 0x13,
+	0x80, 0x7d, 0xf1, 0x5f, 0x6b, 0x44, 0xc3, 0x35, 0xce, 0x00, 0xa4, 0x2a, 0x3f, 0x0b, 0x69, 0x6f,
+	0x5f, 0x42, 0xb4, 0x11, 0x92, 0x0f, 0xfe, 0xc0, 0x9e, 0xe3, 0x67, 0x5f, 0x67, 0xad, 0x54, 0x99,
+	0x7f, 0x53, 0x9e, 0xb2, 0x23, 0x98, 0xf7, 0x33, 0x74, 0x8d, 0xc2, 0x5c, 0x55, 0x86, 0xdf, 0x18,
+	0x3b, 0xe3, 0x61, 0xea, 0xe9, 0x19, 0x7c, 0x8b, 0xec, 0x1f, 0x9f, 0x2b, 0x79, 0x39, 0xb3, 0xe8,
+	0xf8, 0x4f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x4c, 0x3f, 0x67, 0xe5, 0x0d, 0x04, 0x00, 0x00,
 }

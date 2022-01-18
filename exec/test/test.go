@@ -2,13 +2,29 @@ package main
 
 import (
 	"fmt"
+	"initial-server/logger"
+	"initial-server/util"
 	"math/rand"
 	"os"
 	"runtime"
 	"time"
 )
 
+type Config struct {
+	Msg string `json:"msg"`
+}
+
 func main() {
+
+	filename := os.Args[1]
+	var cfg Config
+	if err := util.DecodeJsonFromFile(&cfg, filename); err != nil {
+		panic(err)
+	}
+
+	logg := logger.NewZapLogger("test.log", "log", "debug", 100, 14, 1, true)
+	logg.Sugar().Info(cfg.Msg)
+
 	rand.Seed(time.Now().UnixNano())
 	num := rand.Intn(4)
 	if num == 0 {
@@ -20,7 +36,7 @@ func main() {
 			if r := recover(); r != nil {
 				buf := make([]byte, 65535)
 				l := runtime.Stack(buf, false)
-				fmt.Println(fmt.Sprintf("%v: %s", r, buf[:l]))
+				logg.Sugar().Info(fmt.Sprintf("%v: %s", r, buf[:l]))
 			}
 		}()
 		panic("panic and recover")
@@ -30,7 +46,7 @@ func main() {
 		for {
 			time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)+100))
 			i++
-			fmt.Println(pid, "---", i)
+			logg.Sugar().Info(pid, "---", i)
 			if i == 100 {
 				break
 			}
