@@ -2,7 +2,6 @@ package exec
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/yddeng/dnet/drpc"
 	"initial-server/logger"
 	"initial-server/protocol"
@@ -48,10 +47,6 @@ func (er *Executor) onCmdExec(replier *drpc.Replier, req interface{}) {
 	}); err != nil {
 		_ = replier.Reply(&protocol.CmdExecResp{Code: err.Error()}, nil)
 	}
-}
-
-func makeStderr(dir string, id int32) string {
-	return fmt.Sprintf("%s/%d/stderr.log", dir, id)
 }
 
 func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {

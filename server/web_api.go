@@ -61,24 +61,24 @@ func transBegin(ctx iris.Context, fn interface{}, args ...reflect.Value) {
 	route := getCurrentRoute(ctx)
 	done := newDone(route)
 	if err := taskQueue.SubmitTask(webTask(func() {
-		user, ret := checkToken(ctx, route)
-		if ret.Code != 0 {
+		user, ok := checkToken(ctx, route)
+		if !ok {
 			done.statue = 401
-			done.result.Message = ret.Message
+			done.result.Message = "Token验证失败"
 			done.Done()
 			return
 		}
 
-		ret = checkPermission(ctx, route, user)
-		if ret.Code != 0 {
+		ok = checkPermission(ctx, route, user)
+		if !ok {
 			done.statue = 403
-			done.result.Message = ret.Message
+			done.result.Message = "无操作权限"
 			done.Done()
 			return
 		}
 		val.Call(append([]reflect.Value{reflect.ValueOf(done), reflect.ValueOf(user)}, args...))
 	}), true); err != nil {
-		done.result.Message = "当前访问人数"
+		done.result.Message = "当前访问人数过多"
 		done.Done()
 	}
 	done.Wait()
@@ -166,27 +166,24 @@ func handleCORS(ctx iris.Context) {
 	ctx.Next()
 }
 
-func checkToken(ctx iris.Context, route string) (user string, ret Result) {
-	var ok bool
+func checkToken(ctx iris.Context, route string) (user string, ok bool) {
 	if _, ok = allowTokenRoute[route]; ok {
 		return
 	}
 	tkn := ctx.GetHeader("Access-Token")
 	if tkn == "" {
-		ret.Code = 401
-		ret.Message = "未携带Token"
+		ok = false
 		return
 	}
 	if user, ok = getTknUser(tkn); !ok {
-		ret.Code = 401
-		ret.Message = "Token失效"
+		ok = false
 		return
 	}
+	ok = true
 	return
 }
 
-func checkPermission(ctx iris.Context, route, user string) (ret Result) {
-	var ok bool
+func checkPermission(ctx iris.Context, route, user string) (ok bool) {
 	if _, ok = allowPermissionRoute[route]; ok {
 		return
 	}
@@ -238,6 +235,9 @@ func initHandler(app *iris.Application) {
 
 	processHandle := new(processHandler)
 	processRouter := app.Party("/process")
+	processRouter.Post("/glist", warpHandle(processHandle.GroupList))
+	processRouter.Post("/gadd", warpHandle(processHandle.GroupAdd))
+	processRouter.Post("/gremove", warpHandle(processHandle.GroupRemove))
 	processRouter.Post("/list", warpHandle(processHandle.List))
 	processRouter.Post("/create", warpHandle(processHandle.Create))
 	processRouter.Post("/delete", warpHandle(processHandle.Delete))

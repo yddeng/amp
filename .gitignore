@@ -13,5 +13,5 @@ cmd/executor
 data/
 log/
 
-uplaod/initial/
+uplaod/
 exec/test/test

@@ -32,6 +32,7 @@ type ProcessState struct {
 
 type Process struct {
 	ID           int                 `json:"id"`
+	Name         string              `json:"name"`
 	Dir          string              `json:"dir"`
 	Config       []*ProcessConfig    `json:"config"`
 	Command      string              `json:"command"`
@@ -48,39 +49,90 @@ type Process struct {
 type ProcessMgr struct {
 	GenID   int                 `json:"gen_id"`
 	Process map[int]*Process    `json:"process"`
-	Groups  map[string]struct{} `json:"groups"` // 程序组
+	Groups  map[string]struct{} `json:"groups"` // 程序组 'nav1/nav2'
 }
 
 type processHandler struct {
 }
 
-func (*processHandler) List(done *Done, user string, req struct {
-	Groups []string `json:"groups"`
+func (*processHandler) GroupList(done *Done, user string) {
+	log.Printf("%s by(%s) \n", done.route, user)
+	defer func() { done.Done() }()
+	done.result.Data = processMgr.Groups
+}
+
+func (*processHandler) GroupAdd(done *Done, user string, req struct {
+	Group string `json:"group"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
-	isHas := func(gs map[string]struct{}) bool {
-		for _, v := range req.Groups {
-			if v == "all" {
-				return true
-			} else if _, ok := gs[v]; ok {
-				return true
+	if _, ok := processMgr.Groups[req.Group]; !ok {
+		// 创建路径
+		ss := strings.Split(req.Group, "/")
+		var nav string
+		for i := 1; i <= len(ss); i++ {
+			nav = strings.Join(ss[0:i], "/")
+			if _, ok := processMgr.Groups[nav]; !ok {
+				processMgr.Groups[nav] = struct{}{}
 			}
 		}
-		return false
+		saveStore(snProcessMgr)
 	}
+}
+
+func (*processHandler) GroupRemove(done *Done, user string, req struct {
+	Group string `json:"group"`
+}) {
+	log.Printf("%s by(%s) %v\n", done.route, user, req)
+	defer func() { done.Done() }()
+
+	delg := map[string]struct{}{}
+	for nav := range processMgr.Groups {
+		if strings.HasPrefix(nav, req.Group) {
+			delg[nav] = struct{}{}
+		}
+	}
+
+	if len(delg) == 0 {
+		done.result.Message = "不存在的分组"
+		return
+	}
+
+	for _, v := range processMgr.Process {
+		for g := range v.Groups {
+			if _, ok := delg[g]; ok {
+				done.result.Message = "当前分组还存在进程，不允许删除"
+				return
+			}
+		}
+	}
+
+	for name := range delg {
+		delete(processMgr.Groups, name)
+	}
+	saveStore(snProcessMgr)
+}
+
+func (*processHandler) List(done *Done, user string, req struct {
+	Group string `json:"group"`
+}) {
+	log.Printf("%s by(%s) %v\n", done.route, user, req)
+	defer func() { done.Done() }()
 
 	s := make(map[int]*Process, len(processMgr.Process))
 	for _, v := range processMgr.Process {
-		if isHas(v.Groups) {
-			s[v.ID] = v
+		for nav := range v.Groups {
+			if strings.HasPrefix(nav, req.Group) {
+				s[v.ID] = v
+			}
 		}
 	}
 	done.result.Data = s
 }
 
 func (*processHandler) Create(done *Done, user string, req struct {
+	Name         string           `json:"name"`
 	Dir          string           `json:"dir"`
 	Config       []*ProcessConfig `json:"config"`
 	Command      string           `json:"command"`
@@ -96,7 +148,15 @@ func (*processHandler) Create(done *Done, user string, req struct {
 	gs := map[string]struct{}{}
 	for _, g := range req.Groups {
 		if _, ok := processMgr.Groups[g]; !ok {
-			processMgr.Groups[g] = struct{}{}
+			// 创建路径
+			ss := strings.Split(g, "/")
+			var nav string
+			for i := 0; i <= len(ss); i++ {
+				nav = strings.Join(ss[0:i], "/")
+				if _, ok := processMgr.Groups[nav]; !ok {
+					processMgr.Groups[nav] = struct{}{}
+				}
+			}
 		}
 		gs[g] = struct{}{}
 	}
@@ -105,6 +165,7 @@ func (*processHandler) Create(done *Done, user string, req struct {
 	id := processMgr.GenID
 	p := new(Process)
 	p.ID = id
+	p.Name = req.Name
 	p.Dir = req.Dir
 	p.Config = req.Config
 	p.Command = req.Command
@@ -125,6 +186,7 @@ func (*processHandler) Create(done *Done, user string, req struct {
 
 func (*processHandler) Update(done *Done, user string, req struct {
 	ID           int              `json:"id"`
+	Name         string           `json:"name"`
 	Dir          string           `json:"dir"`
 	Config       []*ProcessConfig `json:"config"`
 	Command      string           `json:"command"`
@@ -140,7 +202,15 @@ func (*processHandler) Update(done *Done, user string, req struct {
 	gs := map[string]struct{}{}
 	for _, g := range req.Groups {
 		if _, ok := processMgr.Groups[g]; !ok {
-			processMgr.Groups[g] = struct{}{}
+			// 创建路径
+			ss := strings.Split(g, "/")
+			var nav string
+			for i := 0; i <= len(ss); i++ {
+				nav = strings.Join(ss[0:i], "/")
+				if _, ok := processMgr.Groups[nav]; !ok {
+					processMgr.Groups[nav] = struct{}{}
+				}
+			}
 		}
 		gs[g] = struct{}{}
 	}
@@ -151,6 +221,7 @@ func (*processHandler) Update(done *Done, user string, req struct {
 		return
 	}
 
+	p.Name = req.Name
 	p.Dir = req.Dir
 	p.Config = req.Config
 	p.Command = req.Command
