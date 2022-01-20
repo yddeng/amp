@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/yddeng/dnet/drpc"
+	"initial-server/exec"
 	"initial-server/protocol"
 	"log"
 	"path"
@@ -15,35 +16,45 @@ type ProcessConfig struct {
 	Context string `json:"context"`
 }
 
-const (
-	processStarting = "Starting"
-	processRunning  = "Running"
-	processFatal    = "Fatal"  // 设置重启时，超过重启次数
-	processExited   = "Exited" // 程序退出
-	processStopping = "Stopping"
-	processStopped  = "Stopped"
-)
-
 type ProcessState struct {
-	Pid       int32  `json:"pid"`
-	Timestamp int64  `json:"timestamp"`
-	Status    string `json:"status"`
+	// 状态
+	Status string `json:"status"`
+	// 运行时Pid， Running、Stopping 时可用，启动时重置
+	Pid int32 `json:"pid"`
+	// 时间戳 秒， 启动、停止时设置
+	Timestamp int64 `json:"timestamp"`
+	// Exited 信息，启动时重置
+	ExitMsg string `json:"exit_msg"`
+	// 已经自动重启次数，启动时重置
+	AutoStartTimes int `json:"auto_start_times"`
+	isAutoStart    bool
 }
 
 type Process struct {
-	ID           int                 `json:"id"`
-	Name         string              `json:"name"`
-	Dir          string              `json:"dir"`
-	Config       []*ProcessConfig    `json:"config"`
-	Command      string              `json:"command"`
-	Priority     int                 `json:"priority"`       // 子进程启动关闭优先级，优先级低的，最先启动，关闭的时候最后关闭	默认值为999 。。非必须设置
-	StartRetries int                 `json:"start_retries"`  // 当进程启动失败后，最大尝试启动的次数。。当超过3次后，supervisor将把 此进程的状态置为FAIL	默认值为3 。。非必须设置
-	StopWaitSecs int                 `json:"stop_wait_secs"` // 这个是当我们向子进程发送stopsignal信号后，到系统返回信息	给supervisord，所等待的最大时间。 超过这个时间，supervisord会向该	子进程发送一个强制kill的信号。
-	State        ProcessState        `json:"state"`
-	Groups       map[string]struct{} `json:"groups"`
-	Node         string              `json:"node"`
-	User         string              `json:"user"`
-	CreateAt     int64               `json:"create_at"`
+	ID       int                 `json:"id"`
+	Name     string              `json:"name"`
+	Dir      string              `json:"dir"`
+	Config   []*ProcessConfig    `json:"config"`
+	Command  string              `json:"command"`
+	State    ProcessState        `json:"state"`
+	Groups   map[string]struct{} `json:"groups"`
+	Node     string              `json:"node"`
+	User     string              `json:"user"`
+	CreateAt int64               `json:"create_at"`
+
+	// 子进程启动关闭优先级，优先级低的，最先启动，关闭的时候最后关闭
+	// 默认值为999 。。非必须设置
+	Priority int `json:"priority"`
+	// 子进程启动多少秒之后，此时状态如果是running，则我们认为启动成功了
+	// 默认值为1 。。非必须设置
+	//StartSecs int `json:"start_secs"`
+	// 这个是当我们向子进程发送stop信号后，到系统返回信息所等待的最大时间。
+	// 超过这个时间会向该子进程发送一个强制kill的信号。
+	// 默认为10秒。。非必须设置
+	StopWaitSecs int `json:"stop_wait_secs"`
+	// 进程状态为 Exited时，自动重启
+	// 默认为3次。。非必须设置
+	AutoStartTimes int `json:"auto_start_times"`
 }
 
 type ProcessMgr struct {
@@ -132,15 +143,15 @@ func (*processHandler) List(done *Done, user string, req struct {
 }
 
 func (*processHandler) Create(done *Done, user string, req struct {
-	Name         string           `json:"name"`
-	Dir          string           `json:"dir"`
-	Config       []*ProcessConfig `json:"config"`
-	Command      string           `json:"command"`
-	Priority     int              `json:"priority"`
-	StartRetries int              `json:"start_retries"`
-	StopWaitSecs int              `json:"stop_wait_secs"`
-	Groups       []string         `json:"groups"`
-	Node         string           `json:"node"`
+	Name           string           `json:"name"`
+	Dir            string           `json:"dir"`
+	Config         []*ProcessConfig `json:"config"`
+	Command        string           `json:"command"`
+	Groups         []string         `json:"groups"`
+	Node           string           `json:"node"`
+	Priority       int              `json:"priority"`
+	StopWaitSecs   int              `json:"stop_wait_secs"`
+	AutoStartTimes int              `json:"auto_start_times"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
@@ -169,32 +180,32 @@ func (*processHandler) Create(done *Done, user string, req struct {
 	p.Dir = req.Dir
 	p.Config = req.Config
 	p.Command = req.Command
-	p.Priority = req.Priority
-	p.StartRetries = req.StartRetries
-	p.StopWaitSecs = req.StartRetries
 	p.State = ProcessState{
-		Status: processStopped,
+		Status: exec.StateStopped,
 	}
 	p.Groups = gs
 	p.Node = req.Node
 	p.User = user
 	p.CreateAt = NowUnix()
+	p.Priority = req.Priority
+	p.StopWaitSecs = req.StopWaitSecs
+	p.AutoStartTimes = req.AutoStartTimes
 
 	processMgr.Process[id] = p
 	saveStore(snProcessMgr)
 }
 
 func (*processHandler) Update(done *Done, user string, req struct {
-	ID           int              `json:"id"`
-	Name         string           `json:"name"`
-	Dir          string           `json:"dir"`
-	Config       []*ProcessConfig `json:"config"`
-	Command      string           `json:"command"`
-	Priority     int              `json:"priority"`
-	StartRetries int              `json:"start_retries"`
-	StopWaitSecs int              `json:"stop_wait_secs"`
-	Groups       []string         `json:"groups"`
-	Node         string           `json:"node"`
+	ID             int              `json:"id"`
+	Name           string           `json:"name"`
+	Dir            string           `json:"dir"`
+	Config         []*ProcessConfig `json:"config"`
+	Command        string           `json:"command"`
+	Groups         []string         `json:"groups"`
+	Node           string           `json:"node"`
+	Priority       int              `json:"priority"`
+	StopWaitSecs   int              `json:"stop_wait_secs"`
+	AutoStartTimes int              `json:"auto_start_times"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
@@ -216,7 +227,8 @@ func (*processHandler) Update(done *Done, user string, req struct {
 	}
 
 	p, ok := processMgr.Process[req.ID]
-	if !ok || p.State.Status != processStopped {
+	if !ok || !(p.State.Status == exec.StateStopped ||
+		p.State.Status == exec.StateExited) {
 		done.result.Message = "当前状态不允许修改"
 		return
 	}
@@ -225,11 +237,11 @@ func (*processHandler) Update(done *Done, user string, req struct {
 	p.Dir = req.Dir
 	p.Config = req.Config
 	p.Command = req.Command
-	p.Priority = req.Priority
-	p.StartRetries = req.StartRetries
-	p.StopWaitSecs = req.StartRetries
 	p.Groups = gs
 	p.Node = req.Node
+	p.Priority = req.Priority
+	p.StopWaitSecs = req.StopWaitSecs
+	p.AutoStartTimes = req.AutoStartTimes
 
 	saveStore(snProcessMgr)
 }
@@ -241,8 +253,9 @@ func (*processHandler) Delete(done *Done, user string, req struct {
 	defer func() { done.Done() }()
 
 	p, ok := processMgr.Process[req.ID]
-	if !ok || p.State.Status != processStopped {
-		done.result.Message = "当前状态不允许修改"
+	if !ok || !(p.State.Status == exec.StateStopped ||
+		p.State.Status == exec.StateExited) {
+		done.result.Message = "当前状态不允许删除"
 		return
 	}
 
@@ -251,18 +264,19 @@ func (*processHandler) Delete(done *Done, user string, req struct {
 }
 
 func processTick() {
-	rpcReq := map[string]*protocol.ProcessIsAliveReq{}
+	rpcReq := map[string]*protocol.ProcessStateReq{}
 	for _, p := range processMgr.Process {
-		if !(p.State.Status == processStopped ||
-			p.State.Status == processExited) {
+		if p.State.Status == exec.StateStarting ||
+			p.State.Status == exec.StateRunning ||
+			p.State.Status == exec.StateStopping {
 			req, ok := rpcReq[p.Node]
 			if !ok {
-				req = &protocol.ProcessIsAliveReq{
-					Pid: map[int32]int32{},
+				req = &protocol.ProcessStateReq{
+					Ids: make([]int32, 0, 4),
 				}
 				rpcReq[p.Node] = req
 			}
-			req.Pid[int32(p.ID)] = p.State.Pid
+			req.Ids = append(req.Ids, int32(p.ID))
 		}
 	}
 
@@ -275,32 +289,113 @@ func processTick() {
 			if e != nil {
 				return
 			}
-			rpcResp := i.(*protocol.ProcessIsAliveResp)
-			for id, b := range rpcResp.GetAlive() {
+			change := false
+			rpcResp := i.(*protocol.ProcessStateResp)
+			for id, state := range rpcResp.GetStates() {
 				p, ok := processMgr.Process[int(id)]
 				if !ok {
 					continue
 				}
-				if p.State.Status == processStarting {
-					if b {
-						p.State.Status = processRunning
+				pState := p.State.Status
+				if pState != state.GetState() {
+					if pState == exec.StateStarting {
+						p.State.Status = state.GetState()
+						if state.GetState() == exec.StateRunning {
+							p.State.Pid = state.Pid
+						} else if state.GetState() == exec.StateExited {
+							p.State.ExitMsg = state.GetExitMsg()
+							p.State.isAutoStart = true
+						} else {
+							// Stopped
+						}
+						change = true
+					} else if pState == exec.StateRunning {
+						p.State.Status = state.GetState()
+						if state.GetState() == exec.StateExited {
+							p.State.ExitMsg = state.GetExitMsg()
+							p.State.isAutoStart = true
+						} else {
+							// Stopped
+						}
+						change = true
 					} else {
-						p.State.Status = processExited
-					}
-				} else if p.State.Status == processRunning {
-					if !b {
-						p.State.Status = processExited
-					}
-				} else if p.State.Status == processStopping {
-					if !b {
-						p.State.Status = processStopped
+						// Stopping
+						if state.GetState() == exec.StateRunning {
+							subUnix := NowUnix() - p.State.Timestamp
+							if int(subUnix) >= p.StopWaitSecs {
+								_ = center.Go(node, &protocol.ProcessSignalReq{
+									Pid:    p.State.Pid,
+									Signal: int32(syscall.SIGKILL),
+								}, drpc.DefaultRPCTimeout, func(i interface{}, e error) {})
+							}
+						} else {
+							// Stopped || Exited
+							p.State.ExitMsg = state.GetExitMsg()
+							p.State.Status = exec.StateStopped
+							change = true
+						}
 					}
 				}
 			}
-			saveStore(snProcessMgr)
+			if change {
+				saveStore(snProcessMgr)
+			}
 		})
 	}
+}
 
+func processAutoStart() {
+	for _, p := range processMgr.Process {
+		if p.State.isAutoStart &&
+			p.State.Status == exec.StateExited &&
+			p.State.AutoStartTimes < p.AutoStartTimes {
+
+			node, ok := nodes[p.Node]
+			if !ok || !node.Online() {
+				continue
+			}
+
+			log.Printf("process %d auto start times %d\n", p.ID, p.State.AutoStartTimes)
+			if err := p.start(node, func(code string, err error) {}); err == nil {
+				p.State.AutoStartTimes += 1
+				p.State.Status = exec.StateStarting
+				p.State.Timestamp = NowUnix()
+				p.State.ExitMsg = ""
+				saveStore(snProcessMgr)
+			}
+		}
+	}
+}
+
+//func makePath(dir string, id int) string {
+//	return path.Join(dir, strconv.Itoa(id))
+//}
+
+func (p *Process) start(node *Node, callback func(code string, err error)) error {
+	configs := make(map[string]string, len(p.Config))
+	for _, cfg := range p.Config {
+		name := path.Join(p.Dir, strconv.Itoa(p.ID), cfg.Name)
+		configs[name] = cfg.Context
+	}
+
+	cmd := strings.ReplaceAll(p.Command, "{{path}}", strconv.Itoa(p.ID))
+	cmds := strings.Split(cmd, " ")
+	rpcReq := &protocol.ProcessExecReq{
+		Id:     int32(p.ID),
+		Dir:    p.Dir,
+		Name:   cmds[0],
+		Args:   cmds[1:],
+		Config: configs,
+	}
+
+	return center.Go(node, rpcReq, drpc.DefaultRPCTimeout, func(i interface{}, e error) {
+		if e != nil {
+			callback("", e)
+			return
+		}
+		rpcResp := i.(*protocol.ProcessExecResp)
+		callback(rpcResp.GetCode(), nil)
+	})
 }
 
 func (*processHandler) Start(done *Done, user string, req struct {
@@ -310,8 +405,10 @@ func (*processHandler) Start(done *Done, user string, req struct {
 	defer func() { done.Done() }()
 
 	p, ok := processMgr.Process[req.ID]
-	if !ok || !(p.State.Status == processStopped ||
-		p.State.Status == processExited) {
+	if !ok ||
+		p.State.Status == exec.StateStarting ||
+		p.State.Status == exec.StateRunning ||
+		p.State.Status == exec.StateStopping {
 		done.result.Message = "当前状态不允许启动"
 		return
 	}
@@ -322,48 +419,19 @@ func (*processHandler) Start(done *Done, user string, req struct {
 		return
 	}
 
-	p.State = ProcessState{
-		Status:    processStarting,
-		Timestamp: NowUnix(),
-	}
-
-	configs := make(map[string]string, len(p.Config))
-	for _, cfg := range p.Config {
-		name := path.Join(p.Dir, strconv.Itoa(p.ID), cfg.Name)
-		configs[name] = cfg.Context
-	}
-
-	cmd := strings.ReplaceAll(p.Command, "{{id}}", strconv.Itoa(p.ID))
-	cmds := strings.Split(cmd, " ")
-	rpcReq := &protocol.ProcessExecReq{
-		Dir:    p.Dir,
-		Name:   cmds[0],
-		Args:   cmds[1:],
-		Config: configs,
-		Stderr: path.Join(p.Dir, strconv.Itoa(p.ID), "stderr.log"),
-	}
-
-	if err := center.Go(node, rpcReq, drpc.DefaultRPCTimeout, func(i interface{}, e error) {
-		if e != nil {
-			done.result.Message = e.Error()
-			done.Done()
-			return
+	if err := p.start(node, func(code string, err error) {
+		if err == nil {
+			done.result.Message = code
 		}
-		rpcResp := i.(*protocol.ProcessExecResp)
-		if rpcResp.GetCode() != "" {
-			done.result.Message = rpcResp.GetCode()
-			p.State.Status = processStopped
-		} else {
-			p.State.Status = processRunning
-			p.State.Pid = rpcResp.GetPid()
-		}
-		saveStore(snProcessMgr)
 		done.Done()
 	}); err != nil {
-		log.Println(err)
 		done.result.Message = err.Error()
 		done.Done()
 	} else {
+		p.State = ProcessState{
+			Status:    exec.StateStarting,
+			Timestamp: NowUnix(),
+		}
 		saveStore(snProcessMgr)
 	}
 }
@@ -375,9 +443,7 @@ func (*processHandler) Stop(done *Done, user string, req struct {
 	defer func() { done.Done() }()
 
 	p, ok := processMgr.Process[req.ID]
-	if !ok || !(p.State.Status == processStopped ||
-		p.State.Status == processStopping ||
-		p.State.Status == processExited) {
+	if !ok || p.State.Status != exec.StateRunning {
 		done.result.Message = "当前状态不允许停止"
 		return
 	}
@@ -388,8 +454,6 @@ func (*processHandler) Stop(done *Done, user string, req struct {
 		return
 	}
 
-	p.State.Status = processStopping
-
 	rpcReq := &protocol.ProcessSignalReq{
 		Pid:    p.State.Pid,
 		Signal: int32(syscall.SIGTERM),
@@ -397,7 +461,6 @@ func (*processHandler) Stop(done *Done, user string, req struct {
 
 	if err := center.Go(node, rpcReq, drpc.DefaultRPCTimeout, func(i interface{}, e error) {
 		if e != nil {
-			done.result.Message = e.Error()
 			done.Done()
 			return
 		}
@@ -405,13 +468,13 @@ func (*processHandler) Stop(done *Done, user string, req struct {
 		if rpcResp.GetCode() != "" {
 			done.result.Message = rpcResp.GetCode()
 		}
-		saveStore(snProcessMgr)
 		done.Done()
 	}); err != nil {
-		log.Println(err)
 		done.result.Message = err.Error()
 		done.Done()
 	} else {
+		p.State.Status = exec.StateStopping
+		p.State.Timestamp = NowUnix()
 		saveStore(snProcessMgr)
 	}
 }

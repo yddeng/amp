@@ -86,7 +86,7 @@ const (
 	CmdCmdExec    = 2
 	CmdProcStart  = 3
 	CmdProcSignal = 4
-	CmdProcAlive  = 5
+	CmdProcState  = 5
 	CmdLogFile    = 6
 )
 
@@ -103,8 +103,8 @@ func init() {
 	Register("req", &ProcessSignalReq{}, CmdProcSignal)
 	Register("resp", &ProcessSignalResp{}, CmdProcSignal)
 
-	Register("req", &ProcessIsAliveReq{}, CmdProcAlive)
-	Register("resp", &ProcessIsAliveResp{}, CmdProcAlive)
+	Register("req", &ProcessStateReq{}, CmdProcState)
+	Register("resp", &ProcessStateResp{}, CmdProcState)
 
 	Register("req", &LogFileReq{}, CmdLogFile)
 	Register("resp", &LogFileResp{}, CmdLogFile)

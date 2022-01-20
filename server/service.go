@@ -133,6 +133,7 @@ func centerRun(cfg *CenterConfig) {
 			<-timer.C
 			taskQueue.Submit(func() {
 				processTick()
+				processAutoStart()
 				timer.Reset(time.Second)
 			})
 		}

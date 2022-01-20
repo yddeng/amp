@@ -187,6 +187,7 @@ func checkPermission(ctx iris.Context, route, user string) (ok bool) {
 	if _, ok = allowPermissionRoute[route]; ok {
 		return
 	}
+	ok = true
 	return
 }
 

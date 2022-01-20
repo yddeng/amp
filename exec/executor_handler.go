@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"syscall"
 )
 
@@ -49,9 +50,18 @@ func (er *Executor) onCmdExec(replier *drpc.Replier, req interface{}) {
 	}
 }
 
+func makeStderr(dir string, id int32) string {
+	return path.Join(dir, strconv.Itoa(int(id)), "stderr.log")
+}
+
 func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 	msg := req.(*protocol.ProcessExecReq)
 	logger.GetSugar().Infof("onProcExec %v", msg)
+
+	if p, ok := processCache[msg.GetId()]; ok && p.State == StateRunning {
+		_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(p.Pid())}, nil)
+		return
+	}
 
 	if len(msg.GetConfig()) > 0 {
 		for name, ctx := range msg.GetConfig() {
@@ -64,32 +74,31 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 	ecmd.Dir = msg.GetDir()
 
 	// 错误信息重定向
-	var errFile *os.File
-	var err error
-	if msg.GetStderr() != "" {
-		_ = os.MkdirAll(path.Dir(msg.GetStderr()), os.ModePerm)
-		errFile, err = os.OpenFile(msg.GetStderr(), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
-		if err != nil {
-			_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
-			return
-		}
-		ecmd.Stderr = errFile
+	filename := makeStderr(msg.GetDir(), msg.GetId())
+	_ = os.MkdirAll(path.Dir(filename), os.ModePerm)
+	errFile, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
+		return
 	}
+	ecmd.Stderr = errFile
 
-	cmd := CommandWithCmd(ecmd)
-	if err = cmd.Run(0, func(cmd *Cmd, err error) {
-		er.Submit(func() {
-			if errFile != nil {
-				_ = errFile.Close()
-			}
-		})
-	}); err != nil {
-		if errFile != nil {
-			_ = errFile.Close()
+	if p, err := ProcessWithCmd(ecmd, func(process *Process) {
+		_ = errFile.Close()
+		if process.State == StateStopped {
+			delete(processCache, process.ID)
 		}
+		saveCache()
+	}); err != nil {
+		_ = errFile.Close()
 		_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
 	} else {
-		_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(cmd.Pid())}, nil)
+		p.ID = msg.GetId()
+		p.Stderr = filename
+		p.Command = ecmd.String()
+		processCache[p.ID] = p
+		saveCache()
+		_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(p.Pid())}, nil)
 	}
 }
 
@@ -104,20 +113,27 @@ func (er *Executor) onProcSignal(replier *drpc.Replier, req interface{}) {
 	}
 }
 
-func (er *Executor) onProcIsAlive(replier *drpc.Replier, req interface{}) {
-	msg := req.(*protocol.ProcessIsAliveReq)
-	logger.GetSugar().Infof("onProcIsAlive %v", msg)
+func (er *Executor) onProcState(replier *drpc.Replier, req interface{}) {
+	msg := req.(*protocol.ProcessStateReq)
+	logger.GetSugar().Infof("onProcState %v", msg)
 
-	ret := map[int32]bool{}
-	for id, pid := range msg.GetPid() {
-		if err := syscall.Kill(int(pid), 0); err == nil {
-			ret[id] = true
-		} else {
-			ret[id] = false
+	states := map[int32]*protocol.ProcessState{}
+	for _, id := range msg.GetIds() {
+		state := &protocol.ProcessState{
+			State: StateStopped,
 		}
+		if p, ok := processCache[id]; ok {
+			state.Pid = int32(p.Pid())
+			state.State = p.State
+			if p.State == StateExited {
+				if data, err := ioutil.ReadFile(p.Stderr); err == nil {
+					state.ExitMsg = string(data)
+				}
+			}
+		}
+		states[id] = state
 	}
-
-	_ = replier.Reply(&protocol.ProcessIsAliveResp{Alive: ret}, nil)
+	_ = replier.Reply(&protocol.ProcessStateResp{States: states}, nil)
 
 }
 

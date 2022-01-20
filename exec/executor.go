@@ -130,6 +130,8 @@ func (er *Executor) dispatchMsg(session dnet.Session, msg *protocol.Message) {}
 var er *Executor
 
 func Start(cfg Config) (err error) {
+	loadCache(cfg.DataPath)
+
 	er = new(Executor)
 	er.cfg = &cfg
 	er.taskPool = task.NewTaskPool(1, 1024)
@@ -139,7 +141,7 @@ func Start(cfg Config) (err error) {
 	er.rpcServer.Register(proto.MessageName(&protocol.CmdExecReq{}), er.onCmdExec)
 	er.rpcServer.Register(proto.MessageName(&protocol.ProcessExecReq{}), er.onProcExec)
 	er.rpcServer.Register(proto.MessageName(&protocol.ProcessSignalReq{}), er.onProcSignal)
-	er.rpcServer.Register(proto.MessageName(&protocol.ProcessIsAliveReq{}), er.onProcIsAlive)
+	er.rpcServer.Register(proto.MessageName(&protocol.ProcessStateReq{}), er.onProcState)
 	er.rpcServer.Register(proto.MessageName(&protocol.LogFileReq{}), er.onLogFile)
 
 	er.Submit(er.dial)

@@ -50,7 +50,7 @@ func TestCommandWithCmd(t *testing.T) {
 	wg := sync.WaitGroup{}
 
 	for i := 0; i < num; i++ {
-		ecmd := exec.Command("./test/test")
+		ecmd := exec.Command("./test/test", "./test/config.json")
 		errBuff := bytes.Buffer{}
 		ecmd.Stderr = &errBuff
 		outBuff := bytes.Buffer{}
@@ -60,6 +60,7 @@ func TestCommandWithCmd(t *testing.T) {
 		wg.Add(1)
 		if err := cmd.Run(0, func(cmd *Cmd, err error) {
 			wg.Done()
+			t.Log(err, cmd.cmd.ProcessState.ExitCode(), cmd.ProcessState().Exited(), cmd.ProcessState().Success())
 			// 异步调用过来的
 			if err != nil {
 				// exit or signal
@@ -82,9 +83,16 @@ func TestCommandWithCmd(t *testing.T) {
 		find := false
 		for _, p := range pros {
 			if !p.Done() {
-				t.Log(p.Pid(), "kill")
-				if err := p.Signal(syscall.SIGTERM); err != nil {
-					t.Log(p.Pid(), "kill", err)
+				sig := syscall.SIGTERM
+				code := rand.Intn(3)
+				if code == 1 {
+					sig = syscall.SIGTERM
+				} else if code == 2 {
+					sig = syscall.SIGKILL
+				}
+				t.Log(p.Pid(), "signal", sig.String())
+				if err := p.Signal(sig); err != nil {
+					t.Log(p.Pid(), "signal", err)
 				}
 				find = true
 				break
@@ -134,7 +142,7 @@ func TestShell(t *testing.T) {
 }
 
 func TestCmd_Pid(t *testing.T) {
-	ecmd := exec.Command("./test")
+	ecmd := exec.Command("/bin/sh", "-c", "./test")
 	ecmd.Dir = "./test"
 
 	f, err := os.OpenFile("test_err.log", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
@@ -154,6 +162,7 @@ func TestCmd_Pid(t *testing.T) {
 
 	t.Log(ecmd.Process.Pid, ecmd.ProcessState)
 	time.AfterFunc(time.Second, func() {
+		syscall.Kill(0, syscall.SIGTERM)
 		os.Exit(0)
 	})
 	err = ecmd.Wait()

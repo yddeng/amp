@@ -26,7 +26,7 @@ message processExecReq{
     string name   = 2;
     repeated string args = 3;
     string dir    = 4;
-    string stderr = 5;
+    int32  id     = 5;
 }
 message processExecResp{
     string code  = 1;
@@ -41,11 +41,16 @@ message processSignalResp{
     string code = 1;
 }
 
-message processIsAliveReq{
-    map<int32, int32> pid = 1;
+message processStateReq{
+    repeated int32  ids = 1;
 }
-message processIsAliveResp{
-    map<int32,bool>   alive = 1;
+message processStateResp{
+    map<int32,processState>  states  = 1;
+}
+message processState{
+    int32  pid     = 1;
+    string state   = 2;
+    string exitMsg = 3;
 }
 
 message logFileReq{
