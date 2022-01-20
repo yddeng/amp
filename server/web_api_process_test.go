@@ -102,7 +102,7 @@ func TestProcessHandler_Start(t *testing.T) {
 				AutoStartTimes int              `json:"auto_start_times"`
 				Groups         []string         `json:"groups"`
 				Node           string           `json:"node"`
-			}{Dir: "/Users/yidongdeng/go/src/initial-server/exec/test",
+			}{Dir: "",
 				Config: []*ProcessConfig{
 					{Name: "config.json", Context: `{"msg":"teststetstest"}`},
 				},
@@ -117,7 +117,9 @@ func TestProcessHandler_Start(t *testing.T) {
 			ret, err := req.ToString()
 			t.Log(err, ret)
 		}
+
 	*/
+
 	{
 		// exec
 		req, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/process/start", address), "POST")

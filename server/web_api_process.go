@@ -72,6 +72,19 @@ func (*processHandler) GroupList(done *Done, user string) {
 	done.result.Data = processMgr.Groups
 }
 
+func createGroupPath(group string) {
+	// 创建路径
+	ss := strings.Split(group, "/")
+	var nav string
+	for i := 1; i <= len(ss); i++ {
+		nav = strings.Join(ss[0:i], "/")
+		if _, ok := processMgr.Groups[nav]; !ok {
+			processMgr.Groups[nav] = struct{}{}
+		}
+	}
+	saveStore(snProcessMgr)
+}
+
 func (*processHandler) GroupAdd(done *Done, user string, req struct {
 	Group string `json:"group"`
 }) {
@@ -79,16 +92,7 @@ func (*processHandler) GroupAdd(done *Done, user string, req struct {
 	defer func() { done.Done() }()
 
 	if _, ok := processMgr.Groups[req.Group]; !ok {
-		// 创建路径
-		ss := strings.Split(req.Group, "/")
-		var nav string
-		for i := 1; i <= len(ss); i++ {
-			nav = strings.Join(ss[0:i], "/")
-			if _, ok := processMgr.Groups[nav]; !ok {
-				processMgr.Groups[nav] = struct{}{}
-			}
-		}
-		saveStore(snProcessMgr)
+		createGroupPath(req.Group)
 	}
 }
 
@@ -159,15 +163,7 @@ func (*processHandler) Create(done *Done, user string, req struct {
 	gs := map[string]struct{}{}
 	for _, g := range req.Groups {
 		if _, ok := processMgr.Groups[g]; !ok {
-			// 创建路径
-			ss := strings.Split(g, "/")
-			var nav string
-			for i := 0; i <= len(ss); i++ {
-				nav = strings.Join(ss[0:i], "/")
-				if _, ok := processMgr.Groups[nav]; !ok {
-					processMgr.Groups[nav] = struct{}{}
-				}
-			}
+			createGroupPath(g)
 		}
 		gs[g] = struct{}{}
 	}
@@ -213,15 +209,7 @@ func (*processHandler) Update(done *Done, user string, req struct {
 	gs := map[string]struct{}{}
 	for _, g := range req.Groups {
 		if _, ok := processMgr.Groups[g]; !ok {
-			// 创建路径
-			ss := strings.Split(g, "/")
-			var nav string
-			for i := 0; i <= len(ss); i++ {
-				nav = strings.Join(ss[0:i], "/")
-				if _, ok := processMgr.Groups[nav]; !ok {
-					processMgr.Groups[nav] = struct{}{}
-				}
-			}
+			createGroupPath(g)
 		}
 		gs[g] = struct{}{}
 	}
