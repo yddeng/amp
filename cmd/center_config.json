@@ -2,7 +2,8 @@
   "data_path": "./data",
   "cmd_log_capacity": 20,
   "center_config": {
-    "address": "0.0.0.0:40155"
+    "address": "0.0.0.0:40155",
+    "token": "token"
   },
   "web_config": {
     "address": "0.0.0.0:40156",

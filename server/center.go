@@ -16,12 +16,13 @@ var (
 )
 
 type Center struct {
+	token     string
 	acceptor  dnet.Acceptor
 	rpcServer *drpc.Server
 	rpcClient *drpc.Client
 }
 
-func newCenter(address string) *Center {
+func newCenter(address, token string) *Center {
 	c := new(Center)
 	c.acceptor = dnet.NewTCPAcceptor(address)
 	c.rpcClient = drpc.NewClient()

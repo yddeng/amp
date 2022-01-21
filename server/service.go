@@ -23,6 +23,7 @@ type Config struct {
 
 type CenterConfig struct {
 	Address string `json:"address"`
+	Token   string `json:"token"`
 }
 
 type WebConfig struct {
@@ -120,7 +121,7 @@ func webRun(cfg *WebConfig) {
 }
 
 func centerRun(cfg *CenterConfig) {
-	center = newCenter(cfg.Address)
+	center = newCenter(cfg.Address, cfg.Token)
 	go func() {
 		if err := center.startListener(); err != nil {
 			panic(err)

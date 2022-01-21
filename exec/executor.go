@@ -18,6 +18,7 @@ type Config struct {
 	Inet     string `json:"inet"`
 	Net      string `json:"net"`
 	Center   string `json:"center"`
+	Token    string `json:"token"`
 	DataPath string `json:"data_path"`
 }
 
@@ -102,9 +103,10 @@ func (er *Executor) onConnected(conn net.Conn) {
 
 		// login
 		if err := er.Go(&protocol.LoginReq{
-			Name: er.cfg.Name,
-			Net:  er.cfg.Net,
-			Inet: er.cfg.Inet,
+			Name:  er.cfg.Name,
+			Net:   er.cfg.Net,
+			Inet:  er.cfg.Inet,
+			Token: er.cfg.Token,
 		}, func(i interface{}, err error) {
 			if err != nil {
 				er.session.Close(err)

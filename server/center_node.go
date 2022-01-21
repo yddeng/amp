@@ -39,6 +39,12 @@ func (this *Center) onLogin(replier *drpc.Replier, req interface{}) {
 	msg := req.(*protocol.LoginReq)
 	logger.GetSugar().Infof("onLogin %v", msg)
 
+	if this.token != "" && msg.GetToken() != this.token {
+		replier.Reply(&protocol.LoginResp{Code: "token failed"}, nil)
+		channel.(*Node).session.Close(errors.New("token failed. "))
+		return
+	}
+
 	name := msg.GetName()
 	client := nodes[name]
 	if client == nil {

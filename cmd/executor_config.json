@@ -3,5 +3,6 @@
   "net":      "",
   "inet":     "10.128.2.123",
   "center":   "10.128.2.123:40155",
+  "token":    "token",
   "data_path": "./data"
 }
