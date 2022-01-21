@@ -35,7 +35,7 @@
           "show": true
         },
         "redirect": "/command/cmdmanage",
-        "component": "RouteView"
+        "component": "PageView"
       },
       {
         "name": "cmdmanage",

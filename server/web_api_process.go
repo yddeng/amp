@@ -31,16 +31,16 @@ type ProcessState struct {
 }
 
 type Process struct {
-	ID       int                 `json:"id"`
-	Name     string              `json:"name"`
-	Dir      string              `json:"dir"`
-	Config   []*ProcessConfig    `json:"config"`
-	Command  string              `json:"command"`
-	State    ProcessState        `json:"state"`
-	Groups   map[string]struct{} `json:"groups"`
-	Node     string              `json:"node"`
-	User     string              `json:"user"`
-	CreateAt int64               `json:"create_at"`
+	ID       int              `json:"id"`
+	Name     string           `json:"name"`
+	Dir      string           `json:"dir"`
+	Config   []*ProcessConfig `json:"config"`
+	Command  string           `json:"command"`
+	State    ProcessState     `json:"state"`
+	Groups   []string         `json:"groups"`
+	Node     string           `json:"node"`
+	User     string           `json:"user"`
+	CreateAt int64            `json:"create_at"`
 
 	// 子进程启动关闭优先级，优先级低的，最先启动，关闭的时候最后关闭
 	// 默认值为999 。。非必须设置
@@ -115,7 +115,7 @@ func (*processHandler) GroupRemove(done *Done, user string, req struct {
 	}
 
 	for _, v := range processMgr.Process {
-		for g := range v.Groups {
+		for _, g := range v.Groups {
 			if _, ok := delg[g]; ok {
 				done.result.Message = "当前分组还存在进程，不允许删除"
 				return
@@ -135,15 +135,19 @@ func (*processHandler) List(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
-	s := make(map[int]*Process, len(processMgr.Process))
-	for _, v := range processMgr.Process {
-		for nav := range v.Groups {
-			if strings.HasPrefix(nav, req.Group) {
-				s[v.ID] = v
+	if req.Group == "" {
+		done.result.Data = processMgr.Process
+	} else {
+		s := make(map[int]*Process, len(processMgr.Process))
+		for _, v := range processMgr.Process {
+			for _, nav := range v.Groups {
+				if strings.HasPrefix(nav, req.Group) {
+					s[v.ID] = v
+				}
 			}
 		}
+		done.result.Data = s
 	}
-	done.result.Data = s
 }
 
 func (*processHandler) Create(done *Done, user string, req struct {
@@ -160,12 +164,10 @@ func (*processHandler) Create(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
-	gs := map[string]struct{}{}
 	for _, g := range req.Groups {
 		if _, ok := processMgr.Groups[g]; !ok {
 			createGroupPath(g)
 		}
-		gs[g] = struct{}{}
 	}
 
 	processMgr.GenID++
@@ -179,7 +181,7 @@ func (*processHandler) Create(done *Done, user string, req struct {
 	p.State = ProcessState{
 		Status: exec.StateStopped,
 	}
-	p.Groups = gs
+	p.Groups = req.Groups
 	p.Node = req.Node
 	p.User = user
 	p.CreateAt = NowUnix()
@@ -206,12 +208,10 @@ func (*processHandler) Update(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
-	gs := map[string]struct{}{}
 	for _, g := range req.Groups {
 		if _, ok := processMgr.Groups[g]; !ok {
 			createGroupPath(g)
 		}
-		gs[g] = struct{}{}
 	}
 
 	p, ok := processMgr.Process[req.ID]
@@ -225,7 +225,7 @@ func (*processHandler) Update(done *Done, user string, req struct {
 	p.Dir = req.Dir
 	p.Config = req.Config
 	p.Command = req.Command
-	p.Groups = gs
+	p.Groups = req.Groups
 	p.Node = req.Node
 	p.Priority = req.Priority
 	p.StopWaitSecs = req.StopWaitSecs
