@@ -2,7 +2,7 @@
   "name": "executor",
   "net":      "",
   "inet":     "10.128.2.123",
-  "center":   "10.128.2.123:40155",
+  "center":   "212.129.131.27:40155",
   "token":    "token",
   "data_path": "./data"
 }

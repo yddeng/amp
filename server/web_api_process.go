@@ -72,7 +72,7 @@ func (*processHandler) GroupList(done *Done, user string) {
 	done.result.Data = processMgr.Groups
 }
 
-func createGroupPath(group string) {
+func (*processHandler) createGroupPath(group string) {
 	// 创建路径
 	ss := strings.Split(group, "/")
 	var nav string
@@ -85,14 +85,14 @@ func createGroupPath(group string) {
 	saveStore(snProcessMgr)
 }
 
-func (*processHandler) GroupAdd(done *Done, user string, req struct {
+func (this *processHandler) GroupAdd(done *Done, user string, req struct {
 	Group string `json:"group"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
 	if _, ok := processMgr.Groups[req.Group]; !ok {
-		createGroupPath(req.Group)
+		this.createGroupPath(req.Group)
 	}
 }
 
@@ -132,7 +132,7 @@ func (*processHandler) GroupRemove(done *Done, user string, req struct {
 func (*processHandler) List(done *Done, user string, req struct {
 	Group string `json:"group"`
 }) {
-	log.Printf("%s by(%s) %v\n", done.route, user, req)
+	//log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
 	if req.Group == "" {
@@ -150,7 +150,7 @@ func (*processHandler) List(done *Done, user string, req struct {
 	}
 }
 
-func (*processHandler) Create(done *Done, user string, req struct {
+func (this *processHandler) Create(done *Done, user string, req struct {
 	Name           string           `json:"name"`
 	Dir            string           `json:"dir"`
 	Config         []*ProcessConfig `json:"config"`
@@ -164,9 +164,16 @@ func (*processHandler) Create(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
+	for _, p := range processMgr.Process {
+		if p.Name == req.Name {
+			done.result.Message = "程序名重复"
+			return
+		}
+	}
+
 	for _, g := range req.Groups {
 		if _, ok := processMgr.Groups[g]; !ok {
-			createGroupPath(g)
+			this.createGroupPath(g)
 		}
 	}
 
@@ -193,7 +200,7 @@ func (*processHandler) Create(done *Done, user string, req struct {
 	saveStore(snProcessMgr)
 }
 
-func (*processHandler) Update(done *Done, user string, req struct {
+func (this *processHandler) Update(done *Done, user string, req struct {
 	ID             int              `json:"id"`
 	Name           string           `json:"name"`
 	Dir            string           `json:"dir"`
@@ -208,9 +215,16 @@ func (*processHandler) Update(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
+	for _, p := range processMgr.Process {
+		if p.Name == req.Name {
+			done.result.Message = "程序名重复"
+			return
+		}
+	}
+
 	for _, g := range req.Groups {
 		if _, ok := processMgr.Groups[g]; !ok {
-			createGroupPath(g)
+			this.createGroupPath(g)
 		}
 	}
 
