@@ -55,8 +55,8 @@ func Service(cfg Config) (err error) {
 }
 
 func Stop() {
-	app.Shutdown(nil)
 	saveStore()
+	app.Shutdown(nil)
 }
 
 func webRun(cfg *WebConfig) {

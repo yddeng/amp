@@ -6,8 +6,8 @@ import (
 	"github.com/yddeng/dnet"
 	"github.com/yddeng/dnet/drpc"
 	"github.com/yddeng/utils/task"
-	"initial-server/logger"
 	"initial-server/protocol"
+	"log"
 	"math/rand"
 	"net"
 	"time"
@@ -75,7 +75,7 @@ func (er *Executor) dial() {
 
 func (er *Executor) onConnected(conn net.Conn) {
 	er.Submit(func() {
-		logger.GetSugar().Infof("onConnected center %s", conn.RemoteAddr().String())
+		log.Printf("onConnected center %s", conn.RemoteAddr().String())
 		er.dialing = false
 		er.session = dnet.NewTCPSession(conn,
 			dnet.WithCodec(new(protocol.Codec)),
@@ -95,7 +95,7 @@ func (er *Executor) onConnected(conn net.Conn) {
 				er.Submit(func() {
 					er.session.SetContext(nil)
 					er.session = nil
-					logger.GetSugar().Infof("session closed, reason: %s", reason)
+					log.Printf("session closed, reason: %s", reason)
 					er.dial()
 				})
 

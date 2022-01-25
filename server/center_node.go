@@ -4,8 +4,8 @@ import (
 	"errors"
 	"github.com/yddeng/dnet"
 	"github.com/yddeng/dnet/drpc"
-	"initial-server/logger"
 	"initial-server/protocol"
+	"log"
 )
 
 type Node struct {
@@ -37,7 +37,7 @@ func (n *Node) SendResponse(resp *drpc.Response) error {
 func (this *Center) onLogin(replier *drpc.Replier, req interface{}) {
 	channel := replier.Channel
 	msg := req.(*protocol.LoginReq)
-	logger.GetSugar().Infof("onLogin %v", msg)
+	log.Printf("onLogin %v", msg)
 
 	if this.token != "" && msg.GetToken() != this.token {
 		replier.Reply(&protocol.LoginResp{Code: "token failed"}, nil)
@@ -63,7 +63,7 @@ func (this *Center) onLogin(replier *drpc.Replier, req interface{}) {
 
 	client.session = channel.(*Node).session
 	client.session.SetContext(client)
-	logger.GetSugar().Infof("onLogin %s", client.session.RemoteAddr().String())
+	log.Printf("onLogin %s", client.session.RemoteAddr().String())
 	replier.Reply(&protocol.LoginResp{}, nil)
 	saveStore(snNode)
 }

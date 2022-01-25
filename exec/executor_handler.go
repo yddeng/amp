@@ -3,9 +3,9 @@ package exec
 import (
 	"bytes"
 	"github.com/yddeng/dnet/drpc"
-	"initial-server/logger"
 	"initial-server/protocol"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -15,7 +15,7 @@ import (
 
 func (er *Executor) onCmdExec(replier *drpc.Replier, req interface{}) {
 	msg := req.(*protocol.CmdExecReq)
-	logger.GetSugar().Infof("onCmdExec %v", msg)
+	log.Printf("onCmdExec %v", msg)
 
 	ecmd := exec.Command(msg.GetName(), msg.GetArgs()...)
 	ecmd.Dir = msg.GetDir()
@@ -56,7 +56,7 @@ func makeStderr(dir string, id int32) string {
 
 func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 	msg := req.(*protocol.ProcessExecReq)
-	logger.GetSugar().Infof("onProcExec %v", msg)
+	log.Printf("onProcExec %v", msg)
 
 	if p, ok := processCache[msg.GetId()]; ok && p.State == StateRunning {
 		_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(p.Pid())}, nil)
@@ -110,7 +110,7 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 
 func (er *Executor) onProcSignal(replier *drpc.Replier, req interface{}) {
 	msg := req.(*protocol.ProcessSignalReq)
-	logger.GetSugar().Infof("onProcSignal %v", msg)
+	log.Printf("onProcSignal %v", msg)
 
 	if err := syscall.Kill(int(msg.GetPid()), syscall.Signal(msg.GetSignal())); err != nil {
 		_ = replier.Reply(&protocol.ProcessSignalResp{Code: err.Error()}, nil)
@@ -121,7 +121,7 @@ func (er *Executor) onProcSignal(replier *drpc.Replier, req interface{}) {
 
 func (er *Executor) onProcState(replier *drpc.Replier, req interface{}) {
 	msg := req.(*protocol.ProcessStateReq)
-	//logger.GetSugar().Infof("onProcState %v", msg)
+	//log.Printf("onProcState %v", msg)
 
 	states := map[int32]*protocol.ProcessState{}
 	for _, id := range msg.GetIds() {
@@ -145,7 +145,7 @@ func (er *Executor) onProcState(replier *drpc.Replier, req interface{}) {
 
 func (er *Executor) onLogFile(replier *drpc.Replier, req interface{}) {
 	msg := req.(*protocol.LogFileReq)
-	//logger.GetSugar().Infof("onLogFile %v", msg)
+	//log.Printf("onLogFile %v", msg)
 
 	if file, err := os.Open(msg.GetFilename()); err == nil {
 		payload := int64(msg.GetPayload())

@@ -4,7 +4,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/yddeng/dnet"
 	"github.com/yddeng/dnet/drpc"
-	"initial-server/logger"
 	"initial-server/protocol"
 	"log"
 	"net"
@@ -55,7 +54,7 @@ func (c *Center) startListener() error {
 			}),
 			dnet.WithCloseCallback(func(session dnet.Session, reason error) {
 				taskQueue.Submit(func() {
-					logger.GetSugar().Infof("session closed, reason: %s\n", reason)
+					log.Printf("session closed, reason: %s\n", reason)
 					ctx := session.Context()
 					if ctx != nil {
 						client := ctx.(*Node)
