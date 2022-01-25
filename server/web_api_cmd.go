@@ -47,7 +47,7 @@ func (*cmdHandler) List(done *Done, user string, req struct {
 	PageNo   int `json:"pageNo"`
 	PageSize int `json:"pageSize"`
 }) {
-	log.Printf("%s by(%s) %v\n", done.route, user, req)
+	//log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
 	s := make([]*Cmd, 0, len(cmdMgr.CmdMap))
@@ -279,7 +279,7 @@ func (*cmdHandler) Log(done *Done, user string, req struct {
 	PageNo   int    `json:"pageNo"`
 	PageSize int    `json:"pageSize"`
 }) {
-	log.Printf("%s by(%s) %v\n", done.route, user, req)
+	//log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
 	if logs, ok := cmdMgr.CmdLogs[req.Name]; !ok {

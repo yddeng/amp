@@ -19,7 +19,7 @@ func (*nodeHandler) List(done *Done, user string, req struct {
 	PageNo   int `json:"pageNo"`
 	PageSize int `json:"pageSize"`
 }) {
-	log.Printf("%s by(%s) %v\n", done.route, user, req)
+	//log.Printf("%s by(%s) %v\n", done.route, user, req)
 
 	s := make([]*nodeInfo, 0, len(nodes))
 	for _, n := range nodes {

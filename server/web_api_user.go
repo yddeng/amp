@@ -21,7 +21,7 @@ type userHandler struct {
 }
 
 func (*userHandler) Info(done *Done, user string) {
-	log.Printf("%s by(%s)\n", done.route, user)
+	//log.Printf("%s by(%s)\n", done.route, user)
 	defer func() { done.Done() }()
 	//u, _ := getUser(user)
 	//done.result.Data = struct {
@@ -99,7 +99,7 @@ type NavMeta struct {
 var allNav []*Nav
 
 func (*userHandler) Nav(done *Done, user string) {
-	log.Printf("%s by(%s)\n", done.route, user)
+	//log.Printf("%s by(%s)\n", done.route, user)
 	defer func() { done.Done() }()
 
 	done.result.Data = allNav
@@ -109,7 +109,7 @@ func (*userHandler) List(done *Done, user string, req struct {
 	PageNo   int `json:"pageNo"`
 	PageSize int `json:"pageSize"`
 }) {
-	log.Printf("%s by(%s) %v\n", done.route, user, req)
+	//log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 	//if user != admin.Username {
 	//	done.result.Message = "无权限"

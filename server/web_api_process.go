@@ -65,7 +65,7 @@ type processHandler struct {
 }
 
 func (*processHandler) GroupList(done *Done, user string) {
-	log.Printf("%s by(%s) \n", done.route, user)
+	//log.Printf("%s by(%s) \n", done.route, user)
 	defer func() { done.Done() }()
 	done.result.Data = processMgr.Groups
 }
