@@ -63,24 +63,29 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 		return
 	}
 
+	// 创建文件目录
+	fileDir := path.Join(msg.GetDir(), msg.GetKey())
+	_ = os.MkdirAll(path.Dir(fileDir), os.ModePerm)
+
+	// 配置文件
 	if len(msg.GetConfig()) > 0 {
 		for name, ctx := range msg.GetConfig() {
-			_ = os.MkdirAll(path.Dir(name), os.ModePerm)
-			_ = ioutil.WriteFile(name, []byte(ctx), os.ModePerm)
+			filename := path.Join(fileDir, name)
+			_ = os.MkdirAll(path.Dir(filename), os.ModePerm)
+			_ = ioutil.WriteFile(filename, []byte(ctx), os.ModePerm)
 		}
 	}
 
-	ecmd := exec.Command(msg.GetName(), msg.GetArgs()...)
-	ecmd.Dir = msg.GetDir()
-
-	// 错误信息重定向
-	filename := makeStderr(msg.GetDir(), msg.GetId())
-	_ = os.MkdirAll(path.Dir(filename), os.ModePerm)
+	// 错误信息文件
+	filename := path.Join(fileDir, "stderr.log")
 	errFile, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
 	if err != nil {
 		_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
 		return
 	}
+
+	ecmd := exec.Command(msg.GetName(), msg.GetArgs()...)
+	ecmd.Dir = msg.GetDir()
 	ecmd.Stderr = errFile
 
 	if p, err := ProcessWithCmd(ecmd, func(process *Process) {
@@ -94,6 +99,7 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 		_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
 	} else {
 		p.ID = msg.GetId()
+		p.Key = msg.GetKey()
 		p.Stderr = filename
 		p.Command = ecmd.String()
 		processCache[p.ID] = p
@@ -115,7 +121,7 @@ func (er *Executor) onProcSignal(replier *drpc.Replier, req interface{}) {
 
 func (er *Executor) onProcState(replier *drpc.Replier, req interface{}) {
 	msg := req.(*protocol.ProcessStateReq)
-	logger.GetSugar().Infof("onProcState %v", msg)
+	//logger.GetSugar().Infof("onProcState %v", msg)
 
 	states := map[int32]*protocol.ProcessState{}
 	for _, id := range msg.GetIds() {
@@ -139,7 +145,7 @@ func (er *Executor) onProcState(replier *drpc.Replier, req interface{}) {
 
 func (er *Executor) onLogFile(replier *drpc.Replier, req interface{}) {
 	msg := req.(*protocol.LogFileReq)
-	logger.GetSugar().Infof("onLogFile %v", msg)
+	//logger.GetSugar().Infof("onLogFile %v", msg)
 
 	if file, err := os.Open(msg.GetFilename()); err == nil {
 		payload := int64(msg.GetPayload())

@@ -5,8 +5,6 @@ import (
 	"initial-server/exec"
 	"initial-server/protocol"
 	"log"
-	"path"
-	"strconv"
 	"strings"
 	"syscall"
 )
@@ -374,16 +372,17 @@ func processAutoStart() {
 //}
 
 func (p *Process) start(node *Node, callback func(code string, err error)) error {
+	key := p.Name
 	configs := make(map[string]string, len(p.Config))
 	for _, cfg := range p.Config {
-		name := path.Join(p.Dir, strconv.Itoa(p.ID), cfg.Name)
-		configs[name] = cfg.Context
+		configs[cfg.Name] = cfg.Context
 	}
 
-	cmd := strings.ReplaceAll(p.Command, "{{path}}", strconv.Itoa(p.ID))
+	cmd := strings.ReplaceAll(p.Command, "{{path}}", key)
 	cmds := strings.Split(cmd, " ")
 	rpcReq := &protocol.ProcessExecReq{
 		Id:     int32(p.ID),
+		Key:    key,
 		Dir:    p.Dir,
 		Name:   cmds[0],
 		Args:   cmds[1:],

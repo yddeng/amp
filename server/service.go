@@ -2,7 +2,6 @@ package server
 
 import (
 	"github.com/kataras/iris/v12"
-	"github.com/kataras/iris/v12/middleware/logger"
 	"github.com/yddeng/utils/task"
 	"log"
 	"os"
@@ -76,7 +75,7 @@ func webRun(cfg *WebConfig) {
 	*/
 
 	app = iris.New()
-	app.Use(logger.New())
+	app.Logger().SetLevel("disable")
 	// 跨域
 	app.Use(handleCORS)
 
@@ -89,7 +88,6 @@ func webRun(cfg *WebConfig) {
 
 	// 代理
 	redirect := func(ctx iris.Context) {
-		log.Print(ctx.Method(), ctx.Path())
 		if strings.HasPrefix(ctx.Path(), "/api") {
 			name := strings.TrimPrefix(ctx.Path(), "/api")
 			if name != "" {

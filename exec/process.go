@@ -41,6 +41,7 @@ type Process struct {
 	Cmd *exec.Cmd `json:"_"`
 
 	ID      int32  `json:"id"`
+	Key     string `json:"key"`
 	Command string `json:"command"`
 	State   string `json:"state"`
 	Stderr  string `json:"stderr"`
