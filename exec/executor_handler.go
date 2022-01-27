@@ -1,9 +1,9 @@
 package exec
 
 import (
+	"amp/protocol"
 	"bytes"
 	"github.com/yddeng/dnet/drpc"
-	"initial-server/protocol"
 	"io/ioutil"
 	"log"
 	"os"

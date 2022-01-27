@@ -42,7 +42,7 @@ func RegisterFile(s filePath, d fileDescGZIP) {
 	}
 
 	// Construct a protoreflect.FileDescriptor from the raw descriptor.
-	// Note that DescBuilder.Build automatically registers the constructed
+	// Note that DescBuilder.Build ampatically registers the constructed
 	// file descriptor with the v2 registry.
 	protoimpl.DescBuilder{RawDescriptor: b}.Build()
 

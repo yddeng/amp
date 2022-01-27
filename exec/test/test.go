@@ -1,8 +1,8 @@
 package main
 
 import (
-	"initial-server/logger"
-	"initial-server/util"
+	"amp/logger"
+	"autom/util"
 	"os"
 )
 

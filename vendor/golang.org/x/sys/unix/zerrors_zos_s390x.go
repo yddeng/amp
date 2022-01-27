@@ -45,7 +45,7 @@ const (
 	FSTYPE_HFS                      = 0xc8 //"H"
 	FSTYPE_NFS                      = 0xd5 //"N"
 	FSTYPE_TFS                      = 0xe3 //"T"
-	FSTYPE_AUTOMOUNT                = 0xc1 //"A"
+	FSTYPE_ampOUNT                = 0xc1 //"A"
 	IP6F_MORE_FRAG                  = 0x0001
 	IP6F_OFF_MASK                   = 0xfff8
 	IP6F_RESERVED_MASK              = 0x0006

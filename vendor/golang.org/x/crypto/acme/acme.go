@@ -3,14 +3,14 @@
 // license that can be found in the LICENSE file.
 
 // Package acme provides an implementation of the
-// Automatic Certificate Management Environment (ACME) spec.
+// ampatic Certificate Management Environment (ACME) spec.
 // The intial implementation was based on ACME draft-02 and
 // is now being extended to comply with RFC 8555.
 // See https://tools.ietf.org/html/draft-ietf-acme-acme-02
 // and https://tools.ietf.org/html/rfc8555 for details.
 //
 // Most common scenarios will want to use autocert subdirectory instead,
-// which provides automatic access to certificates from Let's Encrypt
+// which provides ampatic access to certificates from Let's Encrypt
 // and any other ACME-based CA.
 //
 // This package is a work in progress and makes no API stability promises.

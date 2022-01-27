@@ -52,7 +52,7 @@ func (i *interruptListener) FireNow() {
 // If `FireNow` called before then it does nothing when interrupt signal received,
 // so it's safe to be used side by side with `FireNow`.
 //
-// Btw this `listenOnce` is called automatically on first register, it's useless for outsiders.
+// Btw this `listenOnce` is called ampatically on first register, it's useless for outsiders.
 func (i *interruptListener) listenOnce() {
 	i.once.Do(func() { go i.notifyAndFire() })
 }

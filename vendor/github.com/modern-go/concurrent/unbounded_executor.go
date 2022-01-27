@@ -46,7 +46,7 @@ func NewUnboundedExecutor() *UnboundedExecutor {
 }
 
 // Go starts a new goroutine and tracks its lifecycle.
-// Panic will be recovered and logged automatically, except for StopSignal
+// Panic will be recovered and logged ampatically, except for StopSignal
 func (executor *UnboundedExecutor) Go(handler func(ctx context.Context)) {
 	pc := reflect.ValueOf(handler).Pointer()
 	f := runtime.FuncForPC(pc)

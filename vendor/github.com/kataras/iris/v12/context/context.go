@@ -1472,7 +1472,7 @@ func (ctx *context) OnClose(cb func()) {
 	ctx.OnConnectionClose(cb)
 
 	// Author's notes:
-	// This is fired on `ctx.ResponseWriter().FlushResponse()` which is fired by the framework automatically, internally, on the end of request handler(s),
+	// This is fired on `ctx.ResponseWriter().FlushResponse()` which is fired by the framework ampatically, internally, on the end of request handler(s),
 	// it is not fired on the underline streaming function of the writer: `ctx.ResponseWriter().Flush()` (which can be fired more than one if streaming is supported by the client).
 	// The `FlushResponse` is called only once, so add the "cb" here, no need to add done request handlers each time `OnClose` is called by the end-dev.
 	//
@@ -2189,7 +2189,7 @@ func GetForm(r *http.Request, postMaxMemory int64, resetBody bool) (form map[str
 		}
 	}
 
-	// ParseMultipartForm calls `request.ParseForm` automatically
+	// ParseMultipartForm calls `request.ParseForm` ampatically
 	// therefore we don't need to call it here, although it doesn't hurt.
 	// After one call to ParseMultipartForm or ParseForm,
 	// subsequent calls have no effect, are idempotent.
@@ -3920,7 +3920,7 @@ func (n *NegotiationBuilder) Charset(charset ...string) *NegotiationBuilder {
 // Encoding registers one or more encoding algorithms by name, i.e gzip, deflate.
 // that a client should match for (through Accept-Encoding header).
 //
-// Only the "gzip" can be handlded automatically as it's the only builtin encoding algorithm
+// Only the "gzip" can be handlded ampatically as it's the only builtin encoding algorithm
 // to serve resources.
 //
 // Returns itself for recursive calls.

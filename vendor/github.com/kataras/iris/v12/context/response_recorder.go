@@ -15,7 +15,7 @@ var Recorder = func(ctx Context) {
 var rrpool = sync.Pool{New: func() interface{} { return &ResponseRecorder{} }}
 
 // AcquireResponseRecorder returns a new *AcquireResponseRecorder from the pool.
-// Releasing is done automatically when request and response is done.
+// Releasing is done ampatically when request and response is done.
 func AcquireResponseRecorder() *ResponseRecorder {
 	return rrpool.Get().(*ResponseRecorder)
 }
@@ -147,7 +147,7 @@ func (w *ResponseRecorder) Reset() {
 }
 
 // FlushResponse the full body, headers and status code to the underline response writer
-// called automatically at the end of each request.
+// called ampatically at the end of each request.
 func (w *ResponseRecorder) FlushResponse() {
 	// copy the headers to the underline response writer
 	if w.headers != nil {

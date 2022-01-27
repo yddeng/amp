@@ -66,7 +66,7 @@ type Config struct {
 	// DisableCaller stops annotating logs with the calling function's file
 	// name and line number. By default, all logs are annotated.
 	DisableCaller bool `json:"disableCaller" yaml:"disableCaller"`
-	// DisableStacktrace completely disables automatic stacktrace capturing. By
+	// DisableStacktrace completely disables ampatic stacktrace capturing. By
 	// default, stacktraces are captured for WarnLevel and above logs in
 	// development and ErrorLevel and above in production.
 	DisableStacktrace bool `json:"disableStacktrace" yaml:"disableStacktrace"`
@@ -116,7 +116,7 @@ func NewProductionEncoderConfig() zapcore.EncoderConfig {
 // Logging is enabled at InfoLevel and above.
 //
 // It uses a JSON encoder, writes to standard error, and enables sampling.
-// Stacktraces are automatically included on logs of ErrorLevel and above.
+// Stacktraces are ampatically included on logs of ErrorLevel and above.
 func NewProductionConfig() Config {
 	return Config{
 		Level:       NewAtomicLevelAt(InfoLevel),
@@ -157,7 +157,7 @@ func NewDevelopmentEncoderConfig() zapcore.EncoderConfig {
 //
 // It enables development mode (which makes DPanicLevel logs panic), uses a
 // console encoder, writes to standard error, and disables sampling.
-// Stacktraces are automatically included on logs of WarnLevel and above.
+// Stacktraces are ampatically included on logs of WarnLevel and above.
 func NewDevelopmentConfig() Config {
 	return Config{
 		Level:            NewAtomicLevelAt(DebugLevel),

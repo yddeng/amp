@@ -1,10 +1,10 @@
 package server
 
 import (
+	"amp/util"
 	"fmt"
 	"github.com/tidwall/gjson"
 	"github.com/yddeng/dnet/dhttp"
-	"initial-server/util"
 	"testing"
 	"time"
 )

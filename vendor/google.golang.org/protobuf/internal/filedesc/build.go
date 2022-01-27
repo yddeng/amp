@@ -85,7 +85,7 @@ type Out struct {
 // are encountered.
 //
 // If NumEnums+NumMessages+NumExtensions+NumServices is zero,
-// then Build automatically derives them from the raw descriptor.
+// then Build ampatically derives them from the raw descriptor.
 func (db Builder) Build() (out Out) {
 	// Populate the counts if uninitialized.
 	if db.NumEnums+db.NumMessages+db.NumExtensions+db.NumServices == 0 {

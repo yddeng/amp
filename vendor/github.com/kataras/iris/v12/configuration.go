@@ -222,7 +222,7 @@ var WithoutStartupLog = func(app *Application) {
 // Turns off the information send, once, to the terminal when the main server is open.
 var WithoutBanner = WithoutStartupLog
 
-// WithoutInterruptHandler disables the automatic graceful server shutdown
+// WithoutInterruptHandler disables the ampatic graceful server shutdown
 // when control/cmd+C pressed.
 var WithoutInterruptHandler = func(app *Application) {
 	app.config.DisableInterruptHandler = true
@@ -725,7 +725,7 @@ type Configuration struct {
 	//
 	// Defaults to false.
 	DisableStartupLog bool `json:"disableStartupLog,omitempty" yaml:"DisableStartupLog" toml:"DisableStartupLog"`
-	// DisableInterruptHandler if set to true then it disables the automatic graceful server shutdown
+	// DisableInterruptHandler if set to true then it disables the ampatic graceful server shutdown
 	// when control/cmd+C pressed.
 	// Turn this to true if you're planning to handle this by your own via a custom host.Task.
 	//
@@ -783,7 +783,7 @@ type Configuration struct {
 	// context.UnmarshalBody/ReadJSON/ReadXML will be not consumed.
 	DisableBodyConsumptionOnUnmarshal bool `json:"disableBodyConsumptionOnUnmarshal,omitempty" yaml:"DisableBodyConsumptionOnUnmarshal" toml:"DisableBodyConsumptionOnUnmarshal"`
 
-	// DisableAutoFireStatusCode if true then it turns off the http error status code handler automatic execution
+	// DisableAutoFireStatusCode if true then it turns off the http error status code handler ampatic execution
 	// from (`context.StatusCodeNotSuccessful`, defaults to < 200 || >= 400).
 	// If that is false then for a direct error firing, then call the "context#FireStatusCode(statusCode)" manually.
 	//
@@ -922,7 +922,7 @@ func (c Configuration) GetDisableBodyConsumptionOnUnmarshal() bool {
 }
 
 // GetDisableAutoFireStatusCode returns the Configuration#DisableAutoFireStatusCode.
-// Returns true when the http error status code handler automatic execution turned off.
+// Returns true when the http error status code handler ampatic execution turned off.
 func (c Configuration) GetDisableAutoFireStatusCode() bool {
 	return c.DisableAutoFireStatusCode
 }

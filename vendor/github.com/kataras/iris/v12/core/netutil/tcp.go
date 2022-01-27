@@ -107,7 +107,7 @@ func CERT(addr string, cert tls.Certificate) (net.Listener, error) {
 	return tls.NewListener(l, tlsConfig), nil
 }
 
-// LETSENCRYPT returns a new Automatic TLS Listener using letsencrypt.org service
+// LETSENCRYPT returns a new ampatic TLS Listener using letsencrypt.org service
 // receives three parameters,
 // the first is the host of the server,
 // second can be the server name(domain) or empty if skip verification is the expected behavior (not recommended)

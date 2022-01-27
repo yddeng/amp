@@ -712,7 +712,7 @@ type Utsname struct {
 const (
 	AT_EMPTY_PATH   = 0x1000
 	AT_FDCWD        = -0x64
-	AT_NO_AUTOMOUNT = 0x800
+	AT_NO_ampOUNT = 0x800
 	AT_REMOVEDIR    = 0x200
 
 	AT_STATX_SYNC_AS_STAT = 0x0

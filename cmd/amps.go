@@ -1,9 +1,9 @@
 package main
 
 import (
+	"amp/server"
+	"amp/util"
 	"flag"
-	"initial-server/server"
-	"initial-server/util"
 	"log"
 	"math/rand"
 	"os"
@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	file = flag.String("file", "./center_config.json", "config file")
+	file = flag.String("file", "./amps_config.json", "config file")
 )
 
 func main() {

@@ -1,7 +1,7 @@
 package exec
 
 import (
-	"initial-server/util"
+	"amp/util"
 	"os"
 	"os/exec"
 	"path"

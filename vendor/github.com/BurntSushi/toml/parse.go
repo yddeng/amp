@@ -343,7 +343,7 @@ func numPeriodsOK(s string) bool {
 // set depends on the value of the `array` parameter.
 //
 // Establishing the context also makes sure that the key isn't a duplicate, and
-// will create implicit hashes automatically.
+// will create implicit hashes ampatically.
 func (p *parser) establishContext(key Key, array bool) {
 	var ok bool
 

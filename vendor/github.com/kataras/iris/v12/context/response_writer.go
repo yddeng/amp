@@ -112,7 +112,7 @@ type ResponseWriter interface {
 var rpool = sync.Pool{New: func() interface{} { return &responseWriter{} }}
 
 // AcquireResponseWriter returns a new *ResponseWriter from the pool.
-// Releasing is done automatically when request and response is done.
+// Releasing is done ampatically when request and response is done.
 func AcquireResponseWriter() ResponseWriter {
 	return rpool.Get().(*responseWriter)
 }

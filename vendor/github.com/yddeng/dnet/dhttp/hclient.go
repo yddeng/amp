@@ -194,7 +194,7 @@ func (rq *Request) ToFile(filename string) error {
 	return err
 }
 
-//Check that the file directory exists, there is no automatically created
+//Check that the file directory exists, there is no ampatically created
 func pathExistAndMkdir(filename string) (err error) {
 	filename = path.Dir(filename)
 	_, err = os.Stat(filename)

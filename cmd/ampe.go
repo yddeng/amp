@@ -1,9 +1,9 @@
 package main
 
 import (
+	"amp/exec"
+	"amp/util"
 	"flag"
-	"initial-server/exec"
-	"initial-server/util"
 	"log"
 	"math/rand"
 	"os"
@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	file = flag.String("file", "./executor_config.json", "config file")
+	file = flag.String("file", "./ampe_config.json", "config file")
 )
 
 func main() {

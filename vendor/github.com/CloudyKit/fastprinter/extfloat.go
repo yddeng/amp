@@ -629,7 +629,7 @@ func (f *extFloat) ShortestDecimal(d *decimalSlice, lower, upper *extFloat) bool
 		fraction -= uint64(digit) << shift
 		if fraction < allowance*multiplier {
 			// We are in the admissible range. Note that if allowance is about to
-			// overflow, that is, allowance > 2^64/10, the condition is automatically
+			// overflow, that is, allowance > 2^64/10, the condition is ampatically
 			// true due to the limited range of fraction.
 			return adjustLastDigit(d,
 				fraction, targetDiff*multiplier, allowance*multiplier,

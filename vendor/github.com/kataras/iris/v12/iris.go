@@ -560,7 +560,7 @@ const (
 // can access the host created by `app.Run`,
 // they're being executed when application is ready to being served to the public.
 //
-// It's an alternative way to interact with a host that is automatically created by
+// It's an alternative way to interact with a host that is ampatically created by
 // `app.Run`.
 //
 // These "configurators" can work side-by-side with the `iris#Addr, iris#Server, iris#TLS, iris#AutoTLS, iris#Listener`

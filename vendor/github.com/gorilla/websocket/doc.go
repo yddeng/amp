@@ -210,7 +210,7 @@
 //  }
 //
 // If compression was successfully negotiated with the connection's peer, any
-// message received in compressed form will be automatically decompressed.
+// message received in compressed form will be ampatically decompressed.
 // All Read methods will return uncompressed bytes.
 //
 // Per message compression of messages written to a connection can be enabled

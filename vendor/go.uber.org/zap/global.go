@@ -93,7 +93,7 @@ func NewStdLogAt(l *Logger, level zapcore.Level) (*log.Logger, error) {
 
 // RedirectStdLog redirects output from the standard library's package-global
 // logger to the supplied logger at InfoLevel. Since zap already handles caller
-// annotations, timestamps, etc., it automatically disables the standard
+// annotations, timestamps, etc., it ampatically disables the standard
 // library's annotations and prefixing.
 //
 // It returns a function to restore the original prefix and flags and reset the
@@ -110,7 +110,7 @@ func RedirectStdLog(l *Logger) func() {
 
 // RedirectStdLogAt redirects output from the standard library's package-global
 // logger to the supplied logger at the specified level. Since zap already
-// handles caller annotations, timestamps, etc., it automatically disables the
+// handles caller annotations, timestamps, etc., it ampatically disables the
 // standard library's annotations and prefixing.
 //
 // It returns a function to restore the original prefix and flags and reset the

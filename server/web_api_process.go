@@ -1,9 +1,9 @@
 package server
 
 import (
+	"amp/exec"
+	"amp/protocol"
 	"github.com/yddeng/dnet/drpc"
-	"initial-server/exec"
-	"initial-server/protocol"
 	"log"
 	"strings"
 	"syscall"

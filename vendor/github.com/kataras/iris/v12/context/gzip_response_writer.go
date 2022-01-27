@@ -63,7 +63,7 @@ func writeGzip(w io.Writer, b []byte) (int, error) {
 var gzpool = sync.Pool{New: func() interface{} { return &GzipResponseWriter{} }}
 
 // AcquireGzipResponseWriter returns a new *GzipResponseWriter from the pool.
-// Releasing is done automatically when request and response is done.
+// Releasing is done ampatically when request and response is done.
 func AcquireGzipResponseWriter() *GzipResponseWriter {
 	w := gzpool.Get().(*GzipResponseWriter)
 	return w

@@ -123,7 +123,7 @@ func Decode(data string, v interface{}) (MetaData, error) {
 	return md, md.unify(p.mapping, indirect(rv))
 }
 
-// DecodeFile is just like Decode, except it will automatically read the
+// DecodeFile is just like Decode, except it will ampatically read the
 // contents of the file at `fpath` and decode it for you.
 func DecodeFile(fpath string, v interface{}) (MetaData, error) {
 	bs, err := ioutil.ReadFile(fpath)

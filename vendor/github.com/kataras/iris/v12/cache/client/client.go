@@ -36,7 +36,7 @@ type ClientHandler struct {
 // NewClientHandler returns a new remote client handler
 // which asks the remote handler the cached entry's response
 // with a GET request, or add a response with POST request
-// these all are done automatically, users can use this
+// these all are done ampatically, users can use this
 // handler as they use the local.go/NewHandler
 //
 // the ClientHandler is useful when user

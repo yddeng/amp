@@ -178,7 +178,7 @@ func (p *Parser) GetR(shift int) *Token {
 // Error produces a nice error message and returns an error-object.
 // The 'token'-argument is optional. If provided, it will take
 // the token's position information. If not provided, it will
-// automatically use the CURRENT token's position information.
+// ampatically use the CURRENT token's position information.
 func (p *Parser) Error(msg string, token *Token) *Error {
 	if token == nil {
 		// Set current token

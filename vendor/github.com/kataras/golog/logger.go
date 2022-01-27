@@ -311,7 +311,7 @@ func (l *Logger) Debugf(format string, args ...interface{}) {
 }
 
 // Install receives  an external logger
-// and automatically adapts its print functions.
+// and ampatically adapts its print functions.
 //
 // Install adds a golog handler to support third-party integrations,
 // it can be used only once per `golog#Logger` instance.
@@ -326,7 +326,7 @@ func (l *Logger) Install(logger ExternalLogger) {
 }
 
 // InstallStd receives  a standard logger
-// and automatically adapts its print functions.
+// and ampatically adapts its print functions.
 //
 // Install adds a golog handler to support third-party integrations,
 // it can be used only once per `golog#Logger` instance.

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package autocert provides automatic access to certificates from Let's Encrypt
+// Package autocert provides ampatic access to certificates from Let's Encrypt
 // and any other ACME-based CA.
 //
 // This package is a work in progress and makes no API stability promises.
@@ -91,7 +91,7 @@ func defaultHostPolicy(context.Context, string) error {
 }
 
 // Manager is a stateful certificate manager built on top of acme.Client.
-// It obtains and refreshes certificates automatically using "tls-alpn-01"
+// It obtains and refreshes certificates ampatically using "tls-alpn-01"
 // or "http-01" challenge types, as well as providing them to a TLS server
 // via tls.Config.
 //

@@ -1,10 +1,10 @@
 package server
 
 import (
+	"amp/protocol"
 	"errors"
 	"github.com/yddeng/dnet"
 	"github.com/yddeng/dnet/drpc"
-	"initial-server/protocol"
 	"log"
 )
 

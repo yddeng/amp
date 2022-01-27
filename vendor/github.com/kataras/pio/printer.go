@@ -106,7 +106,7 @@ func NewPrinter(name string, output io.Writer) *Printer {
 	// if a user don't want it we can't force this printer
 	// to print texts too, the end-developer
 	// may have split his logic about logging
-	// so don't do it automatically, instead
+	// so don't do it ampatically, instead
 	// create a new function which will return a text printer
 	// and allow this printer to accept more than one marshalers.
 
@@ -292,7 +292,7 @@ func (p *Printer) EnableDirectOutput() *Printer {
 // to the Printer's output.
 //
 // If "v" implements the `Marshaler` type, then this marshaler
-// is called automatically, first.
+// is called ampatically, first.
 //
 // Print -> Store[Marshal -> err != nil && result -> Hijack(result) -> Write(result)] -> Flush[Printer.Write(buf) and Handle(buf)]
 //

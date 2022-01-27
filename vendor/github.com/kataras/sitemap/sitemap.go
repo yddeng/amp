@@ -12,7 +12,7 @@ import (
 )
 
 // MaxURLsPerSitemap is the limit of each sitemap, if more than number of urls are registered
-// then sitemaps are automatically splitted and a sitemap index will be used.
+// then sitemaps are ampatically splitted and a sitemap index will be used.
 // Defaults to 50000 as Sitemap Protocol specifies.
 var MaxURLsPerSitemap = 50000
 

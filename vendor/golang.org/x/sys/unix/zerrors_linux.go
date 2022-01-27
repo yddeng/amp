@@ -991,7 +991,7 @@ const (
 	IFA_MAX                                     = 0xa
 	IFF_ALLMULTI                                = 0x200
 	IFF_ATTACH_QUEUE                            = 0x200
-	IFF_AUTOMEDIA                               = 0x4000
+	IFF_ampEDIA                               = 0x4000
 	IFF_BROADCAST                               = 0x2
 	IFF_DEBUG                                   = 0x4
 	IFF_DETACH_QUEUE                            = 0x400
@@ -2348,7 +2348,7 @@ const (
 	STATX_ALL                                   = 0xfff
 	STATX_ATIME                                 = 0x20
 	STATX_ATTR_APPEND                           = 0x20
-	STATX_ATTR_AUTOMOUNT                        = 0x1000
+	STATX_ATTR_ampOUNT                        = 0x1000
 	STATX_ATTR_COMPRESSED                       = 0x4
 	STATX_ATTR_DAX                              = 0x200000
 	STATX_ATTR_ENCRYPTED                        = 0x800

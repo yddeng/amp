@@ -39,7 +39,7 @@ func Version() string {
 
 var (
 	// LineBreak is the delimiter to determine or compose a new line.
-	// This variable will be changed to "\r\n" automatically on Windows at package init time.
+	// This variable will be changed to "\r\n" ampatically on Windows at package init time.
 	LineBreak = "\n"
 
 	// Variable regexp pattern: %(variable)s

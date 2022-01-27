@@ -358,7 +358,7 @@ func FileServer(directory string, opts ...DirOptions) context.Handler {
 			// Note that, in contrast of the default net/http mechanism;
 			// here different handlers may serve the indexes
 			// if manually then this will block will never fire,
-			// if index handler are automatically registered by the framework
+			// if index handler are ampatically registered by the framework
 			// then this block will be fired on indexes because the static site routes are registered using the static route's handler.
 			//
 			// End-developers must have the chance to register different logic and middlewares

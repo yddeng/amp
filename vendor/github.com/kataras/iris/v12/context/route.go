@@ -61,7 +61,7 @@ type RouteReadOnly interface {
 	// StaticSites if not empty, refers to the system (or virtual if embedded) directory
 	// and sub directories that this "GET" route was registered to serve files and folders
 	// that contain index.html (a site). The index handler may registered by other
-	// route, manually or automatic by the framework,
+	// route, manually or ampatic by the framework,
 	// get the route by `Application#GetRouteByPath(staticSite.RequestPath)`.
 	StaticSites() []StaticSite
 

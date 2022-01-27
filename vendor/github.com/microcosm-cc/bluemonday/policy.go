@@ -169,8 +169,8 @@ func (p *Policy) AllowAttrs(attrNames ...string) *attrPolicyBuilder {
 // is enabled. This is a 'caveat emptor' option and the person enabling this option
 // needs to fully understand the potential impact with regards to whatever application
 // will be consuming the sanitized HTML afterwards, i.e. if you know you put a link in a
-// data attribute and use that to automatically load some new window then you're giving
-// the author of a HTML fragment the means to open a malicious destination automatically.
+// data attribute and use that to ampatically load some new window then you're giving
+// the author of a HTML fragment the means to open a malicious destination ampatically.
 // Use with care!
 func (p *Policy) AllowDataAttributes() {
 	p.allowDataAttributes = true

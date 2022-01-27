@@ -1,9 +1,9 @@
 package server
 
 import (
+	"amp/protocol"
 	"fmt"
 	"github.com/yddeng/dnet/drpc"
-	"initial-server/protocol"
 	"log"
 	"regexp"
 	"sort"
@@ -17,12 +17,15 @@ type Cmd struct {
 	Context  string              `json:"context"`
 	Args     map[string]string   `json:"args"`
 	User     string              `json:"user"`
+	UpdateAt int64               `json:"update_at"`
 	CreateAt int64               `json:"create_at"`
 	CallNo   int                 `json:"call_no"`
 	doing    map[string]struct{} // 节点正在执行
 }
 
 type CmdMgr struct {
+	Success int                  `json:"success"`
+	Failed  int                  `json:"failed"`
 	CmdMap  map[string]*Cmd      `json:"cmd_map"`
 	CmdLogs map[string][]*CmdLog `json:"cmd_logs"`
 }
@@ -63,10 +66,14 @@ func (*cmdHandler) List(done *Done, user string, req struct {
 		PageNo     int    `json:"pageNo"`
 		PageSize   int    `json:"pageSize"`
 		TotalCount int    `json:"totalCount"`
+		Success    int    `json:"success"`
+		Failed     int    `json:"failed"`
 		CmdList    []*Cmd `json:"cmdList"`
 	}{PageNo: req.PageNo,
 		PageSize:   req.PageSize,
 		TotalCount: len(s),
+		Success:    cmdMgr.Success,
+		Failed:     cmdMgr.Failed,
 		CmdList:    s[start:end],
 	}
 }
@@ -90,13 +97,15 @@ func (*cmdHandler) Create(done *Done, user string, req struct {
 		return
 	}
 
+	nowUnix := NowUnix()
 	cmd := &Cmd{
 		Name:     req.Name,
 		Dir:      req.Dir,
 		Context:  req.Context,
 		Args:     req.Args,
 		User:     user,
-		CreateAt: NowUnix(),
+		UpdateAt: nowUnix,
+		CreateAt: nowUnix,
 	}
 
 	cmdMgr.CmdMap[req.Name] = cmd
@@ -138,6 +147,8 @@ func (*cmdHandler) Update(done *Done, user string, req struct {
 		cmd.Dir = req.Dir
 		cmd.Context = req.Context
 		cmd.Args = req.Args
+		cmd.User = user
+		cmd.UpdateAt = NowUnix()
 		saveStore(snCmdMgr)
 	}
 }
@@ -225,12 +236,15 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		Context:  context,
 	}
 
-	cmdResult := func(cmdLog *CmdLog, ret string) {
+	cmdResult := func(cmdLog *CmdLog, ok bool, ret string) {
+		if ok {
+			cmdMgr.Success += 1
+		} else {
+			cmdMgr.Failed += 1
+		}
 		cmdLog.ResultAt = NowUnix()
 		cmdLog.Result = ret
-		if cmd.CallNo-cmdLog.ID < cmdLogCapacity {
-			saveStore(snCmdMgr)
-		}
+		saveStore(snCmdMgr)
 	}
 
 	rpcReq := &protocol.CmdExecReq{
@@ -243,16 +257,16 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 	if err := center.Go(node, rpcReq, timeout, func(i interface{}, e error) {
 		if e != nil {
 			done.result.Message = e.Error()
-			cmdResult(cmdLog, e.Error())
+			cmdResult(cmdLog, false, e.Error())
 			done.Done()
 			return
 		}
 		rpcResp := i.(*protocol.CmdExecResp)
 		if rpcResp.GetCode() != "" {
 			done.result.Message = rpcResp.GetCode()
-			cmdResult(cmdLog, rpcResp.GetCode())
+			cmdResult(cmdLog, false, rpcResp.GetCode())
 		} else {
-			cmdResult(cmdLog, rpcResp.GetOutStr())
+			cmdResult(cmdLog, true, rpcResp.GetOutStr())
 			done.result.Data = cmdLog
 		}
 		delete(cmd.doing, req.Node)

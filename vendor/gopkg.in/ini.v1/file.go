@@ -212,7 +212,7 @@ func (f *File) Reload() (err error) {
 	return nil
 }
 
-// Append appends one or more data sources and reloads automatically.
+// Append appends one or more data sources and reloads ampatically.
 func (f *File) Append(source interface{}, others ...interface{}) error {
 	ds, err := parseDataSource(source)
 	if err != nil {

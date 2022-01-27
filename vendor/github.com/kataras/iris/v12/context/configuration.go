@@ -47,7 +47,7 @@ type ConfigurationReadOnly interface {
 	GetDisableBodyConsumptionOnUnmarshal() bool
 
 	// GetDisableAutoFireStatusCode returns the configuration.DisableAutoFireStatusCode.
-	// Returns true when the http error status code handler automatic execution turned off.
+	// Returns true when the http error status code handler ampatic execution turned off.
 	GetDisableAutoFireStatusCode() bool
 
 	// GetTimeFormat returns the configuration.TimeFormat,

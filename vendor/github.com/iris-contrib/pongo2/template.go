@@ -97,7 +97,7 @@ func newTemplate(set *TemplateSet, name string, isTplString bool, tpl []byte) (*
 func (tpl *Template) newContextForExecution(context Context) (*Template, *ExecutionContext, error) {
 	if tpl.Options.TrimBlocks || tpl.Options.LStripBlocks {
 		// If an application configures pongo2 template to trim_blocks,
-		// the first newline after a template tag is removed automatically (like in PHP).
+		// the first newline after a template tag is removed ampatically (like in PHP).
 		prev := &Token{
 			Typ: TokenHTML,
 			Val: "\n",

@@ -15,7 +15,7 @@ func SetAutoescape(newValue bool) {
 
 // A Context type provides constants, variables, instances or functions to a template.
 //
-// pongo2 automatically provides meta-information or functions through the "pongo2"-key.
+// pongo2 ampatically provides meta-information or functions through the "pongo2"-key.
 // Currently, context["pongo2"] contains the following keys:
 //  1. version: returns the version string
 //

@@ -847,7 +847,7 @@ func (api *APIBuilder) StaticContent(reqPath string, cType string, content []byt
 //
 // this func will add a route for you which will static serve the /yuorpath/yourfile.ico to the /yourfile.ico
 // (nothing special that you can't handle by yourself).
-// Note that you have to call it on every favicon you have to serve automatically (desktop, mobile and so on).
+// Note that you have to call it on every favicon you have to serve ampatically (desktop, mobile and so on).
 //
 // Returns the GET *Route.
 func (api *APIBuilder) Favicon(favPath string, requestPath ...string) *Route {

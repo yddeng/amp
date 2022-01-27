@@ -969,7 +969,7 @@ const (
 	MCL_CURRENT                       = 0x1
 	MCL_FUTURE                        = 0x2
 	MNT_ASYNC                         = 0x40
-	MNT_AUTOMOUNTED                   = 0x20
+	MNT_ampOUNTED                   = 0x20
 	MNT_CMDFLAGS                      = 0xf0000
 	MNT_DEFEXPORTED                   = 0x200
 	MNT_DELEXPORT                     = 0x20000

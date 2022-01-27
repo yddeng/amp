@@ -128,7 +128,7 @@ func (p Problem) Key(key string, value interface{}) Problem {
 // Empty URI or "about:blank", when used as a problem type,
 // indicates that the problem has no additional semantics beyond that of the HTTP status code.
 // When "about:blank" is used,
-// the title is being automatically set the same as the recommended HTTP status phrase for that code
+// the title is being ampatically set the same as the recommended HTTP status phrase for that code
 // (e.g., "Not Found" for 404, and so on) on `Status` call.
 //
 // Relative paths are also valid when writing this Problem to an Iris Context.
