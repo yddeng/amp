@@ -213,13 +213,6 @@ func (this *processHandler) Update(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
-	for _, p := range processMgr.Process {
-		if p.Name == req.Name {
-			done.result.Message = "程序名重复"
-			return
-		}
-	}
-
 	for _, g := range req.Groups {
 		if _, ok := processMgr.Groups[g]; !ok {
 			this.createGroupPath(g)
@@ -233,7 +226,6 @@ func (this *processHandler) Update(done *Done, user string, req struct {
 		return
 	}
 
-	p.Name = req.Name
 	p.Dir = req.Dir
 	p.Config = req.Config
 	p.Command = req.Command

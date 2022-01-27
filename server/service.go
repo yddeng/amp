@@ -55,8 +55,13 @@ func Service(cfg Config) (err error) {
 }
 
 func Stop() {
-	saveStore()
-	app.Shutdown(nil)
+	ch := make(chan bool)
+	taskQueue.Submit(func() {
+		saveStore()
+		app.Shutdown(nil)
+		ch <- true
+	})
+	<-ch
 }
 
 func webRun(cfg *WebConfig) {
@@ -79,12 +84,14 @@ func webRun(cfg *WebConfig) {
 	// 跨域
 	app.Use(handleCORS)
 
-	dir := app.Party("/")
-	dir.HandleDir("", cfg.App, iris.DirOptions{
-		IndexName: "index.html",
-		Gzip:      false,
-		ShowList:  false,
-	})
+	if cfg.App != "" {
+		dir := app.Party("/")
+		dir.HandleDir("", cfg.App, iris.DirOptions{
+			IndexName: "index.html",
+			Gzip:      false,
+			ShowList:  false,
+		})
+	}
 
 	// 代理
 	redirect := func(ctx iris.Context) {
@@ -100,14 +107,6 @@ func webRun(cfg *WebConfig) {
 	api.Get("/*", redirect)
 	api.Post("/*", redirect)
 
-	app.Get("/test", func(ctx iris.Context) {
-		var ret Result
-		ret.Data = struct {
-			Text string `json:"text"`
-		}{Text: "hello world!"}
-		_, _ = ctx.JSON(ret)
-	})
-
 	initHandler(app)
 
 	log.Printf("web server run %s.\n", cfg.Address)
@@ -119,6 +118,7 @@ func webRun(cfg *WebConfig) {
 }
 
 func centerRun(cfg *CenterConfig) {
+	log.Printf("center server run %s.\n", cfg.Address)
 	center = newCenter(cfg.Address, cfg.Token)
 	go func() {
 		if err := center.startListener(); err != nil {

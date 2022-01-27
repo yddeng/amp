@@ -3,13 +3,14 @@ package server
 import (
 	"amp/util"
 	"errors"
+	"log"
 	"os"
 	"path"
 )
 
 type Store interface {
 	Load(dataPath string) error
-	Save()
+	Save() error
 }
 
 type storeBase struct {
@@ -29,14 +30,19 @@ func loadStore(dataPath string) (err error) {
 }
 
 func saveStore(names ...storeName) {
+	var err error
 	if len(names) == 0 {
-		for _, store := range stores {
-			store.Save()
+		for name, store := range stores {
+			if err = store.Save(); err != nil {
+				log.Printf("store %s save failed, %s\n", name, err)
+			}
 		}
 	} else {
 		for _, name := range names {
 			if store, ok := stores[name]; ok {
-				store.Save()
+				if err = store.Save(); err != nil {
+					log.Printf("store %s save failed, %s\n", name, err)
+				}
 			}
 		}
 	}
@@ -57,8 +63,8 @@ func (store *nodeStore) Load(dataPath string) (err error) {
 	return
 }
 
-func (store *nodeStore) Save() {
-	_ = util.EncodeJsonToFile(nodes, store.filename)
+func (store *nodeStore) Save() error {
+	return util.EncodeJsonToFile(nodes, store.filename)
 }
 
 type userMgrStore struct {
@@ -80,8 +86,8 @@ func (store *userMgrStore) Load(dataPath string) (err error) {
 	return
 }
 
-func (store *userMgrStore) Save() {
-	_ = util.EncodeJsonToFile(userMgr, store.filename)
+func (store *userMgrStore) Save() error {
+	return util.EncodeJsonToFile(userMgr, store.filename)
 }
 
 type processMgrStore struct {
@@ -104,8 +110,8 @@ func (store *processMgrStore) Load(dataPath string) (err error) {
 	return
 }
 
-func (store *processMgrStore) Save() {
-	_ = util.EncodeJsonToFile(processMgr, store.filename)
+func (store *processMgrStore) Save() error {
+	return util.EncodeJsonToFile(processMgr, store.filename)
 }
 
 type cmdMgrStore struct {
@@ -127,8 +133,8 @@ func (store *cmdMgrStore) Load(dataPath string) (err error) {
 	return
 }
 
-func (store *cmdMgrStore) Save() {
-	_ = util.EncodeJsonToFile(cmdMgr, store.filename)
+func (store *cmdMgrStore) Save() error {
+	return util.EncodeJsonToFile(cmdMgr, store.filename)
 }
 
 type storeName string

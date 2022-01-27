@@ -95,6 +95,7 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 		}
 		saveCache()
 	}); err != nil {
+		log.Println("onProcExec error", err)
 		_ = errFile.Close()
 		_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
 	} else {
