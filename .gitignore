@@ -7,11 +7,10 @@
 .idea
 .DS_Store
 
-cmd/center
-cmd/executor
+cmd/amps
+cmd/ampe
 
 data/
 log/
 
-uplaod/
-exec/test/test
+upload/
