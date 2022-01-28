@@ -212,6 +212,13 @@ func (this *processHandler) Update(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
+	for _, p := range processMgr.Process {
+		if p.Name == req.Name && p.ID != req.ID {
+			done.result.Message = "程序名重复"
+			return
+		}
+	}
+
 	for _, g := range req.Groups {
 		if _, ok := processMgr.Groups[g]; !ok {
 			this.createGroupPath(g)
@@ -225,6 +232,7 @@ func (this *processHandler) Update(done *Done, user string, req struct {
 		return
 	}
 
+	p.Name = req.Name
 	p.Dir = req.Dir
 	p.Config = req.Config
 	p.Command = req.Command
@@ -257,10 +265,8 @@ func (*processHandler) Delete(done *Done, user string, req struct {
 func processTick() {
 	rpcReq := map[string]*protocol.ProcessStateReq{}
 	for _, p := range processMgr.Process {
-		if p.State.Status == exec.StateStarting ||
-			p.State.Status == exec.StateRunning ||
-			p.State.Status == exec.StateStopping ||
-			p.State.Status == exec.StateUnknown {
+		if !(p.State.Status == exec.StateStopped ||
+			p.State.Status == exec.StateExited) {
 			req, ok := rpcReq[p.Node]
 			if !ok {
 				req = &protocol.ProcessStateReq{
@@ -373,10 +379,6 @@ func processAutoStart() {
 	}
 }
 
-//func makePath(dir string, id int) string {
-//	return path.Join(dir, strconv.Itoa(id))
-//}
-
 func (p *Process) start(node *Node, callback func(code string, err error)) error {
 	key := p.Name
 	configs := make(map[string]string, len(p.Config))
@@ -411,10 +413,8 @@ func (*processHandler) Start(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	p, ok := processMgr.Process[req.ID]
 	if !ok ||
-		p.State.Status == exec.StateStarting ||
-		p.State.Status == exec.StateRunning ||
-		p.State.Status == exec.StateStopping ||
-		p.State.Status == exec.StateUnknown {
+		!(p.State.Status == exec.StateStopped ||
+			p.State.Status == exec.StateExited) {
 		done.result.Message = "当前状态不允许启动"
 		done.Done()
 		return
