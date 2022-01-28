@@ -59,13 +59,16 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 	log.Printf("onProcExec %v", msg)
 
 	if p, ok := processCache[msg.GetId()]; ok && p.State == StateRunning {
-		_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(p.Pid())}, nil)
+		_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(p.Pid)}, nil)
 		return
 	}
 
 	// 创建文件目录
 	fileDir := path.Join(msg.GetDir(), msg.GetKey())
-	_ = os.MkdirAll(path.Dir(fileDir), os.ModePerm)
+	if err := os.MkdirAll(fileDir, os.ModePerm); err != nil {
+		_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
+		return
+	}
 
 	// 配置文件
 	if len(msg.GetConfig()) > 0 {
@@ -83,7 +86,6 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 		_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
 		return
 	}
-
 	ecmd := exec.Command(msg.GetName(), msg.GetArgs()...)
 	ecmd.Dir = msg.GetDir()
 	ecmd.Stderr = errFile
@@ -105,7 +107,7 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 		p.Command = ecmd.String()
 		processCache[p.ID] = p
 		saveCache()
-		_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(p.Pid())}, nil)
+		_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(p.Pid)}, nil)
 	}
 }
 
@@ -130,7 +132,7 @@ func (er *Executor) onProcState(replier *drpc.Replier, req interface{}) {
 			State: StateStopped,
 		}
 		if p, ok := processCache[id]; ok {
-			state.Pid = int32(p.Pid())
+			state.Pid = int32(p.Pid)
 			state.State = p.State
 			if p.State == StateExited {
 				if data, err := ioutil.ReadFile(p.Stderr); err == nil {
@@ -140,7 +142,10 @@ func (er *Executor) onProcState(replier *drpc.Replier, req interface{}) {
 		}
 		states[id] = state
 	}
-	_ = replier.Reply(&protocol.ProcessStateResp{States: states}, nil)
+	//log.Println("onProcState", 222, states)
+	if err := replier.Reply(&protocol.ProcessStateResp{States: states}, nil); err != nil {
+		log.Println(err)
+	}
 
 }
 

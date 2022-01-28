@@ -25,7 +25,6 @@ type ProcessState struct {
 	ExitMsg string `json:"exit_msg"`
 	// 已经自动重启次数，启动时重置
 	AutoStartTimes int `json:"auto_start_times"`
-	isAutoStart    bool
 }
 
 type Process struct {
@@ -260,7 +259,8 @@ func processTick() {
 	for _, p := range processMgr.Process {
 		if p.State.Status == exec.StateStarting ||
 			p.State.Status == exec.StateRunning ||
-			p.State.Status == exec.StateStopping {
+			p.State.Status == exec.StateStopping ||
+			p.State.Status == exec.StateUnknown {
 			req, ok := rpcReq[p.Node]
 			if !ok {
 				req = &protocol.ProcessStateReq{
@@ -275,14 +275,31 @@ func processTick() {
 	for n, req := range rpcReq {
 		node, ok := nodes[n]
 		if !ok || !node.Online() {
+			// 节点不在线 设置状态为 unknown
+			change := false
+			for _, id := range req.GetIds() {
+				p, ok := processMgr.Process[int(id)]
+				if !ok {
+					continue
+				}
+				if p.State.Status != exec.StateUnknown {
+					p.State.Status = exec.StateUnknown
+					change = true
+				}
+			}
+			if change {
+				saveStore(snProcessMgr)
+			}
 			continue
 		}
 		_ = center.Go(node, req, drpc.DefaultRPCTimeout, func(i interface{}, e error) {
 			if e != nil {
+				//log.Println("11", e)
 				return
 			}
 			change := false
 			rpcResp := i.(*protocol.ProcessStateResp)
+			//log.Println(22, rpcResp)
 			for id, state := range rpcResp.GetStates() {
 				p, ok := processMgr.Process[int(id)]
 				if !ok {
@@ -290,13 +307,12 @@ func processTick() {
 				}
 				pState := p.State.Status
 				if pState != state.GetState() {
-					if pState == exec.StateStarting {
+					if pState == exec.StateUnknown || pState == exec.StateStarting {
 						p.State.Status = state.GetState()
 						if state.GetState() == exec.StateRunning {
 							p.State.Pid = state.Pid
 						} else if state.GetState() == exec.StateExited {
 							p.State.ExitMsg = state.GetExitMsg()
-							p.State.isAutoStart = true
 						} else {
 							// Stopped
 						}
@@ -305,7 +321,6 @@ func processTick() {
 						p.State.Status = state.GetState()
 						if state.GetState() == exec.StateExited {
 							p.State.ExitMsg = state.GetExitMsg()
-							p.State.isAutoStart = true
 						} else {
 							// Stopped
 						}
@@ -338,8 +353,7 @@ func processTick() {
 
 func processAutoStart() {
 	for _, p := range processMgr.Process {
-		if p.State.isAutoStart &&
-			p.State.Status == exec.StateExited &&
+		if p.State.Status == exec.StateExited &&
 			p.State.AutoStartTimes < p.AutoStartTimes {
 
 			node, ok := nodes[p.Node]
@@ -395,20 +409,21 @@ func (*processHandler) Start(done *Done, user string, req struct {
 	ID int `json:"id"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	defer func() { done.Done() }()
-
 	p, ok := processMgr.Process[req.ID]
 	if !ok ||
 		p.State.Status == exec.StateStarting ||
 		p.State.Status == exec.StateRunning ||
-		p.State.Status == exec.StateStopping {
+		p.State.Status == exec.StateStopping ||
+		p.State.Status == exec.StateUnknown {
 		done.result.Message = "当前状态不允许启动"
+		done.Done()
 		return
 	}
 
 	node, ok := nodes[p.Node]
 	if !ok || !node.Online() {
 		done.result.Message = "节点无服务"
+		done.Done()
 		return
 	}
 
@@ -433,17 +448,18 @@ func (*processHandler) Stop(done *Done, user string, req struct {
 	ID int `json:"id"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	defer func() { done.Done() }()
 
 	p, ok := processMgr.Process[req.ID]
 	if !ok || p.State.Status != exec.StateRunning {
 		done.result.Message = "当前状态不允许停止"
+		done.Done()
 		return
 	}
 
 	node, ok := nodes[p.Node]
 	if !ok || !node.Online() {
 		done.result.Message = "节点无服务"
+		done.Done()
 		return
 	}
 

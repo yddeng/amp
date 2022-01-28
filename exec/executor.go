@@ -81,13 +81,17 @@ func (er *Executor) onConnected(conn net.Conn) {
 			dnet.WithCodec(new(protocol.Codec)),
 			dnet.WithMessageCallback(func(session dnet.Session, data interface{}) {
 				er.Submit(func() {
+					var err error
 					switch data.(type) {
 					case *drpc.Request:
-						er.rpcServer.OnRPCRequest(er, data.(*drpc.Request))
+						err = er.rpcServer.OnRPCRequest(er, data.(*drpc.Request))
 					case *drpc.Response:
-						er.rpcClient.OnRPCResponse(data.(*drpc.Response))
+						err = er.rpcClient.OnRPCResponse(data.(*drpc.Response))
 					case *protocol.Message:
 						er.dispatchMsg(session, data.(*protocol.Message))
+					}
+					if err != nil {
+						log.Println(err)
 					}
 				})
 			}),
@@ -132,8 +136,6 @@ func (er *Executor) dispatchMsg(session dnet.Session, msg *protocol.Message) {}
 var er *Executor
 
 func Start(cfg Config) (err error) {
-	loadCache(cfg.DataPath)
-
 	er = new(Executor)
 	er.cfg = &cfg
 	er.taskPool = task.NewTaskPool(1, 1024)
@@ -145,6 +147,8 @@ func Start(cfg Config) (err error) {
 	er.rpcServer.Register(proto.MessageName(&protocol.ProcessSignalReq{}), er.onProcSignal)
 	er.rpcServer.Register(proto.MessageName(&protocol.ProcessStateReq{}), er.onProcState)
 	er.rpcServer.Register(proto.MessageName(&protocol.LogFileReq{}), er.onLogFile)
+
+	loadCache(cfg.DataPath)
 
 	er.Submit(er.dial)
 

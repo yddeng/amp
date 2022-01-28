@@ -23,6 +23,7 @@ func main() {
 
 	//log := logger.NewZapLogger("executor.log", "log", "debug", 100, 14, 1, true)
 	//logger.InitLogger(log)
+	log.Println("ampe")
 
 	var err error
 	var cfg exec.Config

@@ -2,13 +2,17 @@ package exec
 
 import (
 	"amp/util"
+	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path"
 	"syscall"
+	"time"
 )
 
 const (
+	StateUnknown  = "Unknown"
 	StateStarting = "Starting"
 	StateRunning  = "Running"
 	StateStopping = "Stopping"
@@ -35,41 +39,68 @@ type Daemon struct {
 type Process struct {
 	// find by pid
 	Process *os.Process `json:"_"`
-	// state
-	ProcessState *os.ProcessState `json:"_"`
 	// Cmd
 	Cmd *exec.Cmd `json:"_"`
+
+	done chan struct{}
 
 	ID      int32  `json:"id"`
 	Key     string `json:"key"`
 	Command string `json:"command"`
 	State   string `json:"state"`
+	Pid     int    `json:"pid"`
 	Stderr  string `json:"stderr"`
 }
 
 func ProcessWithCmd(cmd *exec.Cmd, callback func(process *Process)) (*Process, error) {
-	process := &Process{Cmd: cmd}
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}
-	process.State = StateRunning
+	process := &Process{
+		State: StateRunning,
+		Cmd:   cmd,
+		done:  make(chan struct{}),
+		Pid:   cmd.Process.Pid,
+	}
 
 	go func() {
 		var err error
 		defer er.Submit(func() {
-			process.ProcessState = cmd.ProcessState
 			if err != nil {
-				if process.ProcessState.Exited() {
-					// exit
-					process.State = StateExited
+				log.Printf("process %d done err %v\n", process.Pid, err)
+				if state, ok := err.(*exec.ExitError); ok {
+					log.Printf("process %d exiterror %s\n", process.Pid, state.String())
+					// !success
+					if state.ProcessState.Exited() {
+						// exit
+						process.State = StateExited
+					} else {
+						// signal 人为操作，视为正常停机
+						process.State = StateStopped
+					}
 				} else {
-					// signal 人为操作，视为正常停机
-					process.State = StateStopped
+					// 异常退出
+					log.Printf("process %d exit %v\n", process.Pid, err)
+					process.State = StateExited
 				}
 			} else {
-				// success code=0
+				// err == nil && success
 				process.State = StateStopped
 			}
+			close(process.done)
+			//process.ProcessState = cmd.ProcessState
+			//if err != nil {
+			//	if process.ProcessState.Exited() {
+			//		// exit
+			//		process.State = StateExited
+			//	} else {
+			//		// signal 人为操作，视为正常停机
+			//		process.State = StateStopped
+			//	}
+			//} else {
+			//	// success code=0
+			//	process.State = StateStopped
+			//}
 			callback(process)
 		})
 		err = cmd.Wait()
@@ -79,58 +110,62 @@ func ProcessWithCmd(cmd *exec.Cmd, callback func(process *Process)) (*Process, e
 
 // 根据pid 绑定进程，能监听停止状态
 func ProcessWithPid(pid int, callback func(process *Process)) (*Process, error) {
+	// todo 总是会成功，需要修改
 	p, err := os.FindProcess(pid)
 	if err != nil {
 		return nil, err
 	}
-	process := &Process{State: StateRunning, Process: p}
+	log.Println("ProcessWithPid", pid, p, err)
+	process := &Process{
+		State:   StateRunning,
+		Process: p,
+		done:    make(chan struct{}),
+		Pid:     pid,
+	}
 
 	go func() {
 		var state *os.ProcessState
-		//var err error
+		var err error
 		defer er.Submit(func() {
-			process.ProcessState = state
-			if !state.Success() {
-				if state.Exited() {
-					// exit
-					process.State = StateExited
+			if err != nil {
+				// 异常退出
+				log.Printf("process %d exit %s\n", process.Pid, err)
+				process.State = StateExited
+			} else {
+				if !state.Success() {
+					if state.Exited() {
+						// exit
+						process.State = StateExited
+					} else {
+						// signal 人为操作，视为正常停机
+						process.State = StateStopped
+					}
 				} else {
-					// signal 人为操作，视为正常停机
+					// success code=0
 					process.State = StateStopped
 				}
-			} else {
-				// success code=0
-				process.State = StateStopped
+
 			}
+			close(process.done)
 			callback(process)
 		})
-		state, _ = p.Wait()
+		state, err = p.Wait()
 	}()
 
 	return process, nil
 }
 
-func (this *Process) Pid() int {
-	if this.Process == nil {
-		return this.Cmd.Process.Pid
-	} else {
-		return this.Process.Pid
-	}
-}
-
 func (this *Process) Signal(sig syscall.Signal) error {
-	if this.Process == nil {
-		return this.Cmd.Process.Signal(sig)
-	} else {
-		return this.Process.Signal(sig)
-	}
+	return syscall.Kill(this.Pid, sig)
 }
 
 func (this *Process) Done() bool {
-	if this.ProcessState != nil {
+	select {
+	case <-this.done:
 		return true
+	default:
+		return false
 	}
-	return false
 }
 
 func (this *Process) IsAlive() bool {
@@ -147,13 +182,60 @@ var (
 )
 
 func loadCache(dataPath string) {
+	var processMap map[int32]*Process
 	cacheFile = path.Join(dataPath, "exec_info.json")
-	if err := util.DecodeJsonFromFile(&processCache, cacheFile); err == nil {
+	if err := util.DecodeJsonFromFile(&processMap, cacheFile); err == nil {
+		for _, p := range processMap {
+			if p.IsAlive() {
+				p.done = make(chan struct{})
+				processCache[p.ID] = p
+				go func(p *Process) {
+					ticker := time.NewTicker(time.Second)
+					for {
+						select {
+						case <-p.done:
+							ticker.Stop()
+							return
+						case <-ticker.C:
+							if !p.IsAlive() {
+								data, err := ioutil.ReadFile(p.Stderr)
+								if err == nil && len(data) != 0 {
+									p.State = StateExited
+								} else {
+									p.State = StateStopped
+								}
+								close(p.done)
+							}
+						}
+					}
+				}(p)
+			} else {
+				log.Printf("loadCache %s faield %d %v", p.Key, p.Pid, err)
+			}
+		}
+
+		//for _, v := range processMap {
+		//	if p, err := ProcessWithPid(v.Pid, func(process *Process) {
+		//		if process.State == StateStopped {
+		//			delete(processCache, process.ID)
+		//		}
+		//		saveCache()
+		//	}); err == nil {
+		//		p.ID = v.ID
+		//		p.Key = v.Key
+		//		p.Stderr = v.Stderr
+		//		p.Command = v.Command
+		//		processCache[p.ID] = p
+		//	} else {
+		//		log.Printf("loadCache %s faield %d %s", v.Key, v.Pid, err)
+		//	}
+		//}
 	}
+	saveCache()
 }
 
 func saveCache() {
 	if err := util.EncodeJsonToFile(processCache, cacheFile); err != nil {
-
+		log.Printf("saveCache faield %v", err)
 	}
 }

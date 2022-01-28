@@ -42,13 +42,17 @@ func (c *Center) startListener() error {
 			//dnet.WithTimeout(time.Second*5, 0),
 			dnet.WithMessageCallback(func(session dnet.Session, data interface{}) {
 				taskQueue.Submit(func() {
+					var err error
 					switch data.(type) {
 					case *drpc.Request:
-						c.rpcServer.OnRPCRequest(&Node{session: session}, data.(*drpc.Request))
+						err = c.rpcServer.OnRPCRequest(&Node{session: session}, data.(*drpc.Request))
 					case *drpc.Response:
-						c.rpcClient.OnRPCResponse(data.(*drpc.Response))
+						err = c.rpcClient.OnRPCResponse(data.(*drpc.Response))
 					case *protocol.Message:
 						//c.dispatchMsg(session, data.(*protocol.Message))
+					}
+					if err != nil {
+						log.Println(err)
 					}
 				})
 			}),
