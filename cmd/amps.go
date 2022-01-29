@@ -36,9 +36,7 @@ func main() {
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case <-sigChan:
-	}
-	log.Println("listen stopping. ")
+	log.Printf("receive signal:%v to stopping. ", <-sigChan)
 	server.Stop()
+	log.Println("stopped. ")
 }

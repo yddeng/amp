@@ -177,3 +177,52 @@ func TestProcessHandler_Start(t *testing.T) {
 		}
 	*/
 }
+
+func TestProcessHandler_GroupAdd(t *testing.T) {
+	startWebListener(t)
+
+	ret := authLogin(t, "admin", "123456")
+	t.Log(ret, gjson.Get(ret, "data.token").String())
+
+	token := gjson.Get(ret, "data.token").String()
+
+	{
+		req, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/process/gadd", address), "POST")
+		req.SetHeader("Access-Token", token)
+		req.WriteJSON(struct {
+			Group string `json:"group"`
+		}{Group: "all"})
+		ret, err := req.ToString()
+		t.Log(err, ret)
+	}
+
+	{
+		req, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/process/gadd", address), "POST")
+		req.SetHeader("Access-Token", token)
+		req.WriteJSON(struct {
+			Group string `json:"group"`
+		}{Group: "all/222"})
+		ret, err := req.ToString()
+		t.Log(err, ret)
+	}
+
+	{
+		req, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/process/gadd", address), "POST")
+		req.SetHeader("Access-Token", token)
+		req.WriteJSON(struct {
+			Group string `json:"group"`
+		}{Group: "all222"})
+		ret, err := req.ToString()
+		t.Log(err, ret)
+	}
+
+	{
+		req, _ := dhttp.NewRequest(fmt.Sprintf("http://%s/process/gremove", address), "POST")
+		req.SetHeader("Access-Token", token)
+		req.WriteJSON(struct {
+			Group string `json:"group"`
+		}{Group: "all"})
+		ret, err := req.ToString()
+		t.Log(err, ret)
+	}
+}

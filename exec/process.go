@@ -88,19 +88,6 @@ func ProcessWithCmd(cmd *exec.Cmd, callback func(process *Process)) (*Process, e
 				process.State = StateStopped
 			}
 			close(process.done)
-			//process.ProcessState = cmd.ProcessState
-			//if err != nil {
-			//	if process.ProcessState.Exited() {
-			//		// exit
-			//		process.State = StateExited
-			//	} else {
-			//		// signal 人为操作，视为正常停机
-			//		process.State = StateStopped
-			//	}
-			//} else {
-			//	// success code=0
-			//	process.State = StateStopped
-			//}
 			callback(process)
 		})
 		err = cmd.Wait()
@@ -213,23 +200,6 @@ func loadCache(dataPath string) {
 				log.Printf("loadCache %s faield %d %v", p.Key, p.Pid, err)
 			}
 		}
-
-		//for _, v := range processMap {
-		//	if p, err := ProcessWithPid(v.Pid, func(process *Process) {
-		//		if process.State == StateStopped {
-		//			delete(processCache, process.ID)
-		//		}
-		//		saveCache()
-		//	}); err == nil {
-		//		p.ID = v.ID
-		//		p.Key = v.Key
-		//		p.Stderr = v.Stderr
-		//		p.Command = v.Command
-		//		processCache[p.ID] = p
-		//	} else {
-		//		log.Printf("loadCache %s faield %d %s", v.Key, v.Pid, err)
-		//	}
-		//}
 	}
 	saveCache()
 }

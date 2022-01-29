@@ -2,6 +2,7 @@ package main
 
 import (
 	"amp/exec"
+	"amp/server"
 	"amp/util"
 	"flag"
 	"log"
@@ -37,8 +38,7 @@ func main() {
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case <-sigChan:
-	}
-	log.Println("listen stopping. ")
+	log.Printf("receive signal:%v to stopping. ", <-sigChan)
+	exec.Stop()
+	log.Println("stopped. ")
 }

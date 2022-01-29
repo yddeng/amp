@@ -100,15 +100,20 @@ func (*processHandler) GroupRemove(done *Done, user string, req struct {
 	defer func() { done.Done() }()
 
 	delg := map[string]struct{}{}
-	for nav := range processMgr.Groups {
-		if strings.HasPrefix(nav, req.Group) {
-			delg[nav] = struct{}{}
-		}
-	}
-
-	if len(delg) == 0 {
+	if _, ok := processMgr.Groups[req.Group]; ok {
+		delg[req.Group] = struct{}{}
+	} else {
 		done.result.Message = "不存在的分组"
 		return
+	}
+
+	// 移除子分组
+	// 防止前缀一致，加上分割符， all、 alltest 移除 all
+	prefix := req.Group + "/"
+	for nav := range processMgr.Groups {
+		if strings.HasPrefix(nav, prefix) {
+			delg[nav] = struct{}{}
+		}
 	}
 
 	for _, v := range processMgr.Process {

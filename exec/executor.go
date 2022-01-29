@@ -154,3 +154,12 @@ func Start(cfg Config) (err error) {
 
 	return nil
 }
+
+func Stop() {
+	stopCh := make(chan struct{})
+	er.Submit(func() {
+		saveCache()
+		stopCh <- struct{}{}
+	})
+	<-stopCh
+}
