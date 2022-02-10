@@ -12,7 +12,7 @@ import (
 var (
 	//address = "212.129.131.27:40156"
 	address  = "10.128.2.123:40156"
-	startWeb = false
+	startWeb = true
 )
 
 func startWebListener(t *testing.T) {
@@ -22,7 +22,7 @@ func startWebListener(t *testing.T) {
 
 	var err error
 	var cfg Config
-	if err = util.DecodeJsonFromFile(&cfg, "../center_config.json"); err != nil {
+	if err = util.DecodeJsonFromFile(&cfg, "../cmd/amps_config.json"); err != nil {
 		t.Fatal(err)
 	}
 

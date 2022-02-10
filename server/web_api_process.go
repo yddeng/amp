@@ -144,8 +144,13 @@ func (*processHandler) List(done *Done, user string, req struct {
 		s := make(map[int]*Process, len(processMgr.Process))
 		for _, v := range processMgr.Process {
 			for _, nav := range v.Groups {
-				if strings.HasPrefix(nav, req.Group) {
+				if nav == req.Group {
 					s[v.ID] = v
+				} else {
+					prefix := req.Group + "/"
+					if strings.HasPrefix(nav, prefix) {
+						s[v.ID] = v
+					}
 				}
 			}
 		}
