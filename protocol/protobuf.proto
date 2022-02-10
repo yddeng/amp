@@ -24,11 +24,10 @@ message cmdExecResp{
 
 message processExecReq{
     map<string,string> config = 1;
-    string name   = 2; // name of command
+    string name   = 2;
     repeated string args = 3; // args of command
     string dir    = 4;
     int32  id     = 5;
-    string key    = 6; // name
 }
 message processExecResp{
     string code  = 1;

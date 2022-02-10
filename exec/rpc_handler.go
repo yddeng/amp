@@ -65,7 +65,7 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 	}
 
 	// 创建文件目录
-	fileDir := path.Join(msg.GetDir(), msg.GetKey())
+	fileDir := path.Join(msg.GetDir(), common.AmpDir, msg.GetName())
 	if err := os.MkdirAll(fileDir, os.ModePerm); err != nil {
 		_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
 		return
@@ -87,7 +87,7 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 		_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
 		return
 	}
-	ecmd := exec.Command(msg.GetName(), msg.GetArgs()...)
+	ecmd := exec.Command(msg.GetArgs()[0], msg.GetArgs()[1:]...)
 	ecmd.Dir = msg.GetDir()
 	ecmd.Stderr = errFile
 
@@ -103,7 +103,7 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 		_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
 	} else {
 		p.ID = msg.GetId()
-		p.Key = msg.GetKey()
+		p.Name = msg.GetName()
 		p.Stderr = filename
 		p.Command = ecmd.String()
 		processCache[p.ID] = p

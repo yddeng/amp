@@ -37,7 +37,7 @@ type Process struct {
 	done chan struct{}
 
 	ID      int32  `json:"id"`
-	Key     string `json:"key"`
+	Name    string `json:"name"`
 	Command string `json:"command"`
 	State   string `json:"state"`
 	Pid     int    `json:"pid"`
@@ -189,7 +189,7 @@ func loadCache(dataPath string) {
 					}
 				}(p)
 			} else {
-				log.Printf("loadCache %s faield %d %v", p.Key, p.Pid, err)
+				log.Printf("loadCache %s faield %d %v", p.Name, p.Pid, err)
 			}
 		}
 	}

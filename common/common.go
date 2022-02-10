@@ -1,7 +1,7 @@
 package common
 
 // 隐藏目录，存放临时配置文件
-const dir = ".amp"
+const AmpDir = ".amp"
 
 // 程序状态
 const (

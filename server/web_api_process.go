@@ -3,6 +3,7 @@ package server
 import (
 	"amp/common"
 	"amp/protocol"
+	"fmt"
 	"github.com/yddeng/dnet/drpc"
 	"log"
 	"strings"
@@ -385,20 +386,17 @@ func processAutoStart() {
 }
 
 func (p *Process) start(node *Node, callback func(code string, err error)) error {
-	key := p.Name
 	configs := make(map[string]string, len(p.Config))
 	for _, cfg := range p.Config {
 		configs[cfg.Name] = cfg.Context
 	}
 
-	cmd := strings.ReplaceAll(p.Command, "{{path}}", key)
-	cmds := strings.Split(cmd, " ")
+	cmd := strings.ReplaceAll(p.Command, "{{path}}", fmt.Sprintf("%s/%s", common.AmpDir, p.Name))
 	rpcReq := &protocol.ProcessExecReq{
 		Id:     int32(p.ID),
-		Key:    key,
 		Dir:    p.Dir,
-		Name:   cmds[0],
-		Args:   cmds[1:],
+		Name:   p.Name,
+		Args:   strings.Fields(cmd),
 		Config: configs,
 	}
 
