@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"amp/common"
 	"amp/util"
 	"io/ioutil"
 	"log"
@@ -9,15 +10,6 @@ import (
 	"path"
 	"syscall"
 	"time"
-)
-
-const (
-	StateUnknown  = "Unknown"
-	StateStarting = "Starting"
-	StateRunning  = "Running"
-	StateStopping = "Stopping"
-	StateStopped  = "Stopped"
-	StateExited   = "Exited"
 )
 
 type Daemon struct {
@@ -57,7 +49,7 @@ func ProcessWithCmd(cmd *exec.Cmd, callback func(process *Process)) (*Process, e
 		return nil, err
 	}
 	process := &Process{
-		State: StateRunning,
+		State: common.StateRunning,
 		Cmd:   cmd,
 		done:  make(chan struct{}),
 		Pid:   cmd.Process.Pid,
@@ -73,19 +65,19 @@ func ProcessWithCmd(cmd *exec.Cmd, callback func(process *Process)) (*Process, e
 					// !success
 					if state.ProcessState.Exited() {
 						// exit
-						process.State = StateExited
+						process.State = common.StateExited
 					} else {
 						// signal 人为操作，视为正常停机
-						process.State = StateStopped
+						process.State = common.StateStopped
 					}
 				} else {
 					// 异常退出
 					log.Printf("process %d exit %v\n", process.Pid, err)
-					process.State = StateExited
+					process.State = common.StateExited
 				}
 			} else {
 				// err == nil && success
-				process.State = StateStopped
+				process.State = common.StateStopped
 			}
 			close(process.done)
 			callback(process)
@@ -104,7 +96,7 @@ func ProcessWithPid(pid int, callback func(process *Process)) (*Process, error) 
 	}
 	log.Println("ProcessWithPid", pid, p, err)
 	process := &Process{
-		State:   StateRunning,
+		State:   common.StateRunning,
 		Process: p,
 		done:    make(chan struct{}),
 		Pid:     pid,
@@ -117,19 +109,19 @@ func ProcessWithPid(pid int, callback func(process *Process)) (*Process, error) 
 			if err != nil {
 				// 异常退出
 				log.Printf("process %d exit %s\n", process.Pid, err)
-				process.State = StateExited
+				process.State = common.StateExited
 			} else {
 				if !state.Success() {
 					if state.Exited() {
 						// exit
-						process.State = StateExited
+						process.State = common.StateExited
 					} else {
 						// signal 人为操作，视为正常停机
-						process.State = StateStopped
+						process.State = common.StateStopped
 					}
 				} else {
 					// success code=0
-					process.State = StateStopped
+					process.State = common.StateStopped
 				}
 
 			}
@@ -187,9 +179,9 @@ func loadCache(dataPath string) {
 							if !p.IsAlive() {
 								data, err := ioutil.ReadFile(p.Stderr)
 								if err == nil && len(data) != 0 {
-									p.State = StateExited
+									p.State = common.StateExited
 								} else {
-									p.State = StateStopped
+									p.State = common.StateStopped
 								}
 								close(p.done)
 							}

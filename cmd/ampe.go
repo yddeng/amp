@@ -2,7 +2,6 @@ package main
 
 import (
 	"amp/exec"
-	"amp/server"
 	"amp/util"
 	"flag"
 	"log"

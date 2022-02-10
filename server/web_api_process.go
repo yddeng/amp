@@ -1,7 +1,7 @@
 package server
 
 import (
-	"amp/exec"
+	"amp/common"
 	"amp/protocol"
 	"github.com/yddeng/dnet/drpc"
 	"log"
@@ -188,7 +188,7 @@ func (this *processHandler) Create(done *Done, user string, req struct {
 	p.Config = req.Config
 	p.Command = req.Command
 	p.State = ProcessState{
-		Status: exec.StateStopped,
+		Status: common.StateStopped,
 	}
 	p.Groups = req.Groups
 	p.Node = req.Node
@@ -231,8 +231,8 @@ func (this *processHandler) Update(done *Done, user string, req struct {
 	}
 
 	p, ok := processMgr.Process[req.ID]
-	if !ok || !(p.State.Status == exec.StateStopped ||
-		p.State.Status == exec.StateExited) {
+	if !ok || !(p.State.Status == common.StateStopped ||
+		p.State.Status == common.StateExited) {
 		done.result.Message = "当前状态不允许修改"
 		return
 	}
@@ -257,8 +257,8 @@ func (*processHandler) Delete(done *Done, user string, req struct {
 	defer func() { done.Done() }()
 
 	p, ok := processMgr.Process[req.ID]
-	if !ok || !(p.State.Status == exec.StateStopped ||
-		p.State.Status == exec.StateExited) {
+	if !ok || !(p.State.Status == common.StateStopped ||
+		p.State.Status == common.StateExited) {
 		done.result.Message = "当前状态不允许删除"
 		return
 	}
@@ -270,8 +270,8 @@ func (*processHandler) Delete(done *Done, user string, req struct {
 func processTick() {
 	rpcReq := map[string]*protocol.ProcessStateReq{}
 	for _, p := range processMgr.Process {
-		if !(p.State.Status == exec.StateStopped ||
-			p.State.Status == exec.StateExited) {
+		if !(p.State.Status == common.StateStopped ||
+			p.State.Status == common.StateExited) {
 			req, ok := rpcReq[p.Node]
 			if !ok {
 				req = &protocol.ProcessStateReq{
@@ -293,8 +293,8 @@ func processTick() {
 				if !ok {
 					continue
 				}
-				if p.State.Status != exec.StateUnknown {
-					p.State.Status = exec.StateUnknown
+				if p.State.Status != common.StateUnknown {
+					p.State.Status = common.StateUnknown
 					change = true
 				}
 			}
@@ -318,19 +318,19 @@ func processTick() {
 				}
 				pState := p.State.Status
 				if pState != state.GetState() {
-					if pState == exec.StateUnknown || pState == exec.StateStarting {
+					if pState == common.StateUnknown || pState == common.StateStarting {
 						p.State.Status = state.GetState()
-						if state.GetState() == exec.StateRunning {
+						if state.GetState() == common.StateRunning {
 							p.State.Pid = state.Pid
-						} else if state.GetState() == exec.StateExited {
+						} else if state.GetState() == common.StateExited {
 							p.State.ExitMsg = state.GetExitMsg()
 						} else {
 							// Stopped
 						}
 						change = true
-					} else if pState == exec.StateRunning {
+					} else if pState == common.StateRunning {
 						p.State.Status = state.GetState()
-						if state.GetState() == exec.StateExited {
+						if state.GetState() == common.StateExited {
 							p.State.ExitMsg = state.GetExitMsg()
 						} else {
 							// Stopped
@@ -338,7 +338,7 @@ func processTick() {
 						change = true
 					} else {
 						// Stopping
-						if state.GetState() == exec.StateRunning {
+						if state.GetState() == common.StateRunning {
 							subUnix := NowUnix() - p.State.Timestamp
 							if int(subUnix) >= p.StopWaitSecs {
 								_ = center.Go(node, &protocol.ProcessSignalReq{
@@ -349,7 +349,7 @@ func processTick() {
 						} else {
 							// Stopped || Exited
 							p.State.ExitMsg = state.GetExitMsg()
-							p.State.Status = exec.StateStopped
+							p.State.Status = common.StateStopped
 							change = true
 						}
 					}
@@ -364,7 +364,7 @@ func processTick() {
 
 func processAutoStart() {
 	for _, p := range processMgr.Process {
-		if p.State.Status == exec.StateExited &&
+		if p.State.Status == common.StateExited &&
 			p.State.AutoStartTimes < p.AutoStartTimes {
 
 			node, ok := nodes[p.Node]
@@ -375,7 +375,7 @@ func processAutoStart() {
 			log.Printf("process %d auto start times %d\n", p.ID, p.State.AutoStartTimes)
 			if err := p.start(node, func(code string, err error) {}); err == nil {
 				p.State.AutoStartTimes += 1
-				p.State.Status = exec.StateStarting
+				p.State.Status = common.StateStarting
 				p.State.Timestamp = NowUnix()
 				p.State.ExitMsg = ""
 				saveStore(snProcessMgr)
@@ -418,8 +418,8 @@ func (*processHandler) Start(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	p, ok := processMgr.Process[req.ID]
 	if !ok ||
-		!(p.State.Status == exec.StateStopped ||
-			p.State.Status == exec.StateExited) {
+		!(p.State.Status == common.StateStopped ||
+			p.State.Status == common.StateExited) {
 		done.result.Message = "当前状态不允许启动"
 		done.Done()
 		return
@@ -442,7 +442,7 @@ func (*processHandler) Start(done *Done, user string, req struct {
 		done.Done()
 	} else {
 		p.State = ProcessState{
-			Status:    exec.StateStarting,
+			Status:    common.StateStarting,
 			Timestamp: NowUnix(),
 		}
 		saveStore(snProcessMgr)
@@ -455,7 +455,7 @@ func (*processHandler) Stop(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 
 	p, ok := processMgr.Process[req.ID]
-	if !ok || p.State.Status != exec.StateRunning {
+	if !ok || p.State.Status != common.StateRunning {
 		done.result.Message = "当前状态不允许停止"
 		done.Done()
 		return
@@ -487,7 +487,7 @@ func (*processHandler) Stop(done *Done, user string, req struct {
 		done.result.Message = err.Error()
 		done.Done()
 	} else {
-		p.State.Status = exec.StateStopping
+		p.State.Status = common.StateStopping
 		p.State.Timestamp = NowUnix()
 		saveStore(snProcessMgr)
 	}

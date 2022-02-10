@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"amp/common"
 	"amp/protocol"
 	"bytes"
 	"github.com/yddeng/dnet/drpc"
@@ -58,7 +59,7 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 	msg := req.(*protocol.ProcessExecReq)
 	log.Printf("onProcExec %v", msg)
 
-	if p, ok := processCache[msg.GetId()]; ok && p.State == StateRunning {
+	if p, ok := processCache[msg.GetId()]; ok && p.State == common.StateRunning {
 		_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(p.Pid)}, nil)
 		return
 	}
@@ -92,7 +93,7 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 
 	if p, err := ProcessWithCmd(ecmd, func(process *Process) {
 		_ = errFile.Close()
-		if process.State == StateStopped {
+		if process.State == common.StateStopped {
 			delete(processCache, process.ID)
 		}
 		saveCache()
@@ -129,12 +130,12 @@ func (er *Executor) onProcState(replier *drpc.Replier, req interface{}) {
 	states := map[int32]*protocol.ProcessState{}
 	for _, id := range msg.GetIds() {
 		state := &protocol.ProcessState{
-			State: StateStopped,
+			State: common.StateStopped,
 		}
 		if p, ok := processCache[id]; ok {
 			state.Pid = int32(p.Pid)
 			state.State = p.State
-			if p.State == StateExited {
+			if p.State == common.StateExited {
 				if data, err := ioutil.ReadFile(p.Stderr); err == nil {
 					state.ExitMsg = string(data)
 				}
