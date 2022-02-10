@@ -12,6 +12,7 @@ import (
 )
 
 type Cmd struct {
+	ID       int                 `json:"id"`
 	Name     string              `json:"name"`
 	Dir      string              `json:"dir"`
 	Context  string              `json:"context"`
@@ -24,10 +25,11 @@ type Cmd struct {
 }
 
 type CmdMgr struct {
-	Success int                  `json:"success"`
-	Failed  int                  `json:"failed"`
-	CmdMap  map[string]*Cmd      `json:"cmd_map"`
-	CmdLogs map[string][]*CmdLog `json:"cmd_logs"`
+	Success int               `json:"success"`
+	Failed  int               `json:"failed"`
+	GenID   int               `json:"gen_id"`
+	CmdMap  map[int]*Cmd      `json:"cmd_map"`
+	CmdLogs map[int][]*CmdLog `json:"cmd_logs"`
 }
 
 // 以字母下划线开头，后接数字下划线和字母
@@ -87,9 +89,11 @@ func (*cmdHandler) Create(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
-	if _, ok := cmdMgr.CmdMap[req.Name]; ok {
-		done.result.Message = "名字重复"
-		return
+	for _, cmd := range cmdMgr.CmdMap {
+		if cmd.Name == req.Name {
+			done.result.Message = "名字重复"
+			return
+		}
 	}
 
 	if len(cmdContextReg(req.Context)) != len(req.Args) {
@@ -98,7 +102,10 @@ func (*cmdHandler) Create(done *Done, user string, req struct {
 	}
 
 	nowUnix := NowUnix()
+	cmdMgr.GenID++
+	id := cmdMgr.GenID
 	cmd := &Cmd{
+		ID:       id,
 		Name:     req.Name,
 		Dir:      req.Dir,
 		Context:  req.Context,
@@ -108,26 +115,27 @@ func (*cmdHandler) Create(done *Done, user string, req struct {
 		CreateAt: nowUnix,
 	}
 
-	cmdMgr.CmdMap[req.Name] = cmd
+	cmdMgr.CmdMap[id] = cmd
 	saveStore(snCmdMgr)
 }
 
 func (*cmdHandler) Delete(done *Done, user string, req struct {
-	Name string `json:"name"`
+	ID int `json:"id"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
-	if _, ok := cmdMgr.CmdMap[req.Name]; !ok {
-		done.result.Message = "不存在的命令名"
+	if _, ok := cmdMgr.CmdMap[req.ID]; !ok {
+		done.result.Message = "不存在的命令"
 		return
 	}
-	delete(cmdMgr.CmdMap, req.Name)
-	delete(cmdMgr.CmdLogs, req.Name)
+	delete(cmdMgr.CmdMap, req.ID)
+	delete(cmdMgr.CmdLogs, req.ID)
 	saveStore(snCmdMgr)
 }
 
 func (*cmdHandler) Update(done *Done, user string, req struct {
+	ID      int               `json:"id"`
 	Name    string            `json:"name"`
 	Dir     string            `json:"dir"`
 	Context string            `json:"context"`
@@ -136,14 +144,22 @@ func (*cmdHandler) Update(done *Done, user string, req struct {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
-	if cmd, ok := cmdMgr.CmdMap[req.Name]; !ok {
-		done.result.Message = "不存在的命令名"
+	for _, cmd := range cmdMgr.CmdMap {
+		if cmd.Name == req.Name && cmd.ID != req.ID {
+			done.result.Message = "命令名重复"
+			return
+		}
+	}
+
+	if cmd, ok := cmdMgr.CmdMap[req.ID]; !ok {
+		done.result.Message = "不存在的命令"
 	} else {
 		if len(cmdContextReg(req.Context)) != len(req.Args) {
 			done.result.Message = "变量与默认值数量不一致"
 			return
 		}
 
+		cmd.Name = req.Name
 		cmd.Dir = req.Dir
 		cmd.Context = req.Context
 		cmd.Args = req.Args
@@ -174,7 +190,7 @@ type CmdLog struct {
 }
 
 func (*cmdHandler) Exec(done *Done, user string, req struct {
-	Name    string            `json:"name"`
+	ID      int               `json:"id"`
 	Dir     string            `json:"dir"`
 	Args    map[string]string `json:"args"`
 	Node    string            `json:"node"`
@@ -182,7 +198,7 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 
-	cmd, ok := cmdMgr.CmdMap[req.Name]
+	cmd, ok := cmdMgr.CmdMap[req.ID]
 	if !ok {
 		done.result.Message = "不存在的命令"
 		done.Done()
@@ -279,9 +295,9 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 		cmd.doing[req.Node] = struct{}{}
 		cmd.CallNo++
 		cmdLog.ID = cmd.CallNo
-		cmdMgr.CmdLogs[req.Name] = append([]*CmdLog{cmdLog}, cmdMgr.CmdLogs[req.Name]...)
-		if len(cmdMgr.CmdLogs[req.Name]) > cmdLogCapacity {
-			cmdMgr.CmdLogs[req.Name] = cmdMgr.CmdLogs[req.Name][:cmdLogCapacity]
+		cmdMgr.CmdLogs[req.ID] = append([]*CmdLog{cmdLog}, cmdMgr.CmdLogs[req.ID]...)
+		if len(cmdMgr.CmdLogs[req.ID]) > cmdLogCapacity {
+			cmdMgr.CmdLogs[req.ID] = cmdMgr.CmdLogs[req.ID][:cmdLogCapacity]
 		}
 		saveStore(snCmdMgr)
 	}
@@ -289,14 +305,14 @@ func (*cmdHandler) Exec(done *Done, user string, req struct {
 }
 
 func (*cmdHandler) Log(done *Done, user string, req struct {
-	Name     string `json:"name"`
-	PageNo   int    `json:"pageNo"`
-	PageSize int    `json:"pageSize"`
+	ID       int `json:"id"`
+	PageNo   int `json:"pageNo"`
+	PageSize int `json:"pageSize"`
 }) {
 	//log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
 
-	if logs, ok := cmdMgr.CmdLogs[req.Name]; !ok {
+	if logs, ok := cmdMgr.CmdLogs[req.ID]; !ok {
 		done.result.Message = "不存在的命令名"
 	} else {
 		start, end := listRange(req.PageNo, req.PageSize, len(logs))

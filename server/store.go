@@ -124,8 +124,8 @@ func (store *cmdMgrStore) Load(dataPath string) (err error) {
 		if os.IsNotExist(err) {
 			err = nil
 			cmdMgr = &CmdMgr{
-				CmdMap:  map[string]*Cmd{},
-				CmdLogs: map[string][]*CmdLog{},
+				CmdMap:  map[int]*Cmd{},
+				CmdLogs: map[int][]*CmdLog{},
 			}
 		}
 		return
