@@ -137,6 +137,25 @@ func (store *cmdMgrStore) Save() error {
 	return util.EncodeJsonToFile(cmdMgr, store.filename)
 }
 
+type kvStore struct {
+	storeBase
+}
+
+func (store *kvStore) Load(dataPath string) (err error) {
+	store.filename = path.Join(dataPath, store.file)
+	if err = util.DecodeJsonFromFile(&kv, store.filename); err != nil {
+		if os.IsNotExist(err) {
+			err = nil
+		}
+		return
+	}
+	return
+}
+
+func (store *kvStore) Save() error {
+	return util.EncodeJsonToFile(kv, store.filename)
+}
+
 type storeName string
 
 const (
@@ -144,6 +163,7 @@ const (
 	snUserMgr    storeName = "user_mgr"
 	snCmdMgr     storeName = "cmd_mgr"
 	snProcessMgr storeName = "process_mgr"
+	snKV         storeName = "kv"
 )
 
 var (
@@ -151,6 +171,7 @@ var (
 	nodes      = map[string]*Node{}
 	cmdMgr     *CmdMgr
 	processMgr *ProcessMgr
+	kv         = map[string]string{}
 )
 
 func init() {
@@ -165,5 +186,8 @@ func init() {
 	}}
 	stores[snProcessMgr] = &processMgrStore{storeBase{
 		file: "process_mgr.json",
+	}}
+	stores[snKV] = &kvStore{storeBase{
+		file: "kv.json",
 	}}
 }

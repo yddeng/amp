@@ -245,4 +245,10 @@ func initHandler(app *iris.Application) {
 	processRouter.Post("/update", warpHandle(processHandle.Update))
 	processRouter.Post("/start", warpHandle(processHandle.Start))
 	processRouter.Post("/stop", warpHandle(processHandle.Stop))
+
+	kvHandle := new(kvHandler)
+	kvRouter := app.Party("/kv")
+	kvRouter.Post("/set", warpHandle(kvHandle.Set))
+	kvRouter.Post("/get", warpHandle(kvHandle.Get))
+	kvRouter.Post("/delete", warpHandle(kvHandle.Delete))
 }
