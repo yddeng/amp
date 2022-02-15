@@ -57,7 +57,7 @@ func makeStderr(dir string, id int32) string {
 
 func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 	msg := req.(*protocol.ProcessExecReq)
-	log.Printf("onProcExec %v", msg)
+	log.Printf("onProcExec id:%d name:%s dir:%s args:%v", msg.GetId(), msg.GetName(), msg.GetDir(), msg.GetArgs())
 
 	if p, ok := processCache[msg.GetId()]; ok && p.State == common.StateRunning {
 		_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(p.Pid)}, nil)
