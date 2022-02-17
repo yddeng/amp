@@ -251,4 +251,10 @@ func initHandler(app *iris.Application) {
 	kvRouter.Post("/set", warpHandle(kvHandle.Set))
 	kvRouter.Post("/get", warpHandle(kvHandle.Get))
 	kvRouter.Post("/delete", warpHandle(kvHandle.Delete))
+
+	flyfishHandle := new(flyfishHandler)
+	flyfishRouter := app.Party("/flyfish")
+	flyfishRouter.Post("/getMeta", warpHandle(flyfishHandle.GetMeta))
+	flyfishRouter.Post("/addTable", warpHandle(flyfishHandle.AddTable))
+	flyfishRouter.Post("/addField", warpHandle(flyfishHandle.AddField))
 }
