@@ -258,4 +258,11 @@ func initHandler(app *iris.Application) {
 	flyfishRouter.Post("/addTable", warpHandle(flyfishHandle.AddTable))
 	flyfishRouter.Post("/addField", warpHandle(flyfishHandle.AddField))
 	flyfishRouter.Post("/getSetStatus", warpHandle(flyfishHandle.GetSetStatus))
+	flyfishRouter.Post("/setMarkClear", warpHandle(flyfishHandle.SetMarkClear))
+	flyfishRouter.Post("/addSet", warpHandle(flyfishHandle.AddSet))
+	flyfishRouter.Post("/remSet", warpHandle(flyfishHandle.RemSet))
+	flyfishRouter.Post("/addNode", warpHandle(flyfishHandle.AddNode))
+	flyfishRouter.Post("/remNode", warpHandle(flyfishHandle.RemNode))
+	flyfishRouter.Post("/addLeaderStoreToNode", warpHandle(flyfishHandle.AddLeaderStoreToNode))
+	flyfishRouter.Post("/removeNodeStore", warpHandle(flyfishHandle.RemoveNodeStore))
 }
