@@ -44,11 +44,11 @@ func (*flyfishHandler) AddTable(done *Done, user string, req struct {
 	Host    string `json:"host"`
 	Name    string `json:"name"`
 	Version int64  `json:"version"`
-	Field   []struct {
+	Fields  []struct {
 		Name    string `json:"name"`
 		Type    string `json:"type"`
 		Default string `json:"default"`
-	} `json:"field"`
+	} `json:"fields"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
@@ -59,7 +59,7 @@ func (*flyfishHandler) AddTable(done *Done, user string, req struct {
 		Name:    req.Name,
 		Version: req.Version,
 	}
-	for _, f := range req.Field {
+	for _, f := range req.Fields {
 		msg.Fields = append(msg.Fields, &sproto.MetaFiled{
 			Name:    f.Name,
 			Type:    f.Type,
@@ -82,11 +82,11 @@ func (*flyfishHandler) AddField(done *Done, user string, req struct {
 	Host    string `json:"host"`
 	Name    string `json:"name"`
 	Version int64  `json:"version"`
-	Field   []struct {
+	Fields  []struct {
 		Name    string `json:"name"`
 		Type    string `json:"type"`
 		Default string `json:"default"`
-	} `json:"field"`
+	} `json:"fields"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
 	defer func() { done.Done() }()
@@ -97,7 +97,7 @@ func (*flyfishHandler) AddField(done *Done, user string, req struct {
 		Table:   req.Name,
 		Version: req.Version,
 	}
-	for _, f := range req.Field {
+	for _, f := range req.Fields {
 		msg.Fields = append(msg.Fields, &sproto.MetaFiled{
 			Name:    f.Name,
 			Type:    f.Type,
