@@ -115,3 +115,20 @@ func (*flyfishHandler) AddField(done *Done, user string, req struct {
 		done.result.Message = resp.GetReason()
 	}
 }
+
+func (*flyfishHandler) GetSetStatus(done *Done, user string, req struct {
+	Host string `json:"host"`
+}) {
+	log.Printf("%s by(%s) %v\n", done.route, user, req)
+	defer func() { done.Done() }()
+
+	c := getFlyClient(req.Host)
+
+	var resp sproto.GetSetStatusResp
+	if _, err := c.Call(&sproto.GetSetStatus{}, &resp); err != nil {
+		done.result.Message = err.Error()
+		return
+	}
+
+	done.result.Data = resp
+}

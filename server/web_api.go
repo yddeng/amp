@@ -257,4 +257,5 @@ func initHandler(app *iris.Application) {
 	flyfishRouter.Post("/getMeta", warpHandle(flyfishHandle.GetMeta))
 	flyfishRouter.Post("/addTable", warpHandle(flyfishHandle.AddTable))
 	flyfishRouter.Post("/addField", warpHandle(flyfishHandle.AddField))
+	flyfishRouter.Post("/getSetStatus", warpHandle(flyfishHandle.GetSetStatus))
 }
