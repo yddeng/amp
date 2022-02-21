@@ -329,6 +329,8 @@ func processTick() {
 						if state.GetState() == common.StateRunning {
 							p.State.Pid = state.Pid
 						} else if state.GetState() == common.StateExited {
+							// 启动报错不重启
+							p.State.AutoStartTimes = p.AutoStartTimes
 							p.State.ExitMsg = state.GetExitMsg()
 						} else {
 							// Stopped
