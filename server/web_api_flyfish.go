@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/gogo/protobuf/proto"
 	"github.com/sniperHW/flyfish/server/flypd/console/http"
 	sproto "github.com/sniperHW/flyfish/server/proto"
 	"log"
@@ -11,33 +12,42 @@ type flyfishHandler struct {
 
 var flyClients = map[string]*http.Client{}
 
-func getFlyClient(host string) *http.Client {
+func flyCall(host string, req, resp proto.Message, callback func(resp proto.Message, err error)) {
 	c, ok := flyClients[host]
 	if !ok {
 		c = http.NewClient(host)
 		flyClients[host] = c
 	}
-	return c
+	go func() {
+		if _, err := c.Call(req, resp); err != nil {
+			taskQueue.Submit(func() {
+				callback(nil, err)
+			})
+		} else {
+			taskQueue.Submit(func() {
+				callback(resp, nil)
+			})
+		}
+	}()
 }
 
 func (*flyfishHandler) GetMeta(done *Done, user string, req struct {
 	Host string `json:"host"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	defer func() { done.Done() }()
 
-	c := getFlyClient(req.Host)
-
-	var resp sproto.GetMetaResp
-	if _, err := c.Call(&sproto.GetMeta{}, &resp); err != nil {
-		done.result.Message = err.Error()
-		return
-	}
-
-	done.result.Data = struct {
-		Version int64  `json:"version"`
-		Meta    string `json:"meta"`
-	}{Version: resp.GetVersion(), Meta: string(resp.GetMeta())}
+	flyCall(req.Host, &sproto.GetMeta{}, &sproto.GetMetaResp{}, func(msg proto.Message, err error) {
+		defer func() { done.Done() }()
+		if err != nil {
+			done.result.Message = err.Error()
+			return
+		}
+		resp := msg.(*sproto.GetMetaResp)
+		done.result.Data = struct {
+			Version int64  `json:"version"`
+			Meta    string `json:"meta"`
+		}{Version: resp.GetVersion(), Meta: string(resp.GetMeta())}
+	})
 }
 
 func (*flyfishHandler) AddTable(done *Done, user string, req struct {
@@ -51,9 +61,6 @@ func (*flyfishHandler) AddTable(done *Done, user string, req struct {
 	} `json:"fields"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	defer func() { done.Done() }()
-
-	c := getFlyClient(req.Host)
 
 	msg := &sproto.MetaAddTable{
 		Name:    req.Name,
@@ -67,15 +74,18 @@ func (*flyfishHandler) AddTable(done *Done, user string, req struct {
 		})
 	}
 
-	var resp sproto.MetaAddTableResp
-	if _, err := c.Call(msg, &resp); err != nil {
-		done.result.Message = err.Error()
-		return
-	}
+	flyCall(req.Host, msg, &sproto.MetaAddTableResp{}, func(msg proto.Message, err error) {
+		defer func() { done.Done() }()
+		if err != nil {
+			done.result.Message = err.Error()
+			return
+		}
+		resp := msg.(*sproto.MetaAddTableResp)
+		if !resp.GetOk() {
+			done.result.Message = resp.GetReason()
+		}
+	})
 
-	if !resp.GetOk() {
-		done.result.Message = resp.GetReason()
-	}
 }
 
 func (*flyfishHandler) AddField(done *Done, user string, req struct {
@@ -89,9 +99,6 @@ func (*flyfishHandler) AddField(done *Done, user string, req struct {
 	} `json:"fields"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	defer func() { done.Done() }()
-
-	c := getFlyClient(req.Host)
 
 	msg := &sproto.MetaAddFields{
 		Table:   req.Name,
@@ -105,32 +112,33 @@ func (*flyfishHandler) AddField(done *Done, user string, req struct {
 		})
 	}
 
-	var resp sproto.MetaAddTableResp
-	if _, err := c.Call(msg, &resp); err != nil {
-		done.result.Message = err.Error()
-		return
-	}
-
-	if !resp.GetOk() {
-		done.result.Message = resp.GetReason()
-	}
+	flyCall(req.Host, msg, &sproto.MetaAddFieldsResp{}, func(msg proto.Message, err error) {
+		defer func() { done.Done() }()
+		if err != nil {
+			done.result.Message = err.Error()
+			return
+		}
+		resp := msg.(*sproto.MetaAddFieldsResp)
+		if !resp.GetOk() {
+			done.result.Message = resp.GetReason()
+		}
+	})
 }
 
 func (*flyfishHandler) GetSetStatus(done *Done, user string, req struct {
 	Host string `json:"host"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	defer func() { done.Done() }()
 
-	c := getFlyClient(req.Host)
-
-	var resp sproto.GetSetStatusResp
-	if _, err := c.Call(&sproto.GetSetStatus{}, &resp); err != nil {
-		done.result.Message = err.Error()
-		return
-	}
-
-	done.result.Data = resp
+	flyCall(req.Host, &sproto.GetSetStatus{}, &sproto.GetSetStatusResp{}, func(msg proto.Message, err error) {
+		defer func() { done.Done() }()
+		if err != nil {
+			done.result.Message = err.Error()
+			return
+		}
+		resp := msg.(*sproto.GetSetStatusResp)
+		done.result.Data = resp
+	})
 }
 
 func (*flyfishHandler) AddSet(done *Done, user string, req struct {
@@ -138,19 +146,18 @@ func (*flyfishHandler) AddSet(done *Done, user string, req struct {
 	AddSet *sproto.AddSet `json:"addSet"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	defer func() { done.Done() }()
 
-	c := getFlyClient(req.Host)
-
-	var resp sproto.AddSetResp
-	if _, err := c.Call(req.AddSet, &resp); err != nil {
-		done.result.Message = err.Error()
-		return
-	}
-
-	if !resp.GetOk() {
-		done.result.Message = resp.GetReason()
-	}
+	flyCall(req.Host, req.AddSet, &sproto.AddSetResp{}, func(msg proto.Message, err error) {
+		defer func() { done.Done() }()
+		if err != nil {
+			done.result.Message = err.Error()
+			return
+		}
+		resp := msg.(*sproto.AddSetResp)
+		if !resp.GetOk() {
+			done.result.Message = resp.GetReason()
+		}
+	})
 }
 
 func (*flyfishHandler) RemSet(done *Done, user string, req struct {
@@ -158,19 +165,18 @@ func (*flyfishHandler) RemSet(done *Done, user string, req struct {
 	RemSet *sproto.RemSet `json:"remSet"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	defer func() { done.Done() }()
 
-	c := getFlyClient(req.Host)
-
-	var resp sproto.RemSetResp
-	if _, err := c.Call(req.RemSet, &resp); err != nil {
-		done.result.Message = err.Error()
-		return
-	}
-
-	if !resp.GetOk() {
-		done.result.Message = resp.GetReason()
-	}
+	flyCall(req.Host, req.RemSet, &sproto.RemSetResp{}, func(msg proto.Message, err error) {
+		defer func() { done.Done() }()
+		if err != nil {
+			done.result.Message = err.Error()
+			return
+		}
+		resp := msg.(*sproto.RemSetResp)
+		if !resp.GetOk() {
+			done.result.Message = resp.GetReason()
+		}
+	})
 }
 
 func (*flyfishHandler) AddNode(done *Done, user string, req struct {
@@ -178,19 +184,18 @@ func (*flyfishHandler) AddNode(done *Done, user string, req struct {
 	AddNode *sproto.AddNode `json:"addNode"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	defer func() { done.Done() }()
 
-	c := getFlyClient(req.Host)
-
-	var resp sproto.AddNodeResp
-	if _, err := c.Call(req.AddNode, &resp); err != nil {
-		done.result.Message = err.Error()
-		return
-	}
-
-	if !resp.GetOk() {
-		done.result.Message = resp.GetReason()
-	}
+	flyCall(req.Host, req.AddNode, &sproto.AddNodeResp{}, func(msg proto.Message, err error) {
+		defer func() { done.Done() }()
+		if err != nil {
+			done.result.Message = err.Error()
+			return
+		}
+		resp := msg.(*sproto.AddNodeResp)
+		if !resp.GetOk() {
+			done.result.Message = resp.GetReason()
+		}
+	})
 }
 
 func (*flyfishHandler) RemNode(done *Done, user string, req struct {
@@ -198,19 +203,18 @@ func (*flyfishHandler) RemNode(done *Done, user string, req struct {
 	RemNode *sproto.RemNode `json:"remNode"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	defer func() { done.Done() }()
 
-	c := getFlyClient(req.Host)
-
-	var resp sproto.RemNodeResp
-	if _, err := c.Call(req.RemNode, &resp); err != nil {
-		done.result.Message = err.Error()
-		return
-	}
-
-	if !resp.GetOk() {
-		done.result.Message = resp.GetReason()
-	}
+	flyCall(req.Host, req.RemNode, &sproto.RemNodeResp{}, func(msg proto.Message, err error) {
+		defer func() { done.Done() }()
+		if err != nil {
+			done.result.Message = err.Error()
+			return
+		}
+		resp := msg.(*sproto.RemNodeResp)
+		if !resp.GetOk() {
+			done.result.Message = resp.GetReason()
+		}
+	})
 }
 
 func (*flyfishHandler) AddLeaderStoreToNode(done *Done, user string, req struct {
@@ -218,19 +222,18 @@ func (*flyfishHandler) AddLeaderStoreToNode(done *Done, user string, req struct 
 	AddLearnerStoreToNode *sproto.AddLearnerStoreToNode `json:"addLearnerStoreToNode"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	defer func() { done.Done() }()
 
-	c := getFlyClient(req.Host)
-
-	var resp sproto.AddLearnerStoreToNodeResp
-	if _, err := c.Call(req.AddLearnerStoreToNode, &resp); err != nil {
-		done.result.Message = err.Error()
-		return
-	}
-
-	if !resp.GetOk() {
-		done.result.Message = resp.GetReason()
-	}
+	flyCall(req.Host, req.AddLearnerStoreToNode, &sproto.AddLearnerStoreToNodeResp{}, func(msg proto.Message, err error) {
+		defer func() { done.Done() }()
+		if err != nil {
+			done.result.Message = err.Error()
+			return
+		}
+		resp := msg.(*sproto.AddLearnerStoreToNodeResp)
+		if !resp.GetOk() {
+			done.result.Message = resp.GetReason()
+		}
+	})
 }
 
 func (*flyfishHandler) RemoveNodeStore(done *Done, user string, req struct {
@@ -238,19 +241,18 @@ func (*flyfishHandler) RemoveNodeStore(done *Done, user string, req struct {
 	RemoveNodeStore *sproto.RemoveNodeStore `json:"removeNodeStore"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	defer func() { done.Done() }()
 
-	c := getFlyClient(req.Host)
-
-	var resp sproto.RemoveNodeStoreResp
-	if _, err := c.Call(req.RemoveNodeStore, &resp); err != nil {
-		done.result.Message = err.Error()
-		return
-	}
-
-	if !resp.GetOk() {
-		done.result.Message = resp.GetReason()
-	}
+	flyCall(req.Host, req.RemoveNodeStore, &sproto.RemoveNodeStoreResp{}, func(msg proto.Message, err error) {
+		defer func() { done.Done() }()
+		if err != nil {
+			done.result.Message = err.Error()
+			return
+		}
+		resp := msg.(*sproto.RemoveNodeStoreResp)
+		if !resp.GetOk() {
+			done.result.Message = resp.GetReason()
+		}
+	})
 }
 
 func (*flyfishHandler) SetMarkClear(done *Done, user string, req struct {
@@ -258,17 +260,16 @@ func (*flyfishHandler) SetMarkClear(done *Done, user string, req struct {
 	SetMarkClear *sproto.SetMarkClear `json:"setMarkClear"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
-	defer func() { done.Done() }()
 
-	c := getFlyClient(req.Host)
-
-	var resp sproto.SetMarkClearResp
-	if _, err := c.Call(req.SetMarkClear, &resp); err != nil {
-		done.result.Message = err.Error()
-		return
-	}
-
-	if !resp.GetOk() {
-		done.result.Message = resp.GetReason()
-	}
+	flyCall(req.Host, req.SetMarkClear, &sproto.SetMarkClearResp{}, func(msg proto.Message, err error) {
+		defer func() { done.Done() }()
+		if err != nil {
+			done.result.Message = err.Error()
+			return
+		}
+		resp := msg.(*sproto.SetMarkClearResp)
+		if !resp.GetOk() {
+			done.result.Message = resp.GetReason()
+		}
+	})
 }
