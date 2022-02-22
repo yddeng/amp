@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"github.com/kataras/iris/v12"
 	"github.com/yddeng/utils/task"
 	"log"
@@ -57,8 +58,8 @@ func Service(cfg Config) (err error) {
 func Stop() {
 	ch := make(chan bool)
 	taskQueue.Submit(func() {
+		app.Shutdown(context.TODO())
 		saveStore()
-		app.Shutdown(nil)
 		ch <- true
 	})
 	<-ch
@@ -112,7 +113,11 @@ func webRun(cfg *WebConfig) {
 	log.Printf("web server run %s.\n", cfg.Address)
 	go func() {
 		if err := app.Listen(cfg.Address); err != nil {
-			panic(err)
+			if err == iris.ErrServerClosed {
+				log.Printf("web server %s stoped.\n", cfg.Address)
+			} else {
+				panic(err)
+			}
 		}
 	}()
 }
