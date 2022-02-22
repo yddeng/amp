@@ -155,8 +155,6 @@ var (
 	allowPermissionRoute = map[string]struct{}{
 		"/auth/login":  {},
 		"/auth/logout": {},
-		"/user/nav":    {},
-		"/user/info":   {},
 	}
 )
 
@@ -214,8 +212,6 @@ func initHandler(app *iris.Application) {
 
 	userHandle := new(userHandler)
 	userRouter := app.Party("/user")
-	userRouter.Get("/nav", warpHandle(userHandle.Nav))
-	userRouter.Get("/info", warpHandle(userHandle.Info))
 	userRouter.Post("/list", warpHandle(userHandle.List))
 	userRouter.Post("/add", warpHandle(userHandle.Add))
 	userRouter.Post("/delete", warpHandle(userHandle.Delete))

@@ -33,7 +33,6 @@ type WebConfig struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	} `json:"admin"`
-	Nav []*Nav `json:"nav"`
 }
 
 var (
@@ -66,7 +65,6 @@ func Stop() {
 }
 
 func webRun(cfg *WebConfig) {
-	allNav = cfg.Nav
 	if userMgr.Admin == nil {
 		userMgr.Admin = &User{
 			Username: cfg.Admin.Username,
