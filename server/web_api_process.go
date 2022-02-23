@@ -26,6 +26,9 @@ type ProcessState struct {
 	ExitMsg string `json:"exit_msg"`
 	// 已经自动重启次数，启动时重置
 	AutoStartTimes int `json:"auto_start_times"`
+
+	Cpu float64 `json:"_"`
+	Mem float64 `json:"_"`
 }
 
 type Process struct {
@@ -322,6 +325,8 @@ func processTick() {
 				if !ok {
 					continue
 				}
+				p.State.Mem = state.GetMem()
+				p.State.Cpu = state.GetCpu()
 				pState := p.State.Status
 				if pState != state.GetState() {
 					if pState == common.StateUnknown || pState == common.StateStarting {

@@ -165,31 +165,36 @@ func loadCache(dataPath string) {
 	cacheFile = path.Join(dataPath, "exec_info.json")
 	if err := util.DecodeJsonFromFile(&processMap, cacheFile); err == nil {
 		for _, p := range processMap {
-			if p.IsAlive() {
-				p.done = make(chan struct{})
-				processCache[p.ID] = p
-				go func(p *Process) {
-					ticker := time.NewTicker(time.Second)
-					for {
-						select {
-						case <-p.done:
-							ticker.Stop()
-							return
-						case <-ticker.C:
-							if !p.IsAlive() {
-								data, err := ioutil.ReadFile(p.Stderr)
-								if err == nil && len(data) != 0 {
-									p.State = common.StateExited
-								} else {
-									p.State = common.StateStopped
+			if m, err := ProcessCollect(p.Pid); err != nil {
+				log.Printf("loadCache %s faield %d %v", p.Name, p.Pid, err)
+			} else {
+				if p.Command != m.Args {
+					log.Printf("loadCache %s faield %d command not equal  %s <=> %s", p.Name, p.Pid, p.Command, m.Args)
+				} else {
+					log.Printf("loadCache %s process %d ok", p.Name, p.Pid)
+					p.done = make(chan struct{})
+					processCache[p.ID] = p
+					go func(p *Process) {
+						ticker := time.NewTicker(time.Second)
+						for {
+							select {
+							case <-p.done:
+								ticker.Stop()
+								return
+							case <-ticker.C:
+								if !p.IsAlive() {
+									data, err := ioutil.ReadFile(p.Stderr)
+									if err == nil && len(data) != 0 {
+										p.State = common.StateExited
+									} else {
+										p.State = common.StateStopped
+									}
+									close(p.done)
 								}
-								close(p.done)
 							}
 						}
-					}
-				}(p)
-			} else {
-				log.Printf("loadCache %s faield %d %v", p.Name, p.Pid, err)
+					}(p)
+				}
 			}
 		}
 	}

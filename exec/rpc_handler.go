@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"strconv"
 	"syscall"
 )
 
@@ -49,10 +48,6 @@ func (er *Executor) onCmdExec(replier *drpc.Replier, req interface{}) {
 	}); err != nil {
 		_ = replier.Reply(&protocol.CmdExecResp{Code: err.Error()}, nil)
 	}
-}
-
-func makeStderr(dir string, id int32) string {
-	return path.Join(dir, strconv.Itoa(int(id)), "stderr.log")
 }
 
 func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
@@ -138,6 +133,13 @@ func (er *Executor) onProcState(replier *drpc.Replier, req interface{}) {
 			if p.State == common.StateExited {
 				if data, err := ioutil.ReadFile(p.Stderr); err == nil {
 					state.ExitMsg = string(data)
+				}
+			} else if p.State == common.StateRunning {
+				if m, err := ProcessCollect(p.Pid); err == nil {
+					state.Cpu = m.Cpu
+					state.Mem = m.Mem
+				} else {
+					log.Printf("onProcState processCollector %s", err.Error())
 				}
 			}
 		}
