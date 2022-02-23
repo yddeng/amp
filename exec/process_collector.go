@@ -23,7 +23,7 @@ func convertLocalizedString(s string) string {
 }
 
 func ProcessCollect(pid int) (*procMetric, error) {
-	output, err := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "pcpu=12345,pmem=12345,args").Output()
+	output, err := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "%cpu=12345,%mem=12345,args").Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute 'ps' command: %v", err)
 	}
@@ -37,12 +37,12 @@ func ProcessCollect(pid int) (*procMetric, error) {
 
 	cpu, err := strconv.ParseFloat(convertLocalizedString(strings.TrimSpace(line[0:5])), 64)
 	if err != nil {
-		log.Printf("failed to convert third field to float: %v. split: %v", err, line)
+		log.Printf("failed to convert cpu to float: %v. split: %v", err, line)
 	}
 
 	mem, err := strconv.ParseFloat(convertLocalizedString(strings.TrimSpace(line[6:11])), 64)
 	if err != nil {
-		log.Printf("failed to convert fourth field to float: %v. split: %v", err, line)
+		log.Printf("failed to convert mem to float: %v. split: %v", err, line)
 	}
 
 	return &procMetric{
