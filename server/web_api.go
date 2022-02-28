@@ -1,7 +1,8 @@
 package server
 
 import (
-	"github.com/kataras/iris/v12"
+	"github.com/gin-gonic/gin"
+	"net/http"
 	"reflect"
 	"sync"
 )
@@ -15,7 +16,7 @@ type Result struct {
 
 type Done struct {
 	route    string
-	statue   int
+	code     int
 	result   Result
 	done     chan struct{}
 	doneOnce sync.Once
@@ -23,9 +24,9 @@ type Done struct {
 
 func newDone(route string) *Done {
 	return &Done{
-		route:  route,
-		statue: 200,
-		done:   make(chan struct{}),
+		route: route,
+		code:  http.StatusOK,
+		done:  make(chan struct{}),
 	}
 }
 
@@ -48,7 +49,7 @@ func (t webTask) Do() {
 	t()
 }
 
-func transBegin(ctx iris.Context, fn interface{}, args ...reflect.Value) {
+func transBegin(ctx *gin.Context, fn interface{}, args ...reflect.Value) {
 	val := reflect.ValueOf(fn)
 	if val.Kind() != reflect.Func {
 		panic("value not func")
@@ -63,7 +64,7 @@ func transBegin(ctx iris.Context, fn interface{}, args ...reflect.Value) {
 	if err := taskQueue.SubmitTask(webTask(func() {
 		user, ok := checkToken(ctx, route)
 		if !ok {
-			done.statue = 401
+			done.code = 401
 			done.result.Message = "Token验证失败"
 			done.Done()
 			return
@@ -71,7 +72,7 @@ func transBegin(ctx iris.Context, fn interface{}, args ...reflect.Value) {
 
 		ok = checkPermission(ctx, route, user)
 		if !ok {
-			done.statue = 403
+			done.code = 403
 			done.result.Message = "无操作权限"
 			done.Done()
 			return
@@ -83,25 +84,20 @@ func transBegin(ctx iris.Context, fn interface{}, args ...reflect.Value) {
 	}
 	done.Wait()
 
-	if done.statue != 200 {
-		ctx.StatusCode(done.statue)
-	}
-	if _, err := ctx.JSON(done.result); err != nil {
-		_, _ = ctx.Problem(newProblem(iris.StatusInternalServerError, "", err.Error()))
-	}
+	ctx.JSON(done.code, done.result)
 }
 
-func getCurrentRoute(ctx iris.Context) string {
-	return ctx.GetCurrentRoute().Path()
+func getCurrentRoute(ctx *gin.Context) string {
+	return ctx.FullPath()
 }
 
-func getJsonBody(ctx iris.Context, inType reflect.Type) (inValue reflect.Value, err error) {
+func getJsonBody(ctx *gin.Context, inType reflect.Type) (inValue reflect.Value, err error) {
 	if inType.Kind() == reflect.Ptr {
 		inValue = reflect.New(inType.Elem())
 	} else {
 		inValue = reflect.New(inType)
 	}
-	if err = ctx.ReadJSON(inValue.Interface()); err != nil {
+	if err = ctx.ShouldBindJSON(inValue.Interface()); err != nil {
 		return
 	}
 	if inType.Kind() != reflect.Ptr {
@@ -110,7 +106,7 @@ func getJsonBody(ctx iris.Context, inType reflect.Type) (inValue reflect.Value, 
 	return
 }
 
-func warpHandle(fn interface{}) iris.Handler {
+func warpHandle(fn interface{}) gin.HandlerFunc {
 	val := reflect.ValueOf(fn)
 	if val.Kind() != reflect.Func {
 		panic("value not func")
@@ -118,14 +114,17 @@ func warpHandle(fn interface{}) iris.Handler {
 	typ := val.Type()
 	switch typ.NumIn() {
 	case 2: // func(done *Done, username string)
-		return func(ctx iris.Context) {
+		return func(ctx *gin.Context) {
 			transBegin(ctx, fn)
 		}
 	case 3: // func(done *Done, username string,req struct)Result
-		return func(ctx iris.Context) {
+		return func(ctx *gin.Context) {
 			inValue, err := getJsonBody(ctx, typ.In(2))
 			if err != nil {
-				_, _ = ctx.Problem(newProblem(iris.StatusBadRequest, "", err.Error()))
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"message": "Json unmarshal failed!",
+					"error":   err.Error(),
+				})
 				return
 			}
 
@@ -136,35 +135,24 @@ func warpHandle(fn interface{}) iris.Handler {
 	}
 }
 
-func newProblem(statusCode int, title, detail string) iris.Problem {
-	p := iris.NewProblem().Status(statusCode)
-	if title != "" {
-		p.Title(title)
-	}
-	p.Detail(detail)
-	return p
-}
-
 var (
 	// 允许无token的路由
 	allowTokenRoute = map[string]struct{}{
-		"/auth/login":  {},
-		"/auth/logout": {},
+		"/auth/login":      {},
+		"/api/auth/login":  {},
+		"/auth/logout":     {},
+		"/api/auth/logout": {},
 	}
 	// 允许无权限的路由
 	allowPermissionRoute = map[string]struct{}{
-		"/auth/login":  {},
-		"/auth/logout": {},
+		"/auth/login":      {},
+		"/api/auth/login":  {},
+		"/auth/logout":     {},
+		"/api/auth/logout": {},
 	}
 )
 
-func handleCORS(ctx iris.Context) {
-	ctx.Header("Access-Control-Allow-Origin", "*")
-	ctx.Header("Access-Control-Allow-Headers", "Content-Type")
-	ctx.Next()
-}
-
-func checkToken(ctx iris.Context, route string) (user string, ok bool) {
+func checkToken(ctx *gin.Context, route string) (user string, ok bool) {
 	if _, ok = allowTokenRoute[route]; ok {
 		return
 	}
@@ -181,7 +169,7 @@ func checkToken(ctx iris.Context, route string) (user string, ok bool) {
 	return
 }
 
-func checkPermission(ctx iris.Context, route, user string) (ok bool) {
+func checkPermission(ctx *gin.Context, route, user string) (ok bool) {
 	if _, ok = allowPermissionRoute[route]; ok {
 		return
 	}
@@ -204,61 +192,61 @@ func listRange(pageNo, pageSize, length int) (start int, end int) {
 	return
 }
 
-func initHandler(app *iris.Application) {
+func initHandler(app *gin.Engine) {
 	authHandle := new(authHandler)
-	authRouter := app.Party("/auth")
-	authRouter.Post("/login", warpHandle(authHandle.Login))
-	authRouter.Post("/logout", warpHandle(authHandle.Logout))
+	authGroup := app.Group("/auth")
+	authGroup.POST("/login", warpHandle(authHandle.Login))
+	authGroup.POST("/logout", warpHandle(authHandle.Logout))
 
 	userHandle := new(userHandler)
-	userRouter := app.Party("/user")
-	userRouter.Post("/list", warpHandle(userHandle.List))
-	userRouter.Post("/add", warpHandle(userHandle.Add))
-	userRouter.Post("/delete", warpHandle(userHandle.Delete))
+	userGroup := app.Group("/user")
+	userGroup.POST("/list", warpHandle(userHandle.List))
+	userGroup.POST("/add", warpHandle(userHandle.Add))
+	userGroup.POST("/delete", warpHandle(userHandle.Delete))
 
 	nodeHandle := new(nodeHandler)
-	nodeRouter := app.Party("/node")
-	nodeRouter.Post("/list", warpHandle(nodeHandle.List))
-	nodeRouter.Post("/remove", warpHandle(nodeHandle.Remove))
+	nodeGroup := app.Group("/node")
+	nodeGroup.POST("/list", warpHandle(nodeHandle.List))
+	nodeGroup.POST("/remove", warpHandle(nodeHandle.Remove))
 
 	cmdHandle := new(cmdHandler)
-	cmdRouter := app.Party("/cmd")
-	cmdRouter.Post("/list", warpHandle(cmdHandle.List))
-	cmdRouter.Post("/create", warpHandle(cmdHandle.Create))
-	cmdRouter.Post("/delete", warpHandle(cmdHandle.Delete))
-	cmdRouter.Post("/update", warpHandle(cmdHandle.Update))
-	cmdRouter.Post("/exec", warpHandle(cmdHandle.Exec))
-	cmdRouter.Post("/log", warpHandle(cmdHandle.Log))
+	cmdGroup := app.Group("/cmd")
+	cmdGroup.POST("/list", warpHandle(cmdHandle.List))
+	cmdGroup.POST("/create", warpHandle(cmdHandle.Create))
+	cmdGroup.POST("/delete", warpHandle(cmdHandle.Delete))
+	cmdGroup.POST("/update", warpHandle(cmdHandle.Update))
+	cmdGroup.POST("/exec", warpHandle(cmdHandle.Exec))
+	cmdGroup.POST("/log", warpHandle(cmdHandle.Log))
 
 	processHandle := new(processHandler)
-	processRouter := app.Party("/process")
-	processRouter.Post("/glist", warpHandle(processHandle.GroupList))
-	processRouter.Post("/gadd", warpHandle(processHandle.GroupAdd))
-	processRouter.Post("/gremove", warpHandle(processHandle.GroupRemove))
-	processRouter.Post("/list", warpHandle(processHandle.List))
-	processRouter.Post("/create", warpHandle(processHandle.Create))
-	processRouter.Post("/delete", warpHandle(processHandle.Delete))
-	processRouter.Post("/update", warpHandle(processHandle.Update))
-	processRouter.Post("/start", warpHandle(processHandle.Start))
-	processRouter.Post("/stop", warpHandle(processHandle.Stop))
+	processGroup := app.Group("/process")
+	processGroup.POST("/glist", warpHandle(processHandle.GroupList))
+	processGroup.POST("/gadd", warpHandle(processHandle.GroupAdd))
+	processGroup.POST("/gremove", warpHandle(processHandle.GroupRemove))
+	processGroup.POST("/list", warpHandle(processHandle.List))
+	processGroup.POST("/create", warpHandle(processHandle.Create))
+	processGroup.POST("/delete", warpHandle(processHandle.Delete))
+	processGroup.POST("/update", warpHandle(processHandle.Update))
+	processGroup.POST("/start", warpHandle(processHandle.Start))
+	processGroup.POST("/stop", warpHandle(processHandle.Stop))
 
 	kvHandle := new(kvHandler)
-	kvRouter := app.Party("/kv")
-	kvRouter.Post("/set", warpHandle(kvHandle.Set))
-	kvRouter.Post("/get", warpHandle(kvHandle.Get))
-	kvRouter.Post("/delete", warpHandle(kvHandle.Delete))
+	kvGroup := app.Group("/kv")
+	kvGroup.POST("/set", warpHandle(kvHandle.Set))
+	kvGroup.POST("/get", warpHandle(kvHandle.Get))
+	kvGroup.POST("/delete", warpHandle(kvHandle.Delete))
 
 	flyfishHandle := new(flyfishHandler)
-	flyfishRouter := app.Party("/flyfish")
-	flyfishRouter.Post("/getMeta", warpHandle(flyfishHandle.GetMeta))
-	flyfishRouter.Post("/addTable", warpHandle(flyfishHandle.AddTable))
-	flyfishRouter.Post("/addField", warpHandle(flyfishHandle.AddField))
-	flyfishRouter.Post("/getSetStatus", warpHandle(flyfishHandle.GetSetStatus))
-	flyfishRouter.Post("/setMarkClear", warpHandle(flyfishHandle.SetMarkClear))
-	flyfishRouter.Post("/addSet", warpHandle(flyfishHandle.AddSet))
-	flyfishRouter.Post("/remSet", warpHandle(flyfishHandle.RemSet))
-	flyfishRouter.Post("/addNode", warpHandle(flyfishHandle.AddNode))
-	flyfishRouter.Post("/remNode", warpHandle(flyfishHandle.RemNode))
-	flyfishRouter.Post("/addLeaderStoreToNode", warpHandle(flyfishHandle.AddLeaderStoreToNode))
-	flyfishRouter.Post("/removeNodeStore", warpHandle(flyfishHandle.RemoveNodeStore))
+	flyfishGroup := app.Group("/flyfish")
+	flyfishGroup.POST("/getMeta", warpHandle(flyfishHandle.GetMeta))
+	flyfishGroup.POST("/addTable", warpHandle(flyfishHandle.AddTable))
+	flyfishGroup.POST("/addField", warpHandle(flyfishHandle.AddField))
+	flyfishGroup.POST("/getSetStatus", warpHandle(flyfishHandle.GetSetStatus))
+	flyfishGroup.POST("/setMarkClear", warpHandle(flyfishHandle.SetMarkClear))
+	flyfishGroup.POST("/addSet", warpHandle(flyfishHandle.AddSet))
+	flyfishGroup.POST("/remSet", warpHandle(flyfishHandle.RemSet))
+	flyfishGroup.POST("/addNode", warpHandle(flyfishHandle.AddNode))
+	flyfishGroup.POST("/remNode", warpHandle(flyfishHandle.RemNode))
+	flyfishGroup.POST("/addLeaderStoreToNode", warpHandle(flyfishHandle.AddLeaderStoreToNode))
+	flyfishGroup.POST("/removeNodeStore", warpHandle(flyfishHandle.RemoveNodeStore))
 }

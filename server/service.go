@@ -1,12 +1,11 @@
 package server
 
 import (
-	"context"
-	"github.com/kataras/iris/v12"
+	"github.com/gin-contrib/static"
+	"github.com/gin-gonic/gin"
 	"github.com/yddeng/utils/task"
 	"log"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -38,7 +37,7 @@ type WebConfig struct {
 var (
 	dataPath  string
 	taskQueue = task.NewTaskPool(1, 2048)
-	app       *iris.Application
+	app       *gin.Engine
 )
 
 func Service(cfg Config) (err error) {
@@ -57,7 +56,6 @@ func Service(cfg Config) (err error) {
 func Stop() {
 	ch := make(chan bool)
 	taskQueue.Submit(func() {
-		app.Shutdown(context.TODO())
 		saveStore()
 		ch <- true
 	})
@@ -78,44 +76,28 @@ func webRun(cfg *WebConfig) {
 	 使用warp函数处理过的方法，已经是在队列中执行。
 	*/
 
-	app = iris.New()
-	app.Logger().SetLevel("disable")
-	// 跨域
-	app.Use(handleCORS)
+	app = gin.New()
+	app.Use(gin.Logger(), gin.Recovery())
 
+	// 前端
 	if cfg.App != "" {
-		dir := app.Party("/")
-		dir.HandleDir("", cfg.App, iris.DirOptions{
-			IndexName: "index.html",
-			Gzip:      false,
-			ShowList:  false,
+		app.Use(static.Serve("/", static.LocalFile(cfg.App, false)))
+		app.NoRoute(func(ctx *gin.Context) {
+			ctx.File(cfg.App + "/index.html")
 		})
 	}
 
-	// 代理
-	redirect := func(ctx iris.Context) {
-		if strings.HasPrefix(ctx.Path(), "/api") {
-			name := strings.TrimPrefix(ctx.Path(), "/api")
-			if name != "" {
-				ctx.Exec(ctx.Method(), name)
-				return
-			}
-		}
-	}
-	api := app.Party("/api")
-	api.Get("/*", redirect)
-	api.Post("/*", redirect)
-
 	initHandler(app)
+
+	// vue项目路由 /api
+	for _, r := range app.Routes() {
+		app.Handle(r.Method, "/api"+r.Path, r.HandlerFunc)
+	}
 
 	log.Printf("web server run %s.\n", cfg.Address)
 	go func() {
-		if err := app.Listen(cfg.Address); err != nil {
-			if err == iris.ErrServerClosed {
-				log.Printf("web server %s stoped.\n", cfg.Address)
-			} else {
-				panic(err)
-			}
+		if err := app.Run(cfg.Address); err != nil {
+			panic(err)
 		}
 	}()
 }

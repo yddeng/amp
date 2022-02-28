@@ -12,7 +12,7 @@ import (
 var (
 	//address = "212.129.131.27:40156"
 	address  = "10.128.2.123:40156"
-	startWeb = true
+	startWeb = false
 )
 
 func startWebListener(t *testing.T) {
@@ -68,4 +68,19 @@ func TestAuthHandler_Logout(t *testing.T) {
 	}
 	t.Log(ret)
 
+}
+
+func TestRedirect(t *testing.T) {
+	startWebListener(t)
+
+	req, _ := dhttp.PostJson(fmt.Sprintf("http://%s/api/auth/login", address), struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}{Username: "admin", Password: "123456"})
+
+	ret, err := req.ToString()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(ret)
 }
