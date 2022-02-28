@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"amp/common"
 	"amp/protocol"
 	"errors"
 	"github.com/golang/protobuf/proto"
@@ -29,6 +30,8 @@ type Executor struct {
 	taskPool  *task.TaskPool
 	rpcServer *drpc.Server
 	rpcClient *drpc.Client
+
+	heartbeatTimer int64
 }
 
 func (er *Executor) SendRequest(req *drpc.Request) error {
@@ -131,6 +134,24 @@ func (er *Executor) onConnected(conn net.Conn) {
 
 }
 
+func (er *Executor) tick() {
+	timer := time.NewTimer(time.Second)
+	heartbeatMsg := &protocol.Heartbeat{}
+	for {
+		now := <-timer.C
+		er.Submit(func() {
+			if er.session != nil && now.Unix() > er.heartbeatTimer {
+				if err := er.session.Send(protocol.NewMessage(heartbeatMsg)); err != nil {
+					log.Println(err)
+				}
+				er.heartbeatTimer = now.Add(common.HeartbeatTimeout / 2).Unix()
+			}
+			timer.Reset(time.Second)
+		})
+	}
+
+}
+
 func (er *Executor) dispatchMsg(session dnet.Session, msg *protocol.Message) {}
 
 var er *Executor
@@ -151,6 +172,8 @@ func Start(cfg Config) (err error) {
 	loadCache(cfg.DataPath)
 
 	er.Submit(er.dial)
+
+	go er.tick()
 
 	return nil
 }

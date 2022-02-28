@@ -64,3 +64,4 @@ message logFileResp{
     bytes  context = 1;
 }
 
+message heartbeat{}

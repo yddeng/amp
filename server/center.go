@@ -1,6 +1,7 @@
 package server
 
 import (
+	"amp/common"
 	"amp/protocol"
 	"github.com/golang/protobuf/proto"
 	"github.com/yddeng/dnet"
@@ -39,7 +40,7 @@ func (c *Center) startListener() error {
 	return c.acceptor.ServeFunc(func(conn net.Conn) {
 		dnet.NewTCPSession(conn,
 			dnet.WithCodec(new(protocol.Codec)),
-			//dnet.WithTimeout(time.Second*5, 0),
+			dnet.WithTimeout(common.HeartbeatTimeout, 0),
 			dnet.WithMessageCallback(func(session dnet.Session, data interface{}) {
 				taskQueue.Submit(func() {
 					var err error
@@ -49,7 +50,7 @@ func (c *Center) startListener() error {
 					case *drpc.Response:
 						err = c.rpcClient.OnRPCResponse(data.(*drpc.Response))
 					case *protocol.Message:
-						//c.dispatchMsg(session, data.(*protocol.Message))
+						c.dispatchMsg(session, data.(*protocol.Message))
 					}
 					if err != nil {
 						log.Println(err)
@@ -68,5 +69,16 @@ func (c *Center) startListener() error {
 				})
 			}))
 	})
+
+}
+
+func (c *Center) dispatchMsg(session dnet.Session, msg *protocol.Message) {
+	cmd := msg.GetCmd()
+	switch cmd {
+	case protocol.CmdHeartbeat:
+		_ = session.Send(msg)
+	default:
+
+	}
 
 }

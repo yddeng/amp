@@ -82,6 +82,7 @@ func Unmarshal(namespace string, id uint16, buff []byte) (interface{}, error) {
 }
 
 const (
+	CmdHeartbeat  = 0
 	CmdLogin      = 1
 	CmdCmdExec    = 2
 	CmdProcStart  = 3
@@ -91,6 +92,8 @@ const (
 )
 
 func init() {
+	Register("msg", &Heartbeat{}, CmdHeartbeat)
+
 	Register("req", &LoginReq{}, CmdLogin)
 	Register("resp", &LoginResp{}, CmdLogin)
 
