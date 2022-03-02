@@ -65,3 +65,5 @@ message logFileResp{
 }
 
 message heartbeat{}
+
+message
