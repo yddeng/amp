@@ -1,16 +1,18 @@
 package server
 
 import (
+	"amp/protocol"
 	"log"
 	"sort"
 )
 
 type nodeInfo struct {
-	Name    string `json:"name"`
-	Inet    string `json:"inet"`
-	Net     string `json:"net"`
-	LoginAt int64  `json:"login_at"` // 登陆时间
-	Online  bool   `json:"online"`
+	Name    string              `json:"name"`
+	Inet    string              `json:"inet"`
+	Net     string              `json:"net"`
+	LoginAt int64               `json:"login_at"` // 登陆时间
+	Online  bool                `json:"online"`
+	State   *protocol.NodeState `json:"state"`
 }
 
 type nodeHandler struct{}
@@ -29,6 +31,7 @@ func (*nodeHandler) List(done *Done, user string, req struct {
 			Net:     n.Net,
 			LoginAt: n.LoginAt,
 			Online:  n.Online(),
+			State:   n.nodeState,
 		})
 	}
 	sort.Slice(s, func(i, j int) bool {

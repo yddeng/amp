@@ -31,7 +31,15 @@ type Executor struct {
 	rpcServer *drpc.Server
 	rpcClient *drpc.Client
 
+	die            chan struct{}
 	heartbeatTimer int64
+}
+
+func (er *Executor) SendMessage(msg proto.Message) error {
+	if er.session == nil {
+		return errors.New("session is nil")
+	}
+	return er.session.Send(protocol.NewMessage(msg))
 }
 
 func (er *Executor) SendRequest(req *drpc.Request) error {
@@ -138,18 +146,29 @@ func (er *Executor) tick() {
 	timer := time.NewTimer(time.Second)
 	heartbeatMsg := &protocol.Heartbeat{}
 	for {
-		now := <-timer.C
-		er.Submit(func() {
-			if er.session != nil && now.Unix() > er.heartbeatTimer {
-				if err := er.session.Send(protocol.NewMessage(heartbeatMsg)); err != nil {
+		select {
+		case <-er.die:
+			timer.Stop()
+			return
+		case now := <-timer.C:
+
+			nodeStateMsg := packCollector()
+
+			er.Submit(func() {
+				if err := er.SendMessage(nodeStateMsg); err != nil {
 					log.Println(err)
 				}
-				er.heartbeatTimer = now.Add(common.HeartbeatTimeout / 2).Unix()
-			}
-			timer.Reset(time.Second)
-		})
-	}
+				if now.Unix() > er.heartbeatTimer {
+					if err := er.SendMessage(heartbeatMsg); err != nil {
+						log.Println(err)
+					}
+					er.heartbeatTimer = now.Add(common.HeartbeatTimeout / 2).Unix()
+				}
+				timer.Reset(time.Second)
+			})
 
+		}
+	}
 }
 
 func (er *Executor) dispatchMsg(session dnet.Session, msg *protocol.Message) {}
@@ -159,6 +178,7 @@ var er *Executor
 func Start(cfg Config) (err error) {
 	er = new(Executor)
 	er.cfg = &cfg
+	er.die = make(chan struct{})
 	er.taskPool = task.NewTaskPool(1, 1024)
 	er.rpcClient = drpc.NewClient()
 	er.rpcServer = drpc.NewServer()
@@ -171,6 +191,8 @@ func Start(cfg Config) (err error) {
 
 	loadCache(cfg.DataPath)
 
+	initCollector()
+
 	er.Submit(er.dial)
 
 	go er.tick()
@@ -181,6 +203,7 @@ func Start(cfg Config) (err error) {
 func Stop() {
 	stopCh := make(chan struct{})
 	er.Submit(func() {
+		close(er.die)
 		saveCache()
 		stopCh <- struct{}{}
 	})

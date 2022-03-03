@@ -89,10 +89,13 @@ const (
 	CmdProcSignal = 4
 	CmdProcState  = 5
 	CmdLogFile    = 6
+
+	CmdNodeState = 101
 )
 
 func init() {
 	Register("msg", &Heartbeat{}, CmdHeartbeat)
+	Register("msg", &NodeState{}, CmdNodeState)
 
 	Register("req", &LoginReq{}, CmdLogin)
 	Register("resp", &LoginResp{}, CmdLogin)

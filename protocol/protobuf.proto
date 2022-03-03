@@ -66,4 +66,11 @@ message logFileResp{
 
 message heartbeat{}
 
-message
+// 上报物理机状态
+message nodeState{
+    map<string,string> cpu  = 1;
+    map<string,string> mem  = 2;
+    map<string,string> disk = 3;
+    map<string,string> host = 4;
+    map<string,string> net  = 5;
+}

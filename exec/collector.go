@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"amp/protocol"
 	"amp/util"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	psHost "github.com/shirou/gopsutil/host"
 	psMem "github.com/shirou/gopsutil/mem"
 	psNet "github.com/shirou/gopsutil/net"
+	//psProc "github.com/shirou/gopsutil/process"
 	"log"
 	"sync"
 	"time"
@@ -312,7 +314,7 @@ func (self *HostCollector) Result() map[string]string {
 
 type DiskCollector struct {
 	updateInterval   time.Duration
-	mounted          map[string]string
+	mounted          string
 	total            uint64
 	used             uint64
 	avail            uint64
@@ -326,9 +328,7 @@ type DiskCollector struct {
 func NewDiskCollector() *DiskCollector {
 	self := &DiskCollector{
 		updateInterval: time.Second,
-		mounted: map[string]string{
-			"/": "",
-		},
+		mounted:        "/",
 	}
 
 	self.update()
@@ -345,19 +345,55 @@ func NewDiskCollector() *DiskCollector {
 }
 
 func (self *DiskCollector) update() {
-	stat, err := psDisk.Usage("/")
+	//parts, err := psDisk.Partitions(false)
+	//if err != nil {
+	//	log.Printf("failed to get disk partitions from collector: %v", err)
+	//	return
+	//}
+	//
+	//for _, part := range parts {
+	//	if part.Mountpoint != self.mounted {
+	//		continue
+	//	}
+
+	stat, err := psDisk.Usage(self.mounted)
 	if err != nil {
 		log.Printf("failed to get disk usage from collector: %v", err)
-	} else {
-		// 依赖库写法与系统不一致
-		self.total = stat.Total
-		self.free = stat.Total - stat.Used
-		self.avail = stat.Free
-		self.used = self.total - self.free
-		self.usedPercent = float64(self.used) * 100 / float64(self.avail+self.used)
-
-		psDisk.Partitions()
 	}
+
+	// 依赖库写法与系统不一致
+	self.total = stat.Total
+	self.free = stat.Total - stat.Used
+	self.avail = stat.Free
+	self.used = self.total - self.free
+	self.usedPercent = float64(self.used) * 100 / float64(self.avail+self.used)
+
+	//	ioCounters, err := psDisk.IOCounters(part.Device)
+	//	if err != nil {
+	//		log.Printf("failed to get partition read/write info from collector: %v. device: %s", err, part.Device)
+	//		continue
+	//	}
+	//
+	//
+	//	ioCounter := ioCounters[strings.Replace(partition.Device, "/dev/", "", -1)]
+	//	bytesRead, bytesWritten := ioCounter.ReadBytes, ioCounter.WriteBytes
+	//	if partition.BytesRead != 0 { // if this isn't the first update
+	//		bytesReadRecently := bytesRead - partition.BytesRead
+	//		bytesWrittenRecently := bytesWritten - partition.BytesWritten
+	//
+	//		readFloat, readMagnitude := utils.ConvertBytes(bytesReadRecently)
+	//		writeFloat, writeMagnitude := utils.ConvertBytes(bytesWrittenRecently)
+	//		bytesReadRecently, bytesWrittenRecently = uint64(readFloat), uint64(writeFloat)
+	//		partition.BytesReadRecently = fmt.Sprintf("%d%s", bytesReadRecently, readMagnitude)
+	//		partition.BytesWrittenRecently = fmt.Sprintf("%d%s", bytesWrittenRecently, writeMagnitude)
+	//	} else {
+	//		partition.BytesReadRecently = fmt.Sprintf("%d%s", 0, "B")
+	//		partition.BytesWrittenRecently = fmt.Sprintf("%d%s", 0, "B")
+	//	}
+	//	partition.BytesRead, partition.BytesWritten = bytesRead, bytesWritten
+	//
+	//}
+
 }
 
 func (self *DiskCollector) String() string {
@@ -379,5 +415,65 @@ func (self *DiskCollector) Result() map[string]string {
 		"avail":       convertBytes(self.avail),
 		"free":        convertBytes(self.free),
 		"usedPercent": fmt.Sprintf("%.1f%%", self.usedPercent),
+	}
+}
+
+//type ProcessCollector struct {
+//	pids map[int32]*psProc.Process
+//}
+//
+//func NewProcessCollector() *ProcessCollector {
+//	self := &ProcessCollector{
+//		pids: map[int32]*psProc.Process{},
+//	}
+//
+//	self.update()
+//
+//	go func() {
+//		for range time.NewTicker(self.updateInterval).C {
+//			self.Lock()
+//			self.update()
+//			self.Unlock()
+//		}
+//	}()
+//
+//	return self
+//}
+//
+//func (self *ProcessCollector) update() {
+//	for pid := range self.pids {
+//		proc, err := psProc.NewProcess(pid)
+//		if err != nil {
+//			log.Printf("failed to get process info from collector: %v. pid: %d", err, pid)
+//			continue
+//		}
+//
+//
+//	}
+//}
+
+var (
+	netCollector  *NetCollector
+	cpuCollector  *CPUCollector
+	memCollector  *MemCollector
+	diskCollector *DiskCollector
+	hostCollector *HostCollector
+)
+
+func initCollector() {
+	netCollector = NewNetCollector()
+	cpuCollector = NewCPUCollector()
+	memCollector = NewMemCollector()
+	diskCollector = NewDiskCollector()
+	hostCollector = NewHostCollector()
+}
+
+func packCollector() *protocol.NodeState {
+	return &protocol.NodeState{
+		Cpu:  cpuCollector.Result(),
+		Mem:  memCollector.Result(),
+		Disk: diskCollector.Result(),
+		Host: hostCollector.Result(),
+		Net:  netCollector.Result(),
 	}
 }

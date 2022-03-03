@@ -77,6 +77,12 @@ func (c *Center) dispatchMsg(session dnet.Session, msg *protocol.Message) {
 	switch cmd {
 	case protocol.CmdHeartbeat:
 		_ = session.Send(msg)
+	case protocol.CmdNodeState:
+		ctx := session.Context()
+		if ctx != nil {
+			node := ctx.(*Node)
+			node.onNodeState(msg.GetData().(*protocol.NodeState))
+		}
 	default:
 
 	}

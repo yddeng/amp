@@ -14,6 +14,8 @@ type Node struct {
 	Net     string       `json:"net"`
 	LoginAt int64        `json:"login_at"` // 登陆时间
 	session dnet.Session `json:"_"`
+
+	nodeState *protocol.NodeState `json:"_"`
 }
 
 func (n *Node) Online() bool {
@@ -66,4 +68,8 @@ func (this *Center) onLogin(replier *drpc.Replier, req interface{}) {
 	log.Printf("onLogin %s", client.session.RemoteAddr().String())
 	replier.Reply(&protocol.LoginResp{}, nil)
 	saveStore(snNode)
+}
+
+func (this *Node) onNodeState(msg *protocol.NodeState) {
+	this.nodeState = msg
 }
