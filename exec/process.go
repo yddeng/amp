@@ -3,12 +3,12 @@ package exec
 import (
 	"amp/common"
 	"amp/util"
+	psProc "github.com/shirou/gopsutil/process"
 	"io/ioutil"
 	"log"
-	"os"
 	"os/exec"
 	"path"
-	"syscall"
+	"sync"
 	"time"
 )
 
@@ -29,21 +29,102 @@ type Daemon struct {
 }
 
 type Process struct {
-	// find by pid
-	Process *os.Process `json:"_"`
-	// Cmd
-	Cmd *exec.Cmd `json:"_"`
+	ID         int32  `json:"id"`
+	Name       string `json:"name"`
+	CreateTime int64  `json:"create_time"`
+	State      string `json:"state"`
+	Pid        int32  `json:"pid"`
+	Stderr     string `json:"stderr"`
 
-	done chan struct{}
-
-	ID      int32  `json:"id"`
-	Name    string `json:"name"`
-	Command string `json:"command"`
-	State   string `json:"state"`
-	Pid     int    `json:"pid"`
-	Stderr  string `json:"stderr"`
+	process *psProc.Process
+	mu      sync.Mutex
+	die     chan struct{}
+	dieOnce sync.Once
 }
 
+func (this *Process) watch(callback func(process *Process)) {
+	go func() {
+		ticker := time.NewTicker(time.Millisecond * 100)
+		for {
+			select {
+			case <-this.die:
+				ticker.Stop()
+				return
+			case <-ticker.C:
+			}
+
+			isRunning, err := this.process.IsRunning()
+			if err != nil || !isRunning {
+				ticker.Stop()
+				if this.Stderr != "" {
+					data, err := ioutil.ReadFile(this.Stderr)
+					this.mu.Lock()
+					if err == nil && len(data) != 0 {
+						this.State = common.StateExited
+					} else {
+						this.State = common.StateStopped
+					}
+					this.mu.Unlock()
+				} else {
+					this.mu.Lock()
+					this.State = common.StateStopped
+					this.mu.Unlock()
+				}
+				callback(this)
+				return
+			}
+		}
+	}()
+}
+
+func (this *Process) GetState() string {
+	this.mu.Lock()
+	defer this.mu.Unlock()
+	return this.State
+}
+
+func (this *Process) CPUPercent() float64 {
+	if this.process == nil {
+		return 0
+	}
+	percent, err := this.process.CPUPercent()
+	if err != nil {
+		return 0
+	}
+	return percent
+}
+
+func (this *Process) MemoryPercent() float32 {
+	if this.process == nil {
+		return 0
+	}
+	percent, err := this.process.MemoryPercent()
+	if err != nil {
+		return 0
+	}
+	return percent
+}
+
+func NewProcess(pid int32) (*Process, error) {
+	p, err := psProc.NewProcess(pid)
+	if err != nil {
+		return nil, err
+	}
+	createTime, err := p.CreateTime()
+	if err != nil {
+		return nil, err
+	}
+
+	this := &Process{
+		CreateTime: createTime,
+		State:      common.StateRunning,
+		Pid:        pid,
+		process:    p,
+	}
+	return this, nil
+}
+
+/*
 func ProcessWithCmd(cmd *exec.Cmd, callback func(process *Process)) (*Process, error) {
 	if err := cmd.Start(); err != nil {
 		return nil, err
@@ -133,76 +214,47 @@ func ProcessWithPid(pid int, callback func(process *Process)) (*Process, error) 
 
 	return process, nil
 }
-
-func (this *Process) Signal(sig syscall.Signal) error {
-	return syscall.Kill(this.Pid, sig)
-}
-
-func (this *Process) Done() bool {
-	select {
-	case <-this.done:
-		return true
-	default:
-		return false
-	}
-}
-
-func (this *Process) IsAlive() bool {
-	if this.Done() {
-		return false
-	} else {
-		return this.Signal(syscall.Signal(0)) == nil
-	}
-}
+*/
 
 var (
-	processCache = map[int32]*Process{}
-	cacheFile    string
+	watchProcess = map[int32]*Process{}
+	processFile  string
 )
 
-func loadCache(dataPath string) {
+func loadProcess(dataPath string) {
 	var processMap map[int32]*Process
-	cacheFile = path.Join(dataPath, "exec_info.json")
-	if err := util.DecodeJsonFromFile(&processMap, cacheFile); err == nil {
+	processFile = path.Join(dataPath, "exec_info.json")
+	if err := util.DecodeJsonFromFile(&processMap, processFile); err == nil {
 		for _, p := range processMap {
-			if m, err := ProcessCollect(p.Pid); err != nil {
-				log.Printf("loadCache %s faield %d %v", p.Name, p.Pid, err)
+			if p.GetState() != common.StateRunning {
+				watchProcess[p.ID] = p
+				continue
+			}
+
+			if proc, err := NewProcess(p.Pid); err != nil {
+				log.Printf("loadProcess %s faield %d %v", p.Name, p.Pid, err)
 			} else {
-				if p.Command != m.Args {
-					log.Printf("loadCache %s faield %d command not equal  %s <=> %s", p.Name, p.Pid, p.Command, m.Args)
+				if p.CreateTime != proc.CreateTime {
+					log.Printf("loadProcess %s faield %d create time not equal", p.Name, p.Pid)
 				} else {
-					log.Printf("loadCache %s process %d ok", p.Name, p.Pid)
-					p.done = make(chan struct{})
-					processCache[p.ID] = p
-					go func(p *Process) {
-						ticker := time.NewTicker(time.Second)
-						for {
-							select {
-							case <-p.done:
-								ticker.Stop()
-								return
-							case <-ticker.C:
-								if !p.IsAlive() {
-									data, err := ioutil.ReadFile(p.Stderr)
-									if err == nil && len(data) != 0 {
-										p.State = common.StateExited
-									} else {
-										p.State = common.StateStopped
-									}
-									close(p.done)
-								}
-							}
-						}
-					}(p)
+					proc.ID = p.ID
+					proc.Name = p.Name
+					proc.Stderr = p.Stderr
+					watchProcess[proc.ID] = proc
+					proc.watch(func(process *Process) {
+						er.Submit(func() {
+							saveProcess()
+						})
+					})
 				}
 			}
 		}
 	}
-	saveCache()
+	saveProcess()
 }
 
-func saveCache() {
-	if err := util.EncodeJsonToFile(processCache, cacheFile); err != nil {
-		log.Printf("saveCache faield %v", err)
+func saveProcess() {
+	if err := util.EncodeJsonToFile(watchProcess, processFile); err != nil {
+		log.Printf("saveProcess faield %v", err)
 	}
 }

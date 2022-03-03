@@ -4,6 +4,7 @@ import (
 	"amp/common"
 	"amp/protocol"
 	"bytes"
+	"fmt"
 	"github.com/yddeng/dnet/drpc"
 	"io/ioutil"
 	"log"
@@ -54,7 +55,7 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 	msg := req.(*protocol.ProcessExecReq)
 	log.Printf("onProcExec id:%d name:%s dir:%s args:%v", msg.GetId(), msg.GetName(), msg.GetDir(), msg.GetArgs())
 
-	if p, ok := processCache[msg.GetId()]; ok && p.State == common.StateRunning {
+	if p, ok := watchProcess[msg.GetId()]; ok && p.GetState() == common.StateRunning {
 		_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(p.Pid)}, nil)
 		return
 	}
@@ -86,25 +87,37 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 	ecmd.Dir = msg.GetDir()
 	ecmd.Stderr = errFile
 
-	if p, err := ProcessWithCmd(ecmd, func(process *Process) {
-		_ = errFile.Close()
-		if process.State == common.StateStopped {
-			delete(processCache, process.ID)
-		}
-		saveCache()
-	}); err != nil {
-		log.Println("onProcExec error", err)
+	if err := ecmd.Start(); err != nil {
+		log.Println("command start error", err)
 		_ = errFile.Close()
 		_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
-	} else {
-		p.ID = msg.GetId()
-		p.Name = msg.GetName()
-		p.Stderr = filename
-		p.Command = ecmd.String()
-		processCache[p.ID] = p
-		saveCache()
-		_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(p.Pid)}, nil)
+		return
 	}
+
+	p, err := NewProcess(int32(ecmd.Process.Pid))
+	if err != nil {
+		log.Println("new process error", err)
+		_ = errFile.Close()
+		_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
+		return
+	}
+
+	p.ID = msg.GetId()
+	p.Name = msg.GetName()
+	p.Stderr = filename
+	watchProcess[p.ID] = p
+	saveProcess()
+	_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(p.Pid)}, nil)
+
+	p.watch(func(process *Process) {
+		er.Submit(func() {
+			_ = errFile.Close()
+			if process.GetState() == common.StateStopped {
+				delete(watchProcess, process.ID)
+			}
+			saveProcess()
+		})
+	})
 }
 
 func (er *Executor) onProcSignal(replier *drpc.Replier, req interface{}) {
@@ -127,7 +140,7 @@ func (er *Executor) onProcState(replier *drpc.Replier, req interface{}) {
 		state := &protocol.ProcessState{
 			State: common.StateStopped,
 		}
-		if p, ok := processCache[id]; ok {
+		if p, ok := watchProcess[id]; ok {
 			state.Pid = int32(p.Pid)
 			state.State = p.State
 			if p.State == common.StateExited {
@@ -135,12 +148,8 @@ func (er *Executor) onProcState(replier *drpc.Replier, req interface{}) {
 					state.ExitMsg = string(data)
 				}
 			} else if p.State == common.StateRunning {
-				if m, err := ProcessCollect(p.Pid); err == nil {
-					state.Cpu = m.Cpu
-					state.Mem = m.Mem
-				} else {
-					log.Printf("onProcState processCollector %s", err.Error())
-				}
+				state.Cpu = fmt.Sprintf("%.1f%", p.CPUPercent())
+				state.Mem = fmt.Sprintf("%.1f%", p.MemoryPercent())
 			}
 		}
 		states[id] = state

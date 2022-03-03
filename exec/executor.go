@@ -189,7 +189,7 @@ func Start(cfg Config) (err error) {
 	er.rpcServer.Register(proto.MessageName(&protocol.ProcessStateReq{}), er.onProcState)
 	er.rpcServer.Register(proto.MessageName(&protocol.LogFileReq{}), er.onLogFile)
 
-	loadCache(cfg.DataPath)
+	loadProcess(cfg.DataPath)
 
 	initCollector()
 
@@ -204,7 +204,7 @@ func Stop() {
 	stopCh := make(chan struct{})
 	er.Submit(func() {
 		close(er.die)
-		saveCache()
+		saveProcess()
 		stopCh <- struct{}{}
 	})
 	<-stopCh

@@ -313,15 +313,13 @@ func (self *HostCollector) Result() map[string]string {
 }
 
 type DiskCollector struct {
-	updateInterval   time.Duration
-	mounted          string
-	total            uint64
-	used             uint64
-	avail            uint64
-	free             uint64
-	usedPercent      float64
-	recentBytesRead  uint64
-	recentBytesWrite uint64
+	updateInterval time.Duration
+	mounted        string
+	total          uint64
+	used           uint64
+	avail          uint64
+	free           uint64
+	usedPercent    float64
 	sync.RWMutex
 }
 
@@ -345,17 +343,6 @@ func NewDiskCollector() *DiskCollector {
 }
 
 func (self *DiskCollector) update() {
-	//parts, err := psDisk.Partitions(false)
-	//if err != nil {
-	//	log.Printf("failed to get disk partitions from collector: %v", err)
-	//	return
-	//}
-	//
-	//for _, part := range parts {
-	//	if part.Mountpoint != self.mounted {
-	//		continue
-	//	}
-
 	stat, err := psDisk.Usage(self.mounted)
 	if err != nil {
 		log.Printf("failed to get disk usage from collector: %v", err)
@@ -367,33 +354,6 @@ func (self *DiskCollector) update() {
 	self.avail = stat.Free
 	self.used = self.total - self.free
 	self.usedPercent = float64(self.used) * 100 / float64(self.avail+self.used)
-
-	//	ioCounters, err := psDisk.IOCounters(part.Device)
-	//	if err != nil {
-	//		log.Printf("failed to get partition read/write info from collector: %v. device: %s", err, part.Device)
-	//		continue
-	//	}
-	//
-	//
-	//	ioCounter := ioCounters[strings.Replace(partition.Device, "/dev/", "", -1)]
-	//	bytesRead, bytesWritten := ioCounter.ReadBytes, ioCounter.WriteBytes
-	//	if partition.BytesRead != 0 { // if this isn't the first update
-	//		bytesReadRecently := bytesRead - partition.BytesRead
-	//		bytesWrittenRecently := bytesWritten - partition.BytesWritten
-	//
-	//		readFloat, readMagnitude := utils.ConvertBytes(bytesReadRecently)
-	//		writeFloat, writeMagnitude := utils.ConvertBytes(bytesWrittenRecently)
-	//		bytesReadRecently, bytesWrittenRecently = uint64(readFloat), uint64(writeFloat)
-	//		partition.BytesReadRecently = fmt.Sprintf("%d%s", bytesReadRecently, readMagnitude)
-	//		partition.BytesWrittenRecently = fmt.Sprintf("%d%s", bytesWrittenRecently, writeMagnitude)
-	//	} else {
-	//		partition.BytesReadRecently = fmt.Sprintf("%d%s", 0, "B")
-	//		partition.BytesWrittenRecently = fmt.Sprintf("%d%s", 0, "B")
-	//	}
-	//	partition.BytesRead, partition.BytesWritten = bytesRead, bytesWritten
-	//
-	//}
-
 }
 
 func (self *DiskCollector) String() string {
