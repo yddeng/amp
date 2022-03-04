@@ -18,7 +18,10 @@ type storeBase struct {
 	filename string
 }
 
-var stores = map[storeName]Store{}
+var (
+	stores   = map[storeName]Store{}
+	needSave = map[storeName]bool{}
+)
 
 func loadStore(dataPath string) (err error) {
 	for name, store := range stores {
@@ -30,17 +33,28 @@ func loadStore(dataPath string) (err error) {
 }
 
 func saveStore(names ...storeName) {
-	var err error
 	if len(names) == 0 {
+		for name := range stores {
+			needSave[name] = true
+		}
+	} else {
+		for _, name := range names {
+			needSave[name] = true
+		}
+	}
+}
+
+func doSave(final bool) {
+	if final {
 		for name, store := range stores {
-			if err = store.Save(); err != nil {
+			if err := store.Save(); err != nil {
 				log.Printf("store %s save failed, %s\n", name, err)
 			}
 		}
 	} else {
-		for _, name := range names {
+		for name := range needSave {
 			if store, ok := stores[name]; ok {
-				if err = store.Save(); err != nil {
+				if err := store.Save(); err != nil {
 					log.Printf("store %s save failed, %s\n", name, err)
 				}
 			}

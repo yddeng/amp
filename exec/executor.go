@@ -4,6 +4,7 @@ import (
 	"amp/common"
 	"amp/protocol"
 	"errors"
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/yddeng/dnet"
 	"github.com/yddeng/dnet/drpc"
@@ -64,8 +65,17 @@ func (er *Executor) Submit(fn interface{}, args ...interface{}) error {
 	return er.taskPool.Submit(fn, args...)
 }
 
+func (er *Executor) closed() bool {
+	select {
+	case <-er.die:
+		return true
+	default:
+		return false
+	}
+}
+
 func (er *Executor) dial() {
-	if er.session != nil || er.dialing {
+	if er.session != nil || er.dialing || er.closed() {
 		return
 	}
 
@@ -155,13 +165,9 @@ func (er *Executor) tick() {
 			nodeStateMsg := packCollector()
 
 			er.Submit(func() {
-				if err := er.SendMessage(nodeStateMsg); err != nil {
-					log.Println(err)
-				}
+				_ = er.SendMessage(nodeStateMsg)
 				if now.Unix() > er.heartbeatTimer {
-					if err := er.SendMessage(heartbeatMsg); err != nil {
-						log.Println(err)
-					}
+					_ = er.SendMessage(heartbeatMsg)
 					er.heartbeatTimer = now.Add(common.HeartbeatTimeout / 2).Unix()
 				}
 				timer.Reset(time.Second)
@@ -204,8 +210,20 @@ func Stop() {
 	stopCh := make(chan struct{})
 	er.Submit(func() {
 		close(er.die)
+		er.session.Close(fmt.Errorf("stop"))
 		saveProcess()
 		stopCh <- struct{}{}
 	})
+
+	//go func() {
+	//	ticker := time.NewTicker(time.Millisecond * 50)
+	//	for {
+	//		<-ticker.C
+	//		if er.taskPool.NumTask() == 0 {
+	//			ticker.Stop()
+	//			stopCh <- struct{}{}
+	//		}
+	//	}
+	//}()
 	<-stopCh
 }

@@ -56,7 +56,7 @@ func Service(cfg Config) (err error) {
 func Stop() {
 	ch := make(chan bool)
 	taskQueue.Submit(func() {
-		saveStore()
+		doSave(true)
 		ch <- true
 	})
 	<-ch
@@ -118,6 +118,7 @@ func centerRun(cfg *CenterConfig) {
 			taskQueue.Submit(func() {
 				processTick()
 				processAutoStart()
+				doSave(false)
 				timer.Reset(time.Second)
 			})
 		}
