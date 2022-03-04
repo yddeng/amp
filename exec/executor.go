@@ -100,6 +100,10 @@ func (er *Executor) onConnected(conn net.Conn) {
 		er.dialing = false
 		er.session = dnet.NewTCPSession(conn,
 			dnet.WithCodec(new(protocol.Codec)),
+			dnet.WithErrorCallback(func(session dnet.Session, err error) {
+				log.Println(err)
+				session.Close(err)
+			}),
 			dnet.WithMessageCallback(func(session dnet.Session, data interface{}) {
 				er.Submit(func() {
 					var err error

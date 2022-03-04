@@ -41,6 +41,10 @@ func (c *Center) startListener() error {
 		dnet.NewTCPSession(conn,
 			dnet.WithCodec(new(protocol.Codec)),
 			dnet.WithTimeout(common.HeartbeatTimeout, 0),
+			dnet.WithErrorCallback(func(session dnet.Session, err error) {
+				log.Println(err)
+				session.Close(err)
+			}),
 			dnet.WithMessageCallback(func(session dnet.Session, data interface{}) {
 				taskQueue.Submit(func() {
 					var err error
