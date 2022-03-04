@@ -4,7 +4,6 @@ import (
 	"amp/common"
 	"amp/protocol"
 	"bytes"
-	"fmt"
 	"github.com/yddeng/dnet/drpc"
 	"io/ioutil"
 	"log"
@@ -148,8 +147,8 @@ func (er *Executor) onProcState(replier *drpc.Replier, req interface{}) {
 					state.ExitMsg = string(data)
 				}
 			} else if state.State == common.StateRunning {
-				state.Cpu = fmt.Sprintf("%.1f%%", p.CPUPercent())
-				state.Mem = fmt.Sprintf("%.1f%%", p.MemoryPercent())
+				state.Cpu = p.CPUPercent()
+				state.Mem = float64(p.MemoryPercent())
 			}
 		}
 		states[id] = state

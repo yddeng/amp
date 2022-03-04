@@ -27,8 +27,8 @@ type ProcessState struct {
 	// 已经自动重启次数，启动时重置
 	AutoStartTimes int `json:"auto_start_times"`
 
-	Cpu string `json:"cpu"`
-	Mem string `json:"mem"`
+	Cpu float64 `json:"cpu"`
+	Mem float64 `json:"mem"`
 }
 
 type Process struct {
