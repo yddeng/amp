@@ -12,5 +12,6 @@ cmd/ampe
 
 data/
 log/
+exec/test/
 
 upload/

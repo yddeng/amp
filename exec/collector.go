@@ -282,6 +282,7 @@ type HostCollector struct {
 	hostname string
 	os       string
 	arch     string
+	bootTime uint64
 }
 
 func NewHostCollector() *HostCollector {
@@ -293,7 +294,7 @@ func NewHostCollector() *HostCollector {
 		self.hostname = info.Hostname
 		self.os = info.OS
 		self.arch = info.KernelArch
-		//self.bootTime = info.BootTime
+		self.bootTime = info.BootTime
 	}
 	return self
 }
@@ -309,6 +310,7 @@ func (self *HostCollector) Result() map[string]string {
 		"hostname": self.hostname,
 		"os":       self.os,
 		"arch":     self.arch,
+		"bootTime": fmt.Sprintf("%d", self.bootTime),
 	}
 }
 

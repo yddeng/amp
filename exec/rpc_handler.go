@@ -55,7 +55,7 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 	msg := req.(*protocol.ProcessExecReq)
 	log.Printf("onProcExec id:%d name:%s dir:%s args:%v", msg.GetId(), msg.GetName(), msg.GetDir(), msg.GetArgs())
 
-	if p, ok := watchProcess[msg.GetId()]; ok && p.GetState() == common.StateRunning {
+	if p, ok := waitProcess[msg.GetId()]; ok && p.GetState() == common.StateRunning {
 		_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(p.Pid)}, nil)
 		return
 	}
@@ -94,9 +94,9 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 		return
 	}
 
+	// 未调用 wait 之前，process 一直存在，除非父进程停止
 	p, err := NewProcess(int32(ecmd.Process.Pid))
 	if err != nil {
-		log.Println("new process error", err)
 		_ = errFile.Close()
 		_ = replier.Reply(&protocol.ProcessExecResp{Code: err.Error()}, nil)
 		return
@@ -105,15 +105,15 @@ func (er *Executor) onProcExec(replier *drpc.Replier, req interface{}) {
 	p.ID = msg.GetId()
 	p.Name = msg.GetName()
 	p.Stderr = filename
-	watchProcess[p.ID] = p
+	waitProcess[p.ID] = p
 	saveProcess()
 	_ = replier.Reply(&protocol.ProcessExecResp{Pid: int32(p.Pid)}, nil)
 
-	p.watch(func(process *Process) {
+	p.waitCmd(ecmd, func(process *Process) {
 		er.Submit(func() {
 			_ = errFile.Close()
 			if process.GetState() == common.StateStopped {
-				delete(watchProcess, process.ID)
+				delete(waitProcess, process.ID)
 			}
 			saveProcess()
 		})
@@ -140,16 +140,16 @@ func (er *Executor) onProcState(replier *drpc.Replier, req interface{}) {
 		state := &protocol.ProcessState{
 			State: common.StateStopped,
 		}
-		if p, ok := watchProcess[id]; ok {
-			state.Pid = int32(p.Pid)
-			state.State = p.State
-			if p.State == common.StateExited {
+		if p, ok := waitProcess[id]; ok {
+			state.Pid = p.Pid
+			state.State = p.GetState()
+			if state.State == common.StateExited {
 				if data, err := ioutil.ReadFile(p.Stderr); err == nil {
 					state.ExitMsg = string(data)
 				}
-			} else if p.State == common.StateRunning {
-				state.Cpu = fmt.Sprintf("%.1f%", p.CPUPercent())
-				state.Mem = fmt.Sprintf("%.1f%", p.MemoryPercent())
+			} else if state.State == common.StateRunning {
+				state.Cpu = fmt.Sprintf("%.1f%%", p.CPUPercent())
+				state.Mem = fmt.Sprintf("%.1f%%", p.MemoryPercent())
 			}
 		}
 		states[id] = state

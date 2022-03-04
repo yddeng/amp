@@ -6,6 +6,7 @@ import (
 	psProc "github.com/shirou/gopsutil/process"
 	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 	"path"
 	"sync"
@@ -29,33 +30,81 @@ type Daemon struct {
 }
 
 type Process struct {
-	ID         int32  `json:"id"`
-	Name       string `json:"name"`
-	CreateTime int64  `json:"create_time"`
-	State      string `json:"state"`
 	Pid        int32  `json:"pid"`
 	Stderr     string `json:"stderr"`
+	ID         int32  `json:"id"`
+	Name       string `json:"name"`
+	State      string `json:"state"`
+	CreateTime int64  `json:"create_time"`
 
 	process *psProc.Process
 	mu      sync.Mutex
-	die     chan struct{}
-	dieOnce sync.Once
 }
 
-func (this *Process) watch(callback func(process *Process)) {
+func (this *Process) waitCmd(cmd *exec.Cmd, callback func(process *Process)) {
+	go func() {
+		err := cmd.Wait()
+
+		this.mu.Lock()
+		if err != nil {
+			if state, ok := err.(*exec.ExitError); ok {
+				// !success
+				if state.ProcessState.Exited() {
+					// exit
+					this.State = common.StateExited
+				} else {
+					// signal 人为操作，视为正常停机
+					this.State = common.StateStopped
+				}
+			} else {
+				// 异常退出
+				this.State = common.StateExited
+			}
+		} else {
+			// err == nil && success
+			this.State = common.StateStopped
+		}
+		this.mu.Unlock()
+		callback(this)
+	}()
+}
+
+func (this *Process) waitChild(proc *os.Process, callback func(process *Process)) {
+	go func() {
+		state, err := proc.Wait()
+		this.mu.Lock()
+		if err != nil {
+			// 异常退出
+			this.State = common.StateExited
+		} else {
+			if !state.Success() {
+				if state.Exited() {
+					// exit
+					this.State = common.StateExited
+				} else {
+					// signal 人为操作，视为正常停机
+					this.State = common.StateStopped
+				}
+			} else {
+				// success code=0
+				this.State = common.StateStopped
+			}
+
+		}
+		this.mu.Unlock()
+		callback(this)
+
+	}()
+}
+
+func (this *Process) waitNoChild(callback func(process *Process)) {
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 100)
 		for {
-			select {
-			case <-this.die:
-				ticker.Stop()
-				return
-			case <-ticker.C:
-			}
+			<-ticker.C
 
 			isRunning, err := this.process.IsRunning()
 			if err != nil || !isRunning {
-				ticker.Stop()
 				if this.Stderr != "" {
 					data, err := ioutil.ReadFile(this.Stderr)
 					this.mu.Lock()
@@ -71,10 +120,29 @@ func (this *Process) watch(callback func(process *Process)) {
 					this.mu.Unlock()
 				}
 				callback(this)
+				ticker.Stop()
 				return
 			}
 		}
 	}()
+}
+
+func (this *Process) wait(callback func(process *Process)) error {
+	pp, err := this.process.Parent()
+	if err != nil {
+		return err
+	} else {
+		if pp.Pid == int32(os.Getpid()) {
+			ppp, err := os.FindProcess(int(this.Pid))
+			if err != nil {
+				return err
+			}
+			this.waitChild(ppp, callback)
+		} else {
+			this.waitNoChild(callback)
+		}
+	}
+	return nil
 }
 
 func (this *Process) GetState() string {
@@ -124,101 +192,9 @@ func NewProcess(pid int32) (*Process, error) {
 	return this, nil
 }
 
-/*
-func ProcessWithCmd(cmd *exec.Cmd, callback func(process *Process)) (*Process, error) {
-	if err := cmd.Start(); err != nil {
-		return nil, err
-	}
-	process := &Process{
-		State: common.StateRunning,
-		Cmd:   cmd,
-		done:  make(chan struct{}),
-		Pid:   cmd.Process.Pid,
-	}
-
-	go func() {
-		var err error
-		defer er.Submit(func() {
-			if err != nil {
-				log.Printf("process %d done err %v\n", process.Pid, err)
-				if state, ok := err.(*exec.ExitError); ok {
-					log.Printf("process %d exiterror %s\n", process.Pid, state.String())
-					// !success
-					if state.ProcessState.Exited() {
-						// exit
-						process.State = common.StateExited
-					} else {
-						// signal 人为操作，视为正常停机
-						process.State = common.StateStopped
-					}
-				} else {
-					// 异常退出
-					log.Printf("process %d exit %v\n", process.Pid, err)
-					process.State = common.StateExited
-				}
-			} else {
-				// err == nil && success
-				process.State = common.StateStopped
-			}
-			close(process.done)
-			callback(process)
-		})
-		err = cmd.Wait()
-	}()
-	return process, nil
-}
-
-// 根据pid 绑定进程，能监听停止状态
-func ProcessWithPid(pid int, callback func(process *Process)) (*Process, error) {
-	// todo 总是会成功，需要修改
-	p, err := os.FindProcess(pid)
-	if err != nil {
-		return nil, err
-	}
-	log.Println("ProcessWithPid", pid, p, err)
-	process := &Process{
-		State:   common.StateRunning,
-		Process: p,
-		done:    make(chan struct{}),
-		Pid:     pid,
-	}
-
-	go func() {
-		var state *os.ProcessState
-		var err error
-		defer er.Submit(func() {
-			if err != nil {
-				// 异常退出
-				log.Printf("process %d exit %s\n", process.Pid, err)
-				process.State = common.StateExited
-			} else {
-				if !state.Success() {
-					if state.Exited() {
-						// exit
-						process.State = common.StateExited
-					} else {
-						// signal 人为操作，视为正常停机
-						process.State = common.StateStopped
-					}
-				} else {
-					// success code=0
-					process.State = common.StateStopped
-				}
-
-			}
-			close(process.done)
-			callback(process)
-		})
-		state, err = p.Wait()
-	}()
-
-	return process, nil
-}
-*/
-
 var (
-	watchProcess = map[int32]*Process{}
-	processFile  string
+	waitProcess = map[int32]*Process{}
+	processFile string
 )
 
 func loadProcess(dataPath string) {
@@ -227,7 +203,7 @@ func loadProcess(dataPath string) {
 	if err := util.DecodeJsonFromFile(&processMap, processFile); err == nil {
 		for _, p := range processMap {
 			if p.GetState() != common.StateRunning {
-				watchProcess[p.ID] = p
+				waitProcess[p.ID] = p
 				continue
 			}
 
@@ -240,8 +216,8 @@ func loadProcess(dataPath string) {
 					proc.ID = p.ID
 					proc.Name = p.Name
 					proc.Stderr = p.Stderr
-					watchProcess[proc.ID] = proc
-					proc.watch(func(process *Process) {
+					waitProcess[proc.ID] = proc
+					proc.waitNoChild(func(process *Process) {
 						er.Submit(func() {
 							saveProcess()
 						})
@@ -254,7 +230,7 @@ func loadProcess(dataPath string) {
 }
 
 func saveProcess() {
-	if err := util.EncodeJsonToFile(watchProcess, processFile); err != nil {
+	if err := util.EncodeJsonToFile(waitProcess, processFile); err != nil {
 		log.Printf("saveProcess faield %v", err)
 	}
 }

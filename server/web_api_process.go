@@ -27,8 +27,8 @@ type ProcessState struct {
 	// 已经自动重启次数，启动时重置
 	AutoStartTimes int `json:"auto_start_times"`
 
-	Cpu float64 `json:"cpu"`
-	Mem float64 `json:"mem"`
+	Cpu string `json:"cpu"`
+	Mem string `json:"mem"`
 }
 
 type Process struct {
@@ -47,12 +47,12 @@ type Process struct {
 	// 默认值为999 。。非必须设置
 	Priority int `json:"priority"`
 	// 子进程启动多少秒之后，此时状态如果是running，则我们认为启动成功了
-	// 默认值为1 。。非必须设置
-	//StartSecs int `json:"start_secs"`
+	// 默认值为2 。。非必须设置
+	StartSecs int64 `json:"start_secs"`
 	// 这个是当我们向子进程发送stop信号后，到系统返回信息所等待的最大时间。
 	// 超过这个时间会向该子进程发送一个强制kill的信号。
 	// 默认为10秒。。非必须设置
-	StopWaitSecs int `json:"stop_wait_secs"`
+	StopWaitSecs int64 `json:"stop_wait_secs"`
 	// 进程状态为 Exited时，自动重启
 	// 默认为3次。。非必须设置
 	AutoStartTimes int `json:"auto_start_times"`
@@ -169,7 +169,8 @@ func (this *processHandler) Create(done *Done, user string, req struct {
 	Groups         []string         `json:"groups"`
 	Node           string           `json:"node"`
 	Priority       int              `json:"priority"`
-	StopWaitSecs   int              `json:"stop_wait_secs"`
+	StartSecs      int64            `json:"start_secs"`
+	StopWaitSecs   int64            `json:"stop_wait_secs"`
 	AutoStartTimes int              `json:"auto_start_times"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
@@ -204,6 +205,7 @@ func (this *processHandler) Create(done *Done, user string, req struct {
 	p.User = user
 	p.CreateAt = NowUnix()
 	p.Priority = req.Priority
+	p.StartSecs = req.StartSecs
 	p.StopWaitSecs = req.StopWaitSecs
 	p.AutoStartTimes = req.AutoStartTimes
 
@@ -220,7 +222,8 @@ func (this *processHandler) Update(done *Done, user string, req struct {
 	Groups         []string         `json:"groups"`
 	Node           string           `json:"node"`
 	Priority       int              `json:"priority"`
-	StopWaitSecs   int              `json:"stop_wait_secs"`
+	StartSecs      int64            `json:"start_secs"`
+	StopWaitSecs   int64            `json:"stop_wait_secs"`
 	AutoStartTimes int              `json:"auto_start_times"`
 }) {
 	log.Printf("%s by(%s) %v\n", done.route, user, req)
@@ -253,6 +256,7 @@ func (this *processHandler) Update(done *Done, user string, req struct {
 	p.Groups = req.Groups
 	p.Node = req.Node
 	p.Priority = req.Priority
+	p.StartSecs = req.StartSecs
 	p.StopWaitSecs = req.StopWaitSecs
 	p.AutoStartTimes = req.AutoStartTimes
 
@@ -314,7 +318,6 @@ func processTick() {
 		}
 		_ = center.Go(node, req, drpc.DefaultRPCTimeout, func(i interface{}, e error) {
 			if e != nil {
-				//log.Println("11", e)
 				return
 			}
 			change := false
@@ -325,46 +328,67 @@ func processTick() {
 				if !ok {
 					continue
 				}
+
+				p.State.Pid = state.Pid
 				p.State.Mem = state.GetMem()
 				p.State.Cpu = state.GetCpu()
-				pState := p.State.Status
-				if pState != state.GetState() {
-					if pState == common.StateUnknown || pState == common.StateStarting {
-						p.State.Status = state.GetState()
-						if state.GetState() == common.StateRunning {
-							p.State.Pid = state.Pid
-						} else if state.GetState() == common.StateExited {
-							// 启动报错不重启
-							p.State.AutoStartTimes = p.AutoStartTimes
-							p.State.ExitMsg = state.GetExitMsg()
-						} else {
-							// Stopped
-						}
-						change = true
-					} else if pState == common.StateRunning {
-						p.State.Status = state.GetState()
-						if state.GetState() == common.StateExited {
-							p.State.ExitMsg = state.GetExitMsg()
-						} else {
-							// Stopped
-						}
-						change = true
-					} else {
-						// Stopping
-						if state.GetState() == common.StateRunning {
-							subUnix := NowUnix() - p.State.Timestamp
-							if int(subUnix) >= p.StopWaitSecs {
-								_ = center.Go(node, &protocol.ProcessSignalReq{
-									Pid:    p.State.Pid,
-									Signal: int32(syscall.SIGKILL),
-								}, drpc.DefaultRPCTimeout, func(i interface{}, e error) {})
-							}
-						} else {
-							// Stopped || Exited
-							p.State.ExitMsg = state.GetExitMsg()
-							p.State.Status = common.StateStopped
+				switch p.State.Status {
+				case common.StateUnknown:
+					p.State.Status = state.GetState()
+					switch state.GetState() {
+					case common.StateRunning:
+					case common.StateStopped:
+					case common.StateExited:
+						p.State.AutoStartTimes = p.AutoStartTimes // 未知状态不重启
+						p.State.ExitMsg = state.GetExitMsg()
+					}
+					change = true
+				case common.StateStarting:
+					switch state.GetState() {
+					case common.StateRunning:
+						if NowUnix() >= p.State.Timestamp+p.StartSecs {
+							// 启动时间
+							p.State.Status = common.StateRunning
 							change = true
 						}
+					case common.StateStopped:
+						p.State.Status = common.StateStopped
+						change = true
+					case common.StateExited:
+						p.State.Status = common.StateExited
+						p.State.AutoStartTimes = p.AutoStartTimes // 启动阶段不重启
+						p.State.ExitMsg = state.GetExitMsg()
+						change = true
+					}
+				case common.StateRunning:
+					switch state.GetState() {
+					case common.StateRunning:
+					case common.StateStopped:
+						p.State.Status = common.StateStopped
+						change = true
+					case common.StateExited:
+						p.State.Status = common.StateExited
+						p.State.ExitMsg = state.GetExitMsg()
+						change = true
+					}
+				case common.StateStopping:
+					switch state.GetState() {
+					case common.StateRunning:
+						if NowUnix() >= p.State.Timestamp+p.StopWaitSecs {
+							// 停止时间超时 ，强行停止
+							_ = center.Go(node, &protocol.ProcessSignalReq{
+								Pid:    p.State.Pid,
+								Signal: int32(syscall.SIGKILL),
+							}, drpc.DefaultRPCTimeout, func(i interface{}, e error) {})
+						}
+					case common.StateStopped:
+						p.State.Status = common.StateStopped
+						change = true
+					case common.StateExited:
+						p.State.Status = common.StateExited
+						p.State.AutoStartTimes = p.AutoStartTimes // 停止阶段不重启
+						p.State.ExitMsg = state.GetExitMsg()
+						change = true
 					}
 				}
 			}
