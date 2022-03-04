@@ -14,10 +14,9 @@ func NowUnix() int64 {
 }
 
 type Config struct {
-	DataPath       string        `json:"data_path"`
-	CmdLogCapacity int           `json:"cmd_log_capacity"`
-	CenterConfig   *CenterConfig `json:"center_config"`
-	WebConfig      *WebConfig    `json:"web_config"`
+	DataPath     string        `json:"data_path"`
+	CenterConfig *CenterConfig `json:"center_config"`
+	WebConfig    *WebConfig    `json:"web_config"`
 }
 
 type CenterConfig struct {
@@ -46,7 +45,6 @@ func Service(cfg Config) (err error) {
 	if err = loadStore(cfg.DataPath); err != nil {
 		return
 	}
-	cmdLogCapacity = cfg.CmdLogCapacity
 
 	centerRun(cfg.CenterConfig)
 	webRun(cfg.WebConfig)

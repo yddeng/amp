@@ -1,6 +1,5 @@
 {
   "data_path": "./data",
-  "cmd_log_capacity": 10,
   "center_config": {
     "address": "0.0.0.0:40155",
     "token": "token"
