@@ -16,13 +16,18 @@ import (
 	"time"
 )
 
+type Collector interface {
+	Update()
+	Result() map[string]string
+	String() string
+}
+
 const (
 	NET_INTERFACE_ALL = "all"
 	NET_INTERFACE_VPN = "tun0"
 )
 
 type NetCollector struct {
-	updateInterval    time.Duration
 	totalBytesRecv    uint64
 	totalBytesSent    uint64
 	totalPacketsRecv  uint64
@@ -37,24 +42,12 @@ type NetCollector struct {
 }
 
 func NewNetCollector() *NetCollector {
-	self := &NetCollector{
-		updateInterval: time.Second,
-	}
-
-	self.update()
-
-	go func() {
-		for range time.NewTicker(self.updateInterval).C {
-			self.Lock()
-			self.update()
-			self.Unlock()
-		}
-	}()
-
+	self := &NetCollector{}
+	self.Update()
 	return self
 }
 
-func (self *NetCollector) update() {
+func (self *NetCollector) Update() {
 	interfaces, err := psNet.IOCounters(true)
 	if err != nil {
 		log.Printf("failed to get network activity from collector: %v", err)
@@ -98,13 +91,15 @@ func (self *NetCollector) update() {
 			log.Printf("error: negative value for recently sent network data from collector. recentPacketsSent: %v", recentPacketsSent)
 			recentPacketsSent = 0
 		}
-
+		self.Lock()
 		self.recentBytesRecv = recentBytesRecv
 		self.recentBytesSent = recentBytesSent
 		self.recentPacketsRecv = recentPacketsRecv
 		self.recentPacketsSent = recentPacketsSent
+		self.Unlock()
 	}
 
+	self.Lock()
 	// used in later calls to update
 	self.totalBytesRecv = totalBytesRecv
 	self.totalBytesSent = totalBytesSent
@@ -117,6 +112,7 @@ func (self *NetCollector) update() {
 	if conns, err := psNet.ConnectionsPid("udp", 0); err == nil {
 		self.udpConnections = len(conns)
 	}
+	self.Unlock()
 }
 
 func (self *NetCollector) String() string {
@@ -166,18 +162,12 @@ func NewCPUCollector() *CPUCollector {
 		log.Printf("failed to get CPU count from collector: %v", err)
 	}
 
-	self.update()
-
-	go func() {
-		for range time.NewTicker(self.updateInterval).C {
-			self.update()
-		}
-	}()
+	self.Update()
 
 	return self
 }
 
-func (self *CPUCollector) update() {
+func (self *CPUCollector) Update() {
 	go func() {
 		percent, err := psCpu.Percent(self.updateInterval, false)
 		if err != nil {
@@ -207,7 +197,6 @@ func (self *CPUCollector) Result() map[string]string {
 }
 
 type MemCollector struct {
-	updateInterval     time.Duration
 	virtualTotal       uint64
 	virtualUsed        uint64
 	virtualUsedPercent float64
@@ -218,40 +207,32 @@ type MemCollector struct {
 }
 
 func NewMemCollector() *MemCollector {
-	self := &MemCollector{
-		updateInterval: time.Second,
-	}
-
-	self.update()
-
-	go func() {
-		for range time.NewTicker(self.updateInterval).C {
-			self.Lock()
-			self.update()
-			self.Unlock()
-		}
-	}()
-
+	self := &MemCollector{}
+	self.Update()
 	return self
 }
 
-func (self *MemCollector) update() {
+func (self *MemCollector) Update() {
 	mainMemory, err := psMem.VirtualMemory()
 	if err != nil {
 		log.Printf("failed to get main memory info from collector: %v", err)
 	} else {
+		self.Lock()
 		self.virtualTotal = mainMemory.Total
 		self.virtualUsed = mainMemory.Used
 		self.virtualUsedPercent = mainMemory.UsedPercent
+		self.Unlock()
 	}
 
 	swapMemory, err := psMem.SwapMemory()
 	if err != nil {
 		log.Printf("failed to get swap memory info from collector: %v", err)
 	} else {
+		self.Lock()
 		self.swapTotal = swapMemory.Total
 		self.swapUsed = swapMemory.Used
 		self.swapUsedPercent = swapMemory.UsedPercent
+		self.Unlock()
 	}
 }
 
@@ -299,6 +280,8 @@ func NewHostCollector() *HostCollector {
 	return self
 }
 
+func (self *HostCollector) Update() {}
+
 func (self *HostCollector) String() string {
 	ret := self.Result()
 	data, _ := json.Marshal(ret)
@@ -315,47 +298,38 @@ func (self *HostCollector) Result() map[string]string {
 }
 
 type DiskCollector struct {
-	updateInterval time.Duration
-	mounted        string
-	total          uint64
-	used           uint64
-	avail          uint64
-	free           uint64
-	usedPercent    float64
+	mounted     string
+	total       uint64
+	used        uint64
+	avail       uint64
+	free        uint64
+	usedPercent float64
 	sync.RWMutex
 }
 
 func NewDiskCollector() *DiskCollector {
 	self := &DiskCollector{
-		updateInterval: time.Second,
-		mounted:        "/",
+		mounted: "/",
 	}
 
-	self.update()
-
-	go func() {
-		for range time.NewTicker(self.updateInterval).C {
-			self.Lock()
-			self.update()
-			self.Unlock()
-		}
-	}()
-
+	self.Update()
 	return self
 }
 
-func (self *DiskCollector) update() {
+func (self *DiskCollector) Update() {
 	stat, err := psDisk.Usage(self.mounted)
 	if err != nil {
 		log.Printf("failed to get disk usage from collector: %v", err)
 	}
 
+	self.Lock()
 	// 依赖库写法与系统不一致
 	self.total = stat.Total
 	self.free = stat.Total - stat.Used
 	self.avail = stat.Free
 	self.used = self.total - self.free
 	self.usedPercent = float64(self.used) * 100 / float64(self.avail+self.used)
+	self.Unlock()
 }
 
 func (self *DiskCollector) String() string {
@@ -380,62 +354,39 @@ func (self *DiskCollector) Result() map[string]string {
 	}
 }
 
-//type ProcessCollector struct {
-//	pids map[int32]*psProc.Process
-//}
-//
-//func NewProcessCollector() *ProcessCollector {
-//	self := &ProcessCollector{
-//		pids: map[int32]*psProc.Process{},
-//	}
-//
-//	self.update()
-//
-//	go func() {
-//		for range time.NewTicker(self.updateInterval).C {
-//			self.Lock()
-//			self.update()
-//			self.Unlock()
-//		}
-//	}()
-//
-//	return self
-//}
-//
-//func (self *ProcessCollector) update() {
-//	for pid := range self.pids {
-//		proc, err := psProc.NewProcess(pid)
-//		if err != nil {
-//			log.Printf("failed to get process info from collector: %v. pid: %d", err, pid)
-//			continue
-//		}
-//
-//
-//	}
-//}
-
 var (
-	netCollector  *NetCollector
-	cpuCollector  *CPUCollector
-	memCollector  *MemCollector
-	diskCollector *DiskCollector
-	hostCollector *HostCollector
+	collectors map[string]Collector
 )
 
 func initCollector() {
-	netCollector = NewNetCollector()
-	cpuCollector = NewCPUCollector()
-	memCollector = NewMemCollector()
-	diskCollector = NewDiskCollector()
-	hostCollector = NewHostCollector()
+	collectors = map[string]Collector{
+		"Cpu":  NewCPUCollector(),
+		"Mem":  NewMemCollector(),
+		"Disk": NewDiskCollector(),
+		"Host": NewHostCollector(),
+		"Net":  NewNetCollector(),
+	}
+
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		for range ticker.C {
+			for _, c := range collectors {
+				c.Update()
+			}
+		}
+	}()
+}
+
+func getResult(name string) map[string]string {
+	return collectors[name].Result()
 }
 
 func packCollector() *protocol.NodeState {
 	return &protocol.NodeState{
-		Cpu:  cpuCollector.Result(),
-		Mem:  memCollector.Result(),
-		Disk: diskCollector.Result(),
-		Host: hostCollector.Result(),
-		Net:  netCollector.Result(),
+		Cpu:  getResult("Cpu"),
+		Mem:  getResult("Mem"),
+		Disk: getResult("Disk"),
+		Host: getResult("Host"),
+		Net:  getResult("Net"),
 	}
 }

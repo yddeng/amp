@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -99,12 +100,9 @@ func (this *Process) waitChild(proc *os.Process, callback func(process *Process)
 
 func (this *Process) waitNoChild(callback func(process *Process)) {
 	go func() {
-		ticker := time.NewTicker(time.Millisecond * 100)
-		for {
-			<-ticker.C
-
-			isRunning, err := this.process.IsRunning()
-			if err != nil || !isRunning {
+		ticker := time.NewTicker(time.Millisecond * 500)
+		for range ticker.C {
+			if err := syscall.Kill(int(this.Pid), 0); err != nil {
 				if this.Stderr != "" {
 					data, err := ioutil.ReadFile(this.Stderr)
 					this.mu.Lock()

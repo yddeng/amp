@@ -6,6 +6,8 @@ import (
 	"flag"
 	"log"
 	"math/rand"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -34,6 +36,10 @@ func main() {
 	if err = exec.Start(cfg); err != nil {
 		panic(err)
 	}
+
+	go func() {
+		http.ListenAndServe("10.128.2.123:40160", nil)
+	}()
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
