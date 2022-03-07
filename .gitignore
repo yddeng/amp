@@ -12,6 +12,6 @@ back-go/cmd/ampe
 
 data/
 log/
-exec/back-go/test/
+back-go/exec/test/
 
 back-go/upload/
