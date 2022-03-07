@@ -31,17 +31,27 @@ type ProcessState struct {
 	Mem float64 `json:"mem"`
 }
 
+type ProcessBell struct {
+	Name         string `json:"name"`
+	DurationTime int64  `json:"duration_time"` // 持续时间
+	Type         int    `json:"type"`
+	Key          string `json:"key"`
+	Value        int    `json:"value"`
+}
+
 type Process struct {
 	ID       int              `json:"id"`
 	Name     string           `json:"name"`
 	Dir      string           `json:"dir"`
 	Config   []*ProcessConfig `json:"config"`
 	Command  string           `json:"command"`
-	State    ProcessState     `json:"state"`
 	Groups   []string         `json:"groups"`
 	Node     string           `json:"node"`
 	User     string           `json:"user"`
 	CreateAt int64            `json:"create_at"`
+
+	State ProcessState `json:"state"`
+	//Bell  []ProcessBell `json:"bell"`
 
 	// 子进程启动关闭优先级，优先级低的，最先启动，关闭的时候最后关闭
 	// 默认值为999 。。非必须设置
