@@ -153,7 +153,7 @@ func (this *Process) CPUPercent() float64 {
 	if this.process == nil {
 		return 0
 	}
-	percent, err := this.process.CPUPercent()
+	percent, err := this.process.Percent(0)
 	if err != nil {
 		return 0
 	}
@@ -217,6 +217,9 @@ func loadProcess(dataPath string) {
 					waitProcess[proc.ID] = proc
 					proc.waitNoChild(func(process *Process) {
 						er.Submit(func() {
+							if process.GetState() == common.StateStopped {
+								delete(waitProcess, process.ID)
+							}
 							saveProcess()
 						})
 					})
