@@ -6,7 +6,7 @@
   },
   "web_config": {
     "address": "0.0.0.0:40156",
-    "app": "",
+    "app": "../../front-vue/dist",
     "admin": {
       "username": "admin",
       "password": "123456"
