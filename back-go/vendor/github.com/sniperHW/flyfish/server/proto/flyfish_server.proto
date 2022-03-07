@@ -1,0 +1,512 @@
+syntax = "proto2";
+package proto;
+
+
+import "gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+
+enum ServerCmdType {
+  //flygate <-> flykv
+  QueryLeader                   = 1;
+  QueryLeaderResp               = 2;
+
+
+  //console <-> pd
+  AddNode                       = 103;
+  AddNodeResp                   = 104;
+  AddLearnerStoreToNode         = 105;
+  AddLearnerStoreToNodeResp     = 106;
+  PromoteLearnerStore           = 107;
+  PromoteLearnerStoreResp       = 108;
+  RemoveNodeStore               = 109;
+  RemoveNodeStoreResp           = 110;
+  RemNode                       = 111;
+  RemNodeResp                   = 112;
+  AddSet                        = 113;
+  AddSetResp                    = 114;
+  RemSet                        = 115;
+  RemSetResp                    = 116;
+  SetMarkClear                  = 117;
+  SetMarkClearResp              = 118;
+  GetMeta                       = 119;
+  GetMetaResp                   = 120;
+  GetSetStatus                  = 121;
+  GetSetStatusResp              = 122;
+  MetaAddTable                  = 123;
+  MetaAddTableResp              = 124;
+  MetaAddFields                 = 125;
+  MetaAddFieldsResp             = 126;
+  MetaRemoveTable               = 127;                
+  MetaRemoveTableResp           = 128;
+  MetaRemoveFields              = 129;
+  MetaRemoveFieldsResp          = 130;
+  QueryPdLeader                 = 131;
+  QueryPdLeaderResp             = 132;
+  AddPdNode                     = 133;
+  AddPdNodeResp                 = 134;
+  RemovePdNode                  = 135;
+  RemovePdNodeResp              = 136; 
+  ListPdMembers                 = 137;
+  ListPdMembersResp             = 138;
+
+
+  //kvnode <-> pd
+  KvnodeBoot                    = 210;                   //kvnode冷启登录  
+  KvnodeBootResp                = 211;
+  NotifyNodeStoreOp             = 212;
+  NodeStoreOpOk                 = 213;
+  IsTransInReady                = 214;
+  IsTransInReadyResp            = 215;
+  NotifySlotTransOut            = 218;
+  SlotTransOutOk                = 219;
+  NotifySlotTransIn             = 220;
+  SlotTransInOk                 = 221;    
+  NotifyUpdateMeta              = 222;
+  StoreReportStatus             = 223;
+  TrasnferLeader                = 224;
+
+
+  //flygate <-> pd
+  QueryRouteInfo                = 310;
+  QueryRouteInfoResp            = 311;
+  FlyGateHeartBeat              = 312;
+  GetScanTableMeta              = 313;
+  GetScanTableMetaResp          = 314;
+
+
+  //client <-> pd
+  GetFlyGateList                = 410;
+  GetFlyGateListResp            = 411;
+  ChangeFlyGate                 = 412;
+  ChangeFlyGateResp             = 413;
+
+  //for test
+  PacketTest                    = 1000;
+}
+
+
+message queryRouteInfo {
+  optional int64  version       = 1;  
+  repeated int32  sets          = 2;
+}         
+
+
+message routeInfoKvNode {
+  optional int32  nodeID        = 1;
+  optional string host          = 2;
+  optional int32  servicePort   = 3;       
+}
+
+message routeInfoSet {
+  optional int32  setID            = 1;
+  repeated int32  stores           = 2;
+  repeated bytes  slots            = 3;
+  repeated routeInfoKvNode kvnodes = 4;
+}
+
+message queryRouteInfoResp {
+  repeated routeInfoSet sets       = 1;
+  repeated int32  removeSets       = 2;
+  optional int64  version          = 3; 
+}
+
+
+//查询是否store的leader,如果是返回yes=true
+message query_leader {
+  optional int32 store = 1;
+}
+
+message query_leader_resp {
+  optional int32 leader = 1;
+}
+
+message deploymentKvnode  {
+  optional int32  nodeID      = 1;
+  optional string host        = 2;
+  optional int32  servicePort = 3;
+  optional int32  raftPort   = 4; 
+}
+
+message deploymentSet  {
+  optional int32  setID           = 1;
+  repeated deploymentKvnode nodes = 2;
+}
+
+message addNode {
+  optional int32  setID       = 1;
+  optional int32  nodeID      = 2;
+  optional string host        = 3;
+  optional int32  servicePort = 4;
+  optional int32  raftPort    = 5;      
+}
+
+
+message addNodeResp  {
+  optional bool ok            = 1;
+  optional string reason      = 2;
+}
+
+message addLearnerStoreToNode {
+  optional int32  setID       = 1;
+  optional int32  nodeID      = 2;
+  optional int32  store       = 3;  
+}
+  
+message addLearnerStoreToNodeResp {
+  optional bool ok            = 1;
+  optional string reason      = 2;  
+}
+  
+message promoteLearnerStore {
+  optional int32  setID       = 1;
+  optional int32  nodeID      = 2;
+  optional int32  store       = 3;  
+}
+
+message promoteLearnerStoreResp {
+  optional bool ok            = 1;
+  optional string reason      = 2; 
+}
+
+message removeNodeStore {
+  optional int32  setID       = 1;
+  optional int32  nodeID      = 2;
+  optional int32  store       = 3;  
+}
+
+message removeNodeStoreResp {
+  optional bool ok            = 1;
+  optional string reason      = 2; 
+}
+
+
+message remNode {
+  optional int32  setID       = 1;
+  optional int32  nodeID      = 2;     
+}
+
+
+message remNodeResp  {
+  optional bool ok            = 1;
+  optional string reason      = 2;
+}
+
+
+message kvnodeBoot {
+  optional int32  nodeID      = 1;
+}
+
+message storeInfo {
+  optional int32  id          = 1;
+  optional string raftCluster = 2;
+  optional bytes  slots       = 3;
+  optional uint64 raftID      = 4;
+}
+
+message kvnodeBootResp {
+  optional bool   ok           = 1;
+  optional string reason       = 2;
+  optional int32  setID        = 3;
+  optional string serviceHost  = 4;
+  optional int32  servicePort  = 5;
+  optional int32  raftPort     = 6;   
+  repeated storeInfo stores    = 7;
+  optional int64  metaVersion  = 8;
+  optional bytes  meta         = 9;
+}
+
+
+enum StoreOpType {
+  AddLearner = 1;
+  PromoteLearner = 2;
+  RemoveStore = 3;
+}
+
+message notifyNodeStoreOp {
+  optional int32  op          = 1;
+  optional int32  nodeID      = 2;
+  optional string host        = 3;
+  optional int32  raftPort    = 4;
+  optional int32  port        = 5;
+  optional int32  store       = 6; 
+  optional uint64 raftID      = 7;
+}
+
+message nodeStoreOpOk {
+
+}
+
+
+
+message  isTransInReady {
+  optional int32  store       = 1;
+  optional int32  slot        = 2; 
+}
+
+message  isTransInReadyResp {
+  optional bool   ready       = 1;
+  optional int32  slot        = 2;
+}
+
+message notifySlotTransOut {
+  optional int32  slot        = 1;  
+  optional int32  store       = 2;  
+}
+  
+message slotTransOutOk {
+  optional int32  slot        = 1; 
+}  
+
+message  notifySlotTransIn {
+  optional int32  slot        = 1;  
+  optional int32  store       = 2; 
+}
+
+message slotTransInOk {
+  optional int32  slot        = 1; 
+}  
+
+
+message addSet {
+  optional deploymentSet set   = 1;
+}
+
+message   addSetResp {
+  optional bool   ok           = 1;
+  optional string reason       = 2;
+}
+
+
+message remSet {
+  optional int32 setID         = 1;
+}
+
+message   remSetResp {
+  optional bool   ok           = 1;
+  optional string reason       = 2;
+}
+
+
+message  setMarkClear{
+  optional int32 setID         = 1;
+}
+
+message  setMarkClearResp{
+  optional bool   ok           = 1;
+  optional string reason       = 2;
+}
+
+
+message flygate  {
+  optional string service      = 1;
+  optional int32  msgPerSecond = 2;  
+}
+
+message   getFlyGateList {
+
+}
+
+message getFlyGateListResp {
+  repeated flygate list        = 1;
+}
+
+message flyGateHeartBeat {
+  optional string gateService  = 1;
+  optional int32  msgPerSecond = 2;
+}
+
+message changeFlyGate {
+  optional string currentGate      = 1;
+  optional int32  msgSendPerSecond = 2;
+}
+
+message changeFlyGateResp {
+  optional bool ok        = 1;
+  optional string service = 2;
+}
+
+message metaFiled {
+  optional string name    = 1;
+  optional string type    = 2;
+  optional string default = 3;
+}
+
+
+message metaAddTable {
+  optional string name      = 1;
+  repeated metaFiled fields = 2;
+  optional int64    version = 3;
+}
+
+
+message metaAddTableResp {
+  optional bool  ok       = 1;  
+  optional string reason  = 2; 
+}
+
+
+message metaAddFields {
+  optional string table     = 1;
+  repeated metaFiled fields = 2;
+  optional int64    version = 3;
+}
+
+message metaAddFieldsResp {
+  optional bool  ok       = 1;  
+  optional string reason  = 2; 
+}
+
+
+message metaRemoveTable{
+  optional string   table   = 1;
+  optional int64    version = 2;
+} 
+
+message   metaRemoveTableResp{
+  optional bool  ok       = 1;  
+  optional string reason  = 2;
+}
+
+message   metaRemoveFields{
+  optional string table     = 1;
+  repeated string fields    = 2;
+  optional int64  version   = 3;  
+}       
+message   metaRemoveFieldsResp{
+  optional bool  ok       = 1;  
+  optional string reason  = 2;  
+}       
+
+
+message getMeta {
+ 
+}
+
+message getMetaResp {
+  optional int64 version  = 1;
+  optional bytes meta     = 2;
+}
+
+message  notifyUpdateMeta {
+  optional int32 store    = 1;
+  optional int64 version  = 2;
+  optional bytes meta     = 3;
+}
+
+message packetTest {
+  optional string message = 1;
+}
+
+message getSetStatus {
+  
+}
+
+message storeStatus {
+  optional int32 storeID = 1;
+  optional bytes slots   = 2;
+}
+
+
+message kvnodeStoreStatus {
+  optional int32 storeID  = 1;
+  optional int32 type     = 2;
+  optional int32 value    = 3;
+  optional bool  isLeader = 4;
+}
+
+message kvnodeStatus {
+  optional int32 nodeID  = 1;
+  repeated kvnodeStoreStatus stores  = 2;
+}
+
+message setStatus {
+  optional int32 setID = 1;
+  optional bool  markClear = 2;
+  repeated storeStatus stores = 3;
+  repeated kvnodeStatus nodes = 4;
+}
+
+message getSetStatusResp {
+  repeated setStatus sets = 1;
+}
+
+message storeReportStatus {
+  optional int32  setID       = 1;
+  optional int32  nodeID      = 2;
+  optional int32  storeID     = 3;
+  optional uint64 raftID      = 4;
+  optional bool   isleader    = 5;
+  optional int32  kvcount     = 6;
+  optional uint64 progress    = 7;
+  optional int64  metaVersion = 8;
+}
+
+message trasnferLeader {
+  optional int32  storeID    = 1;
+  optional uint64 transferee = 2; 
+}
+
+
+message scanField {
+  optional string  field        = 1;
+  optional int64   version      = 2;
+}
+
+message getScanTableMeta {
+  optional string  table        = 1;
+}
+
+message getScanTableMetaResp {
+  optional int64     tabVersion = 1;
+  repeated scanField fields     = 2;
+}
+
+
+message queryPdLeader {
+
+}
+
+message queryPdLeaderResp {
+  optional bool yes       = 1;
+  optional string service = 2;
+}
+
+
+message addPdNode{
+  optional int32 id         = 1;
+  optional string url       = 2;
+  optional string clientUrl = 3;
+}
+ 
+message addPdNodeResp{
+  optional bool   ok          = 1;  
+  optional string reason      = 2;
+  optional uint32 cluster     = 3;
+  optional uint64 raftID      = 4;
+  optional string raftCluster = 5;   
+}
+
+message removePdNode{
+  optional int32  id          = 1;
+  optional uint64 raftID      = 2;    
+}
+
+message removePdNodeResp{
+  optional bool  ok       = 1;  
+  optional string reason  = 2;   
+}
+
+message  listPdMembers {
+  
+}
+
+message  listPdMembersResp {
+  repeated string members = 1;
+}
+
