@@ -1,0 +1,21 @@
+.ant-pro-global-header-index-right {
+  margin-right: 8px;
+}
+.ant-pro-global-header-index-right.ant-pro-global-header-index-dark .ant-pro-global-header-index-action {
+  color: hsla(0, 0%, 100%, 0.85);
+}
+.ant-pro-global-header-index-right.ant-pro-global-header-index-dark .ant-pro-global-header-index-action:hover {
+  background: #1890ff;
+}
+.ant-pro-global-header-index-right .ant-pro-account-avatar .antd-pro-global-header-index-avatar {
+  margin: 5px 0;
+  margin-right: 8px;
+  vertical-align: top;
+  background: rgba(255, 255, 255, 0.85);
+}
+.ant-pro-global-header-index-right .menu .anticon {
+  margin-right: 8px;
+}
+.ant-pro-global-header-index-right .menu .ant-dropdown-menu-item {
+  min-width: 100px;
+}
