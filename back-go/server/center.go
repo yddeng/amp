@@ -1,8 +1,8 @@
 package server
 
 import (
-	"amp/common"
-	"amp/protocol"
+	"amp/back-go/common"
+	"amp/back-go/protocol"
 	"github.com/golang/protobuf/proto"
 	"github.com/yddeng/dnet"
 	"github.com/yddeng/dnet/drpc"

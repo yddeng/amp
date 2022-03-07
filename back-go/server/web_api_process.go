@@ -1,8 +1,8 @@
 package server
 
 import (
-	"amp/common"
-	"amp/protocol"
+	"amp/back-go/common"
+	"amp/back-go/protocol"
 	"fmt"
 	"github.com/yddeng/dnet/drpc"
 	"log"

@@ -1,7 +1,7 @@
 package server
 
 import (
-	"amp/util"
+	"amp/back-go/util"
 	"fmt"
 	"github.com/tidwall/gjson"
 	"github.com/yddeng/dnet/dhttp"

@@ -1,8 +1,8 @@
 package exec
 
 import (
-	"amp/common"
-	"amp/protocol"
+	"amp/back-go/common"
+	"amp/back-go/protocol"
 	"bytes"
 	"github.com/yddeng/dnet/drpc"
 	"io/ioutil"

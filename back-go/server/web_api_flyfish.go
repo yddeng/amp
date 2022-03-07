@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/sniperHW/flyfish/server/flypd/console/http"
 	sproto "github.com/sniperHW/flyfish/server/proto"
 	"log"

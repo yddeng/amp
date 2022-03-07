@@ -1,8 +1,8 @@
 package exec
 
 import (
-	"amp/common"
-	"amp/util"
+	"amp/back-go/common"
+	"amp/back-go/util"
 	psProc "github.com/shirou/gopsutil/process"
 	"io/ioutil"
 	"log"

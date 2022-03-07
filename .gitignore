@@ -7,11 +7,11 @@
 .idea
 .DS_Store
 
-cmd/amps
-cmd/ampe
+back-go/cmd/amps
+back-go/cmd/ampe
 
 data/
 log/
-exec/test/
+exec/back-go/test/
 
-upload/
+back-go/upload/

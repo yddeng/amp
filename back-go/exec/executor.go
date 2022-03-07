@@ -1,8 +1,8 @@
 package exec
 
 import (
-	"amp/common"
-	"amp/protocol"
+	"amp/back-go/common"
+	"amp/back-go/protocol"
 	"errors"
 	"fmt"
 	"github.com/golang/protobuf/proto"

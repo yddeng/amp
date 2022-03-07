@@ -1,8 +1,8 @@
 package main
 
 import (
-	"amp/server"
-	"amp/util"
+	"amp/back-go/server"
+	"amp/back-go/util"
 	"flag"
 	"log"
 	"math/rand"

@@ -1,8 +1,8 @@
 package exec
 
 import (
-	"amp/protocol"
-	"amp/util"
+	"amp/back-go/protocol"
+	"amp/back-go/util"
 	"encoding/json"
 	"fmt"
 	psCpu "github.com/shirou/gopsutil/cpu"
