@@ -24,6 +24,7 @@ type Center struct {
 
 func newCenter(address, token string) *Center {
 	c := new(Center)
+	c.token = token
 	c.acceptor = dnet.NewTCPAcceptor(address)
 	c.rpcClient = drpc.NewClient()
 	c.rpcServer = drpc.NewServer()
