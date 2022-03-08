@@ -109,14 +109,14 @@ export default {
         })
     },
     progressColor (percent) {
-      if (percent >= '80%') {
+      if (percent >= '80') {
         return 'red'
-      } else if (percent >= '50%') {
+      } else if (percent >= '50') {
         return '#EAC100'
       }
     },
     progressPercent (percent) {
-      return parseFloat(percent.slice(0, percent.lastIndexOf('%')))
+      return parseFloat(percent)
     }
   }
 

@@ -192,7 +192,7 @@ func (self *CPUCollector) Result() map[string]string {
 	defer self.RUnlock()
 	return map[string]string{
 		"cpuCores":    fmt.Sprintf("%d", self.cpuCores),
-		"usedPercent": fmt.Sprintf("%.1f%%", self.usedPercent),
+		"usedPercent": fmt.Sprintf("%.1f", self.usedPercent),
 	}
 }
 
@@ -252,10 +252,10 @@ func (self *MemCollector) Result() map[string]string {
 	return map[string]string{
 		"virtualTotal":       convertBytes(self.virtualTotal),
 		"virtualUsed":        convertBytes(self.virtualUsed),
-		"virtualUsedPercent": fmt.Sprintf("%.1f%%", self.virtualUsedPercent),
+		"virtualUsedPercent": fmt.Sprintf("%.1f", self.virtualUsedPercent),
 		"swapTotal":          convertBytes(self.swapTotal),
 		"swapUsed":           convertBytes(self.swapUsed),
-		"swapUsedPercent":    fmt.Sprintf("%.1f%%", self.swapUsedPercent),
+		"swapUsedPercent":    fmt.Sprintf("%.1f", self.swapUsedPercent),
 	}
 }
 
@@ -350,7 +350,7 @@ func (self *DiskCollector) Result() map[string]string {
 		"used":        convertBytes(self.used),
 		"avail":       convertBytes(self.avail),
 		"free":        convertBytes(self.free),
-		"usedPercent": fmt.Sprintf("%.1f%%", self.usedPercent),
+		"usedPercent": fmt.Sprintf("%.1f", self.usedPercent),
 	}
 }
 

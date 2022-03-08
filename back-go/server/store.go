@@ -60,6 +60,7 @@ func doSave(final bool) {
 			}
 		}
 	}
+	needSave = map[storeName]bool{}
 }
 
 type nodeStore struct {
