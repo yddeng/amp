@@ -10,11 +10,11 @@ amp 是一个自动化管理平台： 计划任务、进程控制
 
 ## 页面展示 
 
-![image](https://github.com/yddeng/amp/blob/master/assets/cmd_list.jpg)
-![image](https://github.com/yddeng/amp/blob/master/assets/cmd_exec.jpg)
-![image](https://github.com/yddeng/amp/blob/master/assets/cmd_exec_result.jpg)
-![image](https://github.com/yddeng/amp/blob/master/assets/process_list.jpg)
-![image](https://github.com/yddeng/amp/blob/master/assets/machine_list.jpg)
+![image](https://github.com/yddeng/amp/blob/master/assets/image/cmd_list.jpg)
+![image](https://github.com/yddeng/amp/blob/master/assets/image/cmd_exec.jpg)
+![image](https://github.com/yddeng/amp/blob/master/assets/image/cmd_exec_result.jpg)
+![image](https://github.com/yddeng/amp/blob/master/assets/image/process_list.jpg)
+![image](https://github.com/yddeng/amp/blob/master/assets/image/machine_list.jpg)
 
 ## 启动
 
