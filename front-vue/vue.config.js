@@ -4,8 +4,7 @@ const GitRevisionPlugin = require('git-revision-webpack-plugin')
 const GitRevision = new GitRevisionPlugin()
 const buildDate = JSON.stringify(new Date().toLocaleString())
 const createThemeColorReplacerPlugin = require('./config/plugin.config')
-const target = 'http://212.129.131.27:40156' // 开发服务器地址
-// const target = 'http://10.128.2.123:40156'
+const target = 'http://10.128.2.123:40156'
 
 function resolve (dir) {
   return path.join(__dirname, dir)
