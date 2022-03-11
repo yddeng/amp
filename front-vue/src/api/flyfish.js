@@ -94,3 +94,19 @@ export function removeNodeStore (parameter) {
     data: parameter
   })
 }
+
+export function clearDBData (parameter) {
+  return request({
+    url: '/flyfish/clearDBData',
+    method: 'post',
+    data: parameter
+  })
+}
+
+export function drainKv (parameter) {
+  return request({
+    url: '/flyfish/drainKv',
+    method: 'post',
+    data: parameter
+  })
+}

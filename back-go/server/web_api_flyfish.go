@@ -273,3 +273,36 @@ func (*flyfishHandler) SetMarkClear(done *Done, user string, req struct {
 		}
 	})
 }
+
+func (*flyfishHandler) ClearDBData(done *Done, user string, req struct {
+	Host        string              `json:"host"`
+	ClearDBData *sproto.ClearDBData `json:"clearDBData"`
+}) {
+	log.Printf("%s by(%s) %v\n", done.route, user, req)
+
+	flyCall(req.Host, req.ClearDBData, &sproto.ClearDBDataResp{}, func(msg proto.Message, err error) {
+		defer func() { done.Done() }()
+		if err != nil {
+			done.result.Message = err.Error()
+			return
+		}
+		resp := msg.(*sproto.ClearDBDataResp)
+		if !resp.GetOk() {
+			done.result.Message = resp.GetReason()
+		}
+	})
+}
+
+func (*flyfishHandler) DrainKv(done *Done, user string, req struct {
+	Host string `json:"host"`
+}) {
+	log.Printf("%s by(%s) %v\n", done.route, user, req)
+
+	flyCall(req.Host, &sproto.DrainKv{}, &sproto.DrainKvResp{}, func(msg proto.Message, err error) {
+		defer func() { done.Done() }()
+		if err != nil {
+			done.result.Message = err.Error()
+			return
+		}
+	})
+}

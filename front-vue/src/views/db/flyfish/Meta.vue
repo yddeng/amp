@@ -6,12 +6,22 @@
           justify="space-between"
           type="flex">
           <a-col :span="4"><span style="font-size:20px;font-weight:bold">Vsersion: {{ version }}</span></a-col>
-          <a-col :span="2">
+          <a-col :span="6">
             <a-button
               type="primary"
               @click="openModel('')"
               icon="plus"
-            >AddTable</a-button>
+            >AddTable</a-button>&nbsp;
+            <a-popconfirm title="确定要清除所有表吗？" @confirm="clearDBData('')">
+              <a-button
+                type="primary"
+              >ClearDBData</a-button>
+            </a-popconfirm>&nbsp;
+            <a-popconfirm title="确定要排空所有Kv吗？" @confirm="drainKv()">
+              <a-button
+                type="primary"
+              >DrainKv</a-button>
+            </a-popconfirm>
           </a-col>
         </a-row>
       </div>
@@ -25,8 +35,11 @@
           <div >
             <a @click="openModel(record.name)">AddField</a>
             <a-divider type="vertical" />
+            <a-popconfirm title="确定要清除当前表吗？" @confirm="clearDBData(record.name)">
+              <a>ClearDBData</a>
+            </a-popconfirm>
+            <a-divider type="vertical" />
             <a-popconfirm title="确定要删除吗？">
-              <a-icon slot="icon" type="question-circle-o" style="color: red" />
               <a style="color:red;">Delete</a>
             </a-popconfirm>
           </div>
@@ -107,7 +120,7 @@
 </template>
 
 <script>
-import { getMeta, addTable, addField } from '@/api/flyfish'
+import { getMeta, addTable, addField, clearDBData, drainKv } from '@/api/flyfish'
 
 export default {
   name: 'FlyfishMeta',
@@ -247,7 +260,25 @@ export default {
             this.getMeta()
           })
         }
-    }
+    },
+    clearDBData (name) {
+      var tables = []
+      if (name !== '') {
+        tables.push(name)
+      }
+      clearDBData({ host: this.host, clearDBData: { tables: tables } })
+        .then(res => {
+          this.$message.info('操作成功')
+          this.getMeta()
+        })
+    },
+    drainKv () {
+      drainKv({ host: this.host })
+          .then(res => {
+            this.$message.info('操作成功')
+            this.getMeta()
+          })
+      }
   }
 
 }

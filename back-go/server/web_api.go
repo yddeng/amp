@@ -249,4 +249,6 @@ func initHandler(app *gin.Engine) {
 	flyfishGroup.POST("/remNode", warpHandle(flyfishHandle.RemNode))
 	flyfishGroup.POST("/addLeaderStoreToNode", warpHandle(flyfishHandle.AddLeaderStoreToNode))
 	flyfishGroup.POST("/removeNodeStore", warpHandle(flyfishHandle.RemoveNodeStore))
+	flyfishGroup.POST("/clearDBData", warpHandle(flyfishHandle.ClearDBData))
+	flyfishGroup.POST("/drainKv", warpHandle(flyfishHandle.DrainKv))
 }
