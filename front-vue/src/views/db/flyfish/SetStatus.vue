@@ -2,7 +2,18 @@
   <div>
     <a-card :bordered="false">
       <div style="marginBottom: 24px " >
-        <a-button type="primary" icon="plus" @click="openAddSetModal">AddSet</a-button>
+        <a-row
+          justify="end"
+          type="flex">
+          <a-col :span="4">
+            <a-button type="primary" icon="plus" @click="openAddSetModal">AddSet</a-button>&nbsp;
+            <a-popconfirm title="确定要排空所有Kv吗？" @confirm="drainKv()">
+              <a-button
+                type="primary"
+              >DrainKv</a-button>
+            </a-popconfirm>
+          </a-col>
+        </a-row>
       </div>
       <a-table
         bordered
@@ -203,7 +214,7 @@ import { getSetStatus,
   addNode,
   remNode,
   addLeaderStoreToNode,
-  removeNodeStore
+  removeNodeStore, drainKv
 } from '@/api/flyfish'
 export default {
   name: 'FlyfishSetStatus',
@@ -216,6 +227,7 @@ export default {
     return {
       columns: [
         { title: 'SetID', dataIndex: 'setID' },
+        { title: 'KvCount', dataIndex: 'kvcount' },
         { title: 'MarkClear', scopedSlots: { customRender: 'markClear' } },
         { title: 'NodeCount', customRender: (record) => record.nodes.length },
         { title: 'StoreCount', customRender: (record) => record.stores.length },
@@ -230,11 +242,13 @@ export default {
         { title: 'StoreID', dataIndex: 'storeID' },
         { title: 'Type', dataIndex: 'type' },
         { title: 'Value', dataIndex: 'value' },
+        { title: 'Progress', dataIndex: 'progress' },
         { title: 'IsLeader', dataIndex: 'isLeader', scopedSlots: { customRender: 'nodeStoreIsLeader' } },
         { title: 'Action', scopedSlots: { customRender: 'nodeStoreAction' } }
       ],
       storeColumns: [
         { title: 'StoreID', dataIndex: 'storeID' },
+        { title: 'KvCount', dataIndex: 'kvcount' },
         { title: 'NodeCount', customRender: (record) => record.nodes.length },
         { title: 'Action', scopedSlots: { customRender: 'storeAction' } }
       ],
@@ -281,6 +295,7 @@ export default {
     getSetStatus({ host: this.host })
       .then(res => {
         this.sets = res.sets
+        console.log(this.sets)
         this.sets.sort((a, b) => (a.setID - b.setID))
         for (let i = 0; i < this.sets.length; i++) {
           const set = this.sets[i]
@@ -442,7 +457,16 @@ export default {
         .then(res => {
           this.getSetStatus()
         })
-    }
+    },
+    drainKv () {
+      drainKv({ host: this.host })
+          .then(res => {
+            this.$message.info('操作成功')
+            setTimeout(() => {
+              this.getSetStatus()
+            }, 1500)
+          })
+      }
   }
 }
 </script>

@@ -6,7 +6,7 @@
           justify="space-between"
           type="flex">
           <a-col :span="4"><span style="font-size:20px;font-weight:bold">Vsersion: {{ version }}</span></a-col>
-          <a-col :span="6">
+          <a-col :span="4">
             <a-button
               type="primary"
               @click="openModel('')"
@@ -16,11 +16,6 @@
               <a-button
                 type="primary"
               >ClearDBData</a-button>
-            </a-popconfirm>&nbsp;
-            <a-popconfirm title="确定要排空所有Kv吗？" @confirm="drainKv()">
-              <a-button
-                type="primary"
-              >DrainKv</a-button>
             </a-popconfirm>
           </a-col>
         </a-row>
@@ -120,7 +115,7 @@
 </template>
 
 <script>
-import { getMeta, addTable, addField, clearDBData, drainKv } from '@/api/flyfish'
+import { getMeta, addTable, addField, clearDBData } from '@/api/flyfish'
 
 export default {
   name: 'FlyfishMeta',
@@ -271,14 +266,7 @@ export default {
           this.$message.info('操作成功')
           this.getMeta()
         })
-    },
-    drainKv () {
-      drainKv({ host: this.host })
-          .then(res => {
-            this.$message.info('操作成功')
-            this.getMeta()
-          })
-      }
+    }
   }
 
 }
