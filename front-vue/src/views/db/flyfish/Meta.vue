@@ -5,8 +5,8 @@
         <a-row
           justify="space-between"
           type="flex">
-          <a-col :span="4"><span style="font-size:20px;font-weight:bold">Vsersion: {{ version }}</span></a-col>
-          <a-col :span="4">
+          <a-col><span style="font-size:20px;font-weight:bold">Vsersion: {{ version }}</span></a-col>
+          <a-col>
             <a-button
               type="primary"
               @click="openModel('')"

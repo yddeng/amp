@@ -65,7 +65,7 @@
     </template>
 
     <a-list
-      :grid="{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 3, xl:3, xxl :4 }"
+      :grid="{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 2, xl:3, xxl :4 }"
       :data-source="status.process"
     >
       <a-list-item slot="renderItem" slot-scope="item">
@@ -395,6 +395,9 @@ export default {
   font:14px;
   align:center;
   padding:0 5px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 </style>

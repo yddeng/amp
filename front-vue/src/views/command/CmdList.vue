@@ -271,15 +271,17 @@ const columns = [
 </script>
 
 <style lang="less" scoped>
-
+body{
+  min-width:1500px;
+}
 .header-card-value{
   font-size:30px;
-  color:#7B7B7B,
+  color:#7B7B7B;
 }
 
 .header-card-title{
   font-size:20px;
-  color:#9D9D9D,
+  color:#9D9D9D;
 }
 
 .header-card-icon{

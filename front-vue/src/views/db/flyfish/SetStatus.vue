@@ -2,10 +2,8 @@
   <div>
     <a-card :bordered="false">
       <div style="marginBottom: 24px " >
-        <a-row
-          justify="end"
-          type="flex">
-          <a-col :span="4">
+        <a-row justify="end" type="flex">
+          <a-col>
             <a-button type="primary" icon="plus" @click="openAddSetModal">AddSet</a-button>&nbsp;
             <a-popconfirm title="确定要排空所有Kv吗？" @confirm="drainKv()">
               <a-button
