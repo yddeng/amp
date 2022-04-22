@@ -19,6 +19,7 @@
         :data-source="sets"
         size="small"
         :pagination="false"
+        :rowKey="(record,index) => index"
       >
         <template slot="markClear" slot-scope="set">
           <a-switch checked-children="T" un-checked-children="F" :checked="set.markClear" @change="handleSetMarkClear(set)" />
@@ -45,6 +46,7 @@
               :data-source="set.nodes"
               size="small"
               :pagination="false"
+              :rowKey="(record,index) => index"
             >
               <template slot="nodeAction" slot-scope="node" >
                 <div >
@@ -68,6 +70,7 @@
                 :columns="nodeStoreColumns"
                 :data-source="node.stores"
                 size="small"
+                :rowKey="(record,index) => index"
                 :pagination="false"
               >
                 <template slot="nodeStoreIsLeader" slot-scope="isLeader">
@@ -91,6 +94,7 @@
               bordered
               :columns="storeColumns"
               :data-source="set.stores"
+              :rowKey="(record,index) => index"
               size="small"
               :pagination="false"
             >
@@ -103,6 +107,7 @@
                 slot-scope="store"
                 :columns="storeNodeColumns"
                 :data-source="store.nodes"
+                :rowKey="(record,index) => index"
                 size="small"
                 :pagination="false"
               >

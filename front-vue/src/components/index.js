@@ -14,7 +14,6 @@ import TagCloud from '@/components/Charts/TagCloud'
 // pro components
 import AvatarList from '@/components/AvatarList'
 import Ellipsis from '@/components/Ellipsis'
-import FooterToolbar from '@/components/FooterToolbar'
 import NumberInfo from '@/components/NumberInfo'
 import STable from '@/components/Table'
 import IconSelector from '@/components/IconSelector'
@@ -37,7 +36,6 @@ export {
   RankList,
   TransferBar,
   Ellipsis,
-  FooterToolbar,
   NumberInfo,
   STable,
   IconSelector,

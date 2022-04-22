@@ -46,6 +46,14 @@
         </template>
       </s-table>
     </a-card>
+
+    <a-log-info
+      :visible="logInfoVisible"
+      :cmdName="logInfoCmd"
+      :record="logInfoRecord"
+      @cancel="logInfoCancel"
+    >
+    </a-log-info>
   </page-header-wrapper>
 </template>
 
@@ -87,7 +95,8 @@ const columns = [
 export default {
   name: 'CmdLog',
   components: {
-    STable
+    STable,
+    'a-log-info': LogInfo
   },
   data () {
     return {
@@ -101,7 +110,11 @@ export default {
           return res
         })
       },
-      copyTitle: '复制'
+      copyTitle: '复制',
+
+      logInfoVisible: false,
+      logInfoCmd: '',
+      logInfoRecord: {}
     }
   },
   mounted () {
@@ -122,19 +135,12 @@ export default {
       return tabList
     },
     showLogInfo (record) {
-    this.$dialog(LogInfo,
-      // component props
-      {
-        cmdName: this.cmdName,
-        record
-      },
-      // modal props
-      {
-        title: '执行日志',
-        width: 1000,
-        centered: true,
-        maskClosable: true
-      })
+      this.logInfoVisible = true
+      this.logInfoCmd = this.cmdName
+      this.logInfoRecord = record
+    },
+    logInfoCancel () {
+      this.logInfoVisible = false
     },
     copyClick () {
       this.copyTitle = '复制成功'

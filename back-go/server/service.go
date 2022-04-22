@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/yddeng/utils/task"
 	"log"
+	"net/http"
 	"os"
 	"time"
 )
@@ -85,12 +86,29 @@ func webRun(cfg *WebConfig) {
 		})
 	}
 
+	// 跨域
+	app.Use(func(ctx *gin.Context) {
+		ctx.Header("Access-Control-Allow-Origin", "*")
+		ctx.Header("Access-Control-Allow-Headers", "*")
+		ctx.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, PATCH")
+		ctx.Header("Access-Control-Allow-Credentials", "true")
+		ctx.Header("Access-Control-Expose-Headers", "*")
+		if ctx.Request.Method == "OPTIONS" {
+			// 处理浏览器的options请求时，返回200状态即可
+			ctx.JSON(http.StatusOK, "")
+			ctx.Abort()
+			return
+		}
+
+		ctx.Next()
+	})
+
 	initHandler(app)
 
 	// vue项目路由 /api
-	for _, r := range app.Routes() {
-		app.Handle(r.Method, "/api"+r.Path, r.HandlerFunc)
-	}
+	//for _, r := range app.Routes() {
+	//	app.Handle(r.Method, "/api"+r.Path, r.HandlerFunc)
+	//}
 
 	log.Printf("web server run %s.\n", cfg.Address)
 	go func() {

@@ -45,7 +45,6 @@ export default {
     }
   },
   mounted () {
-    console.log(this.$store)
     setTimeout(() => {
       this.currentUser = {
         name: this.$store.getters.nickname

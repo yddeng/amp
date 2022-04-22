@@ -81,6 +81,14 @@
         </a-form-model>
       </a-spin>
     </a-card>
+
+    <a-log-info
+      :visible="logInfoVisible"
+      :cmdName="logInfoCmd"
+      :record="logInfoRecord"
+      @cancel="logInfoCancel"
+    >
+    </a-log-info>
   </page-header-wrapper>
 </template>
 
@@ -91,6 +99,9 @@ import LogInfo from './modal/LogInfo'
 
 export default {
   name: 'CmdExec',
+  components: {
+    'a-log-info': LogInfo
+  },
   data () {
     return {
       formRule: {
@@ -109,7 +120,11 @@ export default {
         node: '',
         timeout: 60
       },
-      spinning: false
+      spinning: false,
+
+       logInfoVisible: false,
+      logInfoCmd: '',
+      logInfoRecord: {}
     }
   },
   mounted () {
@@ -171,32 +186,13 @@ export default {
       }
     },
     showLogInfo (record) {
-      console.log(this.form.name, record)
-      this.$dialog(LogInfo,
-        // component props
-        {
-          cmdName: this.form.name,
-          record,
-          on: {
-            ok () {
-              console.log('ok 回调')
-            },
-            cancel () {
-              console.log('cancel 回调')
-            },
-            close () {
-              console.log('modal close 回调')
-            }
-          }
-        },
-        // modal props
-        {
-          title: '执行日志',
-          width: 1000,
-          centered: true,
-          maskClosable: true
-        })
-      }
+      this.logInfoVisible = true
+      this.logInfoCmd = this.cmdName
+      this.logInfoRecord = record
+    },
+    logInfoCancel () {
+      this.logInfoVisible = false
+    }
 
   }
 }

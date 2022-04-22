@@ -25,6 +25,7 @@
         :columns="columns"
         :data-source="data"
         size="small"
+        :rowKey="(record,index) => index"
         @change="onPageChange">
         <template slot="action" slot-scope="text, record">
           <div >
@@ -47,6 +48,7 @@
           :columns="innerColumns"
           :data-source="innerData[currentPageIndex*pageSize +index]"
           :pagination="false"
+          :rowKey="(record,index) => index"
         >
           <template slot="innerAction" >
             <div >

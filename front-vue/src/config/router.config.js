@@ -58,6 +58,12 @@ export const asyncRouterMap = [
         path: '/db/flyfish'
       },
       {
+        name: 'gamemaster',
+        meta: { icon: 'database', title: 'GameMaster', show: true },
+        component: () => import('@/views/gm/Gm'),
+        path: '/gm/gamemaster'
+      },
+      {
         path: '/system',
         redirect: '/system/usermange',
         component: RouteView,

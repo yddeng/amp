@@ -6,19 +6,23 @@ import Vue from 'vue'
 import App from './App.vue'
 import router from './router'
 import store from './store/'
+import Antd from 'ant-design-vue'
 import { VueAxios } from './utils/request'
 import ProLayout, { PageHeaderWrapper } from '@ant-design-vue/pro-layout'
 import themePluginConfig from '../config/themePluginConfig'
 
 import bootstrap from './core/bootstrap'
-import './core/lazy_use' // use lazy load components
 import './permission' // permission control
 import './utils/filter' // global filter
 import './global.less' // global style
+import 'ant-design-vue/dist/antd.css'
 
+import moment from 'moment'
 import VueClipboard from 'vue-clipboard2'
-Vue.use(VueClipboard)
 
+moment.locale('zh-cn')
+Vue.use(Antd)
+Vue.use(VueClipboard)
 Vue.config.productionTip = false
 
 // mount axios to `Vue.$http` and `this.$http`
