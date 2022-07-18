@@ -1,6 +1,31 @@
 <template>
   <div>
-    登陆界面公告，暂未实现
+    <a-card :bordered="false">
+      <div style="marginBottom: 24px;font-size:16px " >
+        服务状态:
+        <a-switch v-model="isOpen" checked-children="在线" un-checked-children="离线" @change="onSwitchChange" />
+
+      </div>
+      <a-tabs :default-active-key="activeKey" @change="tabChange">
+        <a-tab-pane key="online" tab="在线公告">
+          <a-input v-model="onlineData.title" placeholder="公告标题" size="large" style="width: 50%;"/></br></br>
+          <a-textarea
+            v-model="onlineData.content"
+            placeholder="公告内容"
+            :auto-size="{ minRows: 6, maxRows: 8 }"/>
+        </a-tab-pane>
+        <a-tab-pane key="offline" tab="离线公告" force-render>
+          <a-input v-model="offlineData.title" placeholder="公告标题" size="large" style="width: 50%;"/></br></br>
+          <a-textarea
+            v-model="offlineData.content"
+            placeholder="公告内容"
+            :auto-size="{ minRows: 6, maxRows: 8 }"/>
+        </a-tab-pane>
+      </a-tabs>
+      </br>
+      <a-button @click="handleUpdate">更改当前公告</a-button>
+    </a-card>
+
   </div>
 </template>
 <script>
@@ -8,7 +33,7 @@
 import axios from 'axios'
 
 export default {
-  name: 'Announcement',
+  name: 'Notification',
   props: { host: {
       type: String,
       default: ''
@@ -16,86 +41,101 @@ export default {
   },
   data () {
     return {
-      data: [],
-      columns: [
-        { title: '类型', dataIndex: 'type' },
-        { title: '标题', dataIndex: 'title' },
-        { title: '开始时间', dataIndex: 'startTime' },
-        { title: '到期时间', dataIndex: 'expireTime' },
-        { title: 'Action', scopedSlots: { customRender: 'action' } }
-      ],
-      version: 0,
-      visible: false,
-      modalTitle: '添加公告',
-      modalContent: '',
-      modalType: 'add'
+      isOpen: false,
+      switchLoading: false,
+      onlineData: {},
+      offlineData: {},
+      activeKey: 'online'
     }
   },
   mounted () {
-    this.getAnnouncement()
+    this.getNotification()
   },
   watch: {
     host (val) {
-      this.getAnnouncement()
+      this.getNotification()
     }
   },
   methods: {
-    getAnnouncement () {
+    onSwitchChange (checked) {
       if (this.host === '') {
+        this.$message.info('请选择一个web节点')
         return
       }
-      const url = 'http://' + this.host + '/announcement/get'
-      axios({ url: url, method: 'post', data: { version: this.version } })
+      this.isOpen = checked
+      // console.log(this.isOpen)
+      this.switchLoading = true
+      const url = 'http://' + this.host + '/serverstatus/set'
+      axios({ url: url, method: 'post', data: { closed: !this.isOpen } })
       .then(res => {
         const data = res.data
         if (data.success) {
-          const ret = data.data
-          this.version = ret.version
-          this.data = ret.announcement
+          this.$message.success('状态更改成功')
+          setTimeout(() => {
+            this.getNotification()
+            // console.log('fffff')
+          }, 2000)
         } else {
-          this.$message.error(data.message)
-        }
-      })
-    },
-    addAnnouncement (content) {
-      const data = JSON.parse(content)
-      const url = 'http://' + this.host + '/announcement/add'
-      axios({ url: url, method: 'post', data: data })
-      .then(res => {
-        const data = res.data
-        if (data.success) {
-          this.getAnnouncement()
-        } else {
+          this.isOpen = !this.isOpen
           this.$message.error(data.message)
         }
       })
       .finally(() => {
-        this.visible = false
+        this.switchLoading = false
       })
     },
-    delAnnouncement (id) {
-      const url = 'http://' + this.host + '/announcement/delete'
-      axios({ url: url, method: 'post', data: { id: id } })
+    getNotification () {
+      if (this.host === '') {
+        return
+      }
+      const url = 'http://' + this.host + '/notification/getAll'
+      axios({ url: url, method: 'post' })
       .then(res => {
         const data = res.data
         if (data.success) {
-          this.getAnnouncement()
+          const ret = data.data
+          this.isOpen = !ret.isClosed
+          this.onlineData = ret.notifications[0]
+          this.offlineData = ret.notifications[1]
+          // console.log(ret)
         } else {
           this.$message.error(data.message)
         }
       })
     },
-    openModal (value) {
-      this.modalContent = value
-      this.visible = true
+    tabChange (activeKey) {
+      this.activeKey = activeKey
     },
-    handleModalOk () {
-      if (this.modalType === 'add') {
-        this.addAnnouncement(this.modalContent)
-      } else {
+    handleUpdate () {
+      if (this.host === '') {
+        this.$message.info('请选择一个web节点')
+        return
+      }
+      try {
+        let _type = 'offline'
+        let notify = this.offlineData
 
+        if (this.activeKey === 'online') {
+          _type = 'online'
+          notify = this.onlineData
+        }
+
+        const url = 'http://' + this.host + '/notification/update'
+        axios({ url: url, method: 'post', data: { type: _type, notification: notify } })
+        .then(res => {
+          const data = res.data
+          if (data.success) {
+            this.$message.success('更改公告成功')
+            this.getNotification()
+          } else {
+            this.$message.error(data.message)
+          }
+        })
+      } catch (error) {
+        this.$message.error('不是一个json字符串')
       }
     }
+
   }
 }
 </script>
