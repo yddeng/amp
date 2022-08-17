@@ -1,0 +1,15 @@
+{
+  "data_path": "./data",
+  "center_config": {
+    "address": "0.0.0.0:40155",
+    "token": "token"
+  },
+  "web_config": {
+    "address": "0.0.0.0:40156",
+    "app": "./dist",
+    "admin": {
+      "username": "admin",
+      "password": "123456"
+    }
+  }
+}

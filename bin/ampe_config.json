@@ -1,0 +1,8 @@
+{
+  "name":      "executor",
+  "net":       "",
+  "inet":      "127.0.0.1",
+  "center":    "127.0.0.1:40155",
+  "token":     "token",
+  "data_path": "./data"
+}
